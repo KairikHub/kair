@@ -62,7 +62,7 @@ Proposal:
 - “Alert on individual stock buys”
 
 Result:
-- FAIL — this proposal requires `schwab:read`, which is not approved.
+- FAIL — this proposal expands scope and requires `schwab:read`, which is not approved.
 
 Resolution paths must be explicit and logged:
 1. Revise the proposal to avoid the missing Control.
@@ -98,8 +98,10 @@ It contains the following fields:
 - current_state
 - history (append-only)
 - approvals
-- controls_required
-- controls_approved
+- controlsRequired
+- controlsApproved
+- activeVersion
+- versions (append-only)
 - executor_ref
 - artifacts
 - timestamps

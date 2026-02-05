@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 const STATES = [
   "DRAFT",
   "PLANNED",
@@ -105,30 +108,34 @@ function validateControls(list) {
 }
 
 function missingControls(contract) {
-  const approved = new Set(contract.controls_approved);
-  return contract.controls_required.filter((control) => !approved.has(control));
+  const approved = new Set(contract.controlsApproved);
+  return contract.controlsRequired.filter((control) => !approved.has(control));
 }
 
 function describeControls(list) {
   return list.length === 0 ? "none" : list.join(", ");
 }
 
-function enforceControls(contract, context) {
+function enforceControls(contract, context, options = {}) {
   const missing = missingControls(contract);
   if (missing.length > 0) {
-    const message = `Blocked: proposal requires missing Controls: ${missing.join(
+    const message = `Blocked: proposal requires controls not approved: ${missing.join(
       ", "
-    )}. Resolution paths: revise the proposal; add/approve the required Controls; rewind to update the Contract; or fork into a new Contract.`;
+    )}. Resolution paths: revise the proposal; add/approve the required controls; rewind the Contract to update authority; or fork into a new Contract.`;
     recordHistory(contract, "CONTROLS", message);
-    fail(`Contract "${contract.id}" blocked due to missing Controls: ${missing.join(", ")}.`);
+    if (options.fatal) {
+      fail(`Contract "${contract.id}" blocked due to missing controls: ${missing.join(", ")}.`);
+    }
+    return false;
   }
   recordHistory(
     contract,
     "CONTROLS",
     `Controls check passed for ${context}. Required: ${describeControls(
-      contract.controls_required
-    )}. Approved: ${describeControls(contract.controls_approved)}.`
+      contract.controlsRequired
+    )}. Approved: ${describeControls(contract.controlsApproved)}.`
   );
+  return true;
 }
 
 function proposeContract(intent, controlsRequired) {
@@ -143,8 +150,10 @@ function proposeContract(intent, controlsRequired) {
     approvals: [],
     executor_ref: null,
     artifacts: [],
-    controls_required: controlsRequired,
-    controls_approved: [],
+    controlsRequired: controlsRequired,
+    controlsApproved: [],
+    activeVersion: null,
+    versions: [],
     timestamps: {
       created_at: timestamp,
       updated_at: timestamp,
@@ -166,6 +175,26 @@ function requireArgs(args, minCount, usage) {
   }
 }
 
+function writeArtifact(contract, proposalSummary) {
+  const dir = path.join("artifacts", contract.id);
+  fs.mkdirSync(dir, { recursive: true });
+  const safeTimestamp = now().replace(/[:.]/g, "-");
+  const filename = `${safeTimestamp}-run.json`;
+  const payload = {
+    contract_id: contract.id,
+    activeVersion: contract.activeVersion,
+    controlsApproved: [...contract.controlsApproved],
+    proposal: proposalSummary,
+    outcome: "mock ok",
+  };
+  const filePath = path.join(dir, filename);
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+  contract.artifacts.push({
+    type: "run",
+    content: filePath,
+  });
+}
+
 function showContractStatus(contract) {
   const timestamp = now();
   console.log(`${timestamp} | ${contract.id} | STATUS | Audit report generated.`);
@@ -175,8 +204,9 @@ function showContractStatus(contract) {
   console.log(`Intent: ${contract.intent}`);
   console.log(`Plan: ${contract.plan ? contract.plan : "none"}`);
   console.log(`Current state: ${contract.current_state}`);
-  console.log(`Controls required: ${describeControls(contract.controls_required)}`);
-  console.log(`Controls approved: ${describeControls(contract.controls_approved)}`);
+  console.log(`Active version: ${contract.activeVersion ?? "none"}`);
+  console.log(`Controls required: ${describeControls(contract.controlsRequired)}`);
+  console.log(`Controls approved: ${describeControls(contract.controlsApproved)}`);
   const missing = missingControls(contract);
   console.log(`Controls missing: ${describeControls(missing)}`);
   console.log("Approvals:");
@@ -185,6 +215,17 @@ function showContractStatus(contract) {
   } else {
     for (const approval of contract.approvals) {
       console.log(`- ${approval.at} | ${approval.approver}`);
+    }
+  }
+  console.log("Versions (append-only):");
+  if (contract.versions.length === 0) {
+    console.log("- none recorded");
+  } else {
+    for (const version of contract.versions) {
+      const activeMark = version.version === contract.activeVersion ? " (active)" : "";
+      console.log(
+        `- v${version.version}${activeMark} | ${version.kind} | ${version.at} | ${version.note}`
+      );
     }
   }
   console.log("Rewinds:");
@@ -216,7 +257,9 @@ function wait(ms) {
 
 async function runContract(contract) {
   assertState(contract, ["APPROVED"], "run");
-  enforceControls(contract, "execution");
+  if (!enforceControls(contract, "execution", { fatal: true })) {
+    return;
+  }
   transition(contract, "RUNNING", "Execution started for the approved Contract.");
   await wait(400);
   logAudit(contract.id, contract.current_state, "Checkpoint: execution is underway.");
@@ -233,6 +276,10 @@ async function runContract(contract) {
   contract.artifacts.push({
     type: "summary",
     content: summary,
+  });
+  writeArtifact(contract, {
+    intent: contract.intent,
+    plan: contract.plan,
   });
   transition(contract, "COMPLETED", "Execution completed successfully for the approved Contract.");
 }
@@ -309,7 +356,7 @@ async function executeCommand(tokens) {
       const controlsRequired = normalizeControls(parseControls(controlsRaw));
       validateControls(controlsRequired);
       const contract = getContract(contractId);
-      contract.controls_required = controlsRequired;
+      contract.controlsRequired = controlsRequired;
       recordHistory(
         contract,
         "CONTROLS",
@@ -322,7 +369,9 @@ async function executeCommand(tokens) {
       const [contractId] = rest;
       const contract = getContract(contractId);
       assertState(contract, ["PLANNED"], "request-approval");
-      enforceControls(contract, "approval request");
+      if (!enforceControls(contract, "approval request")) {
+        return;
+      }
       transition(contract, "AWAITING_APPROVAL", "Approval requested for Contract.");
       break;
     }
@@ -336,12 +385,23 @@ async function executeCommand(tokens) {
       const contract = getContract(contractId);
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
       contract.approvals.push({ at: now(), approver });
+      const version = contract.versions.length + 1;
+      contract.activeVersion = version;
+      contract.versions.push({
+        version,
+        kind: "approval",
+        at: now(),
+        note: `Approved by ${approver}.`,
+        controlsApproved: [...contract.controlsApproved],
+        plan: contract.plan,
+        intent: contract.intent,
+      });
       transition(contract, "APPROVED", `Approved Contract by ${approver}.`);
       break;
     }
     case "approve-control":
     case "add-control": {
-      requireArgs(rest, 3, 'contract approve-control "<contract_id>" "<control>" "<approver>"');
+      requireArgs(rest, 3, 'contract add-control "<contract_id>" "<control>" "<approver>"');
       const [contractId, control, ...approverParts] = rest;
       const approver = approverParts.join(" ").trim();
       if (!approver) {
@@ -349,8 +409,8 @@ async function executeCommand(tokens) {
       }
       validateControls([control]);
       const contract = getContract(contractId);
-      if (!contract.controls_approved.includes(control)) {
-        contract.controls_approved.push(control);
+      if (!contract.controlsApproved.includes(control)) {
+        contract.controlsApproved.push(control);
         recordHistory(contract, "CONTROLS", `Control "${control}" approved by ${approver}.`);
       } else {
         recordHistory(contract, "CONTROLS", `Control "${control}" reaffirmed by ${approver}.`);
@@ -386,6 +446,18 @@ async function executeCommand(tokens) {
       } else if (reasonParts.length === 1) {
         reasonText = reasonParts[0].trim();
       }
+      const previousVersion = contract.activeVersion;
+      const version = contract.versions.length + 1;
+      contract.activeVersion = version;
+      contract.versions.push({
+        version,
+        kind: "rewind",
+        at: now(),
+        note: `Rewound by ${authority}. Supersedes v${previousVersion ?? "none"}.`,
+        controlsApproved: [...contract.controlsApproved],
+        plan: contract.plan,
+        intent: contract.intent,
+      });
       const reasonChunks = [
         "Rewound Contract because a rewind was requested.",
         `Authority: ${authority}.`,

@@ -1,5 +1,7 @@
 Confidential & Proprietary. Not for distribution.
 
+Confidential & Proprietary. Not for distribution.
+
 # Kairik
 
 ## One-sentence definition
@@ -35,7 +37,7 @@ Damien is the first customer because he already runs high‑value work through A
 2. He iteratively discusses the problem with an AI bot, adding context until an agreed solution is articulated.
 3. He writes a product requirements document (PRD).
 4. He uses a terminal-based “Ralph Wiggum” plugin to run the task repeatedly until done.
-5. He stages the work for review/testing and publishes a PR to GitHub.
+5. He stages the work for review/validation and publishes a PR to GitHub.
 
 ### Where it breaks down
 - Not rewindable: if the run goes wrong, there is no clean way to step back.
@@ -49,17 +51,17 @@ Damien is the first customer because he already runs high‑value work through A
 2. Step 2 becomes a tracked conversation that produces an explicit plan, with checkpoints that Damien can approve or pause.
 3. Step 3 becomes a living requirements artifact that Kairik maintains, so the PRD stays aligned with decisions and changes.
 4. Step 4 moves from terminal-only runs to a visible execution view with rewind points, audit trail, and clear ownership for each action.
-5. Step 5 outputs review‑ready artifacts: a change summary, test evidence, and a PR package that is easy to understand.
+5. Step 5 outputs review‑ready artifacts: a change summary, execution evidence, and a PR package that is easy to understand.
 
 ### What success looks like for Damien in week 1
 - He can pause and approve each major step without losing momentum.
 - He can rewind to a safe checkpoint after a wrong turn and continue without starting over.
 - He can show a clean, human‑readable history of decisions to his team.
 - He can explain “why this change happened” in under two minutes.
-- He can ship a PR with clear context and testing evidence on the first try.
+- He can ship a PR with clear context and execution evidence on the first try.
 
 ## One concrete scenario (narrative)
-Intent → Damien writes, in plain English, that he wants to upgrade a production app from Laravel 9 to 10 while keeping sign‑up and checkout stable. Plan → Kairik turns that into a step‑by‑step plan and highlights a risky database migration. Approval → Damien pauses, reviews the risky step, and approves the plan with a note to add a rollback. Execution → The work begins, but the tests reveal a breaking change in a payment dependency; Damien rewinds to the last safe checkpoint and chooses an alternative upgrade path. Explanation → Kairik summarizes what changed, why it changed, and what was rolled back. Review → Damien sees a clean timeline, test results, and a concise change summary. PR → Kairik assembles the PR with context and evidence, ready for team review.
+Intent → Damien writes, in plain English, that he wants to upgrade a production app from Laravel 9 to 10 while keeping sign‑up and checkout stable. Plan → Kairik turns that into a step‑by‑step plan and highlights a risky database migration. Approval → Damien pauses, reviews the risky step, and approves the plan with a note to add a rollback. Execution → The work begins, but validation reveals a breaking change in a payment dependency; Damien rewinds to the last safe checkpoint and chooses an alternative upgrade path. Explanation → Kairik summarizes what changed, why it changed, and what was rolled back. Review → Damien sees a clean timeline, validation results, and a concise change summary. PR → Kairik assembles the PR with context and evidence, ready for team review.
 
 ## What Kairik is not
 Kairik is not a replacement for engineering judgment or team accountability.
