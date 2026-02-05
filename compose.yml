@@ -3,4 +3,3 @@ services:
     build: .
     volumes:
       - .:/app
-    command: ["npm", "run", "kairik", "--"]
