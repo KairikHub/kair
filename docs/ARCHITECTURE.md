@@ -3,6 +3,94 @@
 ## v0 Execution Surface
 Kairik v0 is a CLI-first control plane.
 
+## Card = Repo (Responsibility Boundary)
+
+A **Card** is the unit of responsibility in Kairik. It behaves like a Git repo:
+
+- **One Card = one responsibility boundary**
+- **One active truth** inside a card (no branching)
+- History is **append-only**
+- A new responsibility boundary is created by **forking into a new Card**
+
+**Why “no branching” matters**
+- Branches create multiple simultaneous “truth candidates”
+- Kairik enforces **one active contract** so accountability is unambiguous:
+  - “What are we currently accountable to?”
+  - “What was approved?”
+  - “What changed, and when?”
+
+### Versioning inside a Card
+
+- **Approval = Commit**
+  - An approval creates a new immutable version (commit-like) of the Card’s contract.
+- **Execution = Deploy**
+  - Running a card executes against the currently active approved version.
+- **Rewind = Revert (never reset / force-push)**
+  - Rewind creates a new version that invalidates a prior active version and selects a new active contract.
+  - Rewind does not erase history.
+
+> Rewind doesn’t undo the past — it changes what you’re accountable to.
+
+### Forking
+
+Forking is the only way to change the responsibility boundary.
+- You do **not** expand a Card’s scope silently.
+- You either:
+  - revise the proposal to fit the existing contract,
+  - rewind + explicitly update the contract,
+  - approve a bounded exception,
+  - or fork into a new Card.
+
+## Testing = Contract / Invariant Compatibility
+
+Testing in Kairik is not “correctness.”  
+Testing answers one question:
+
+> Does this proposed change violate or expand the scope of an existing approved commitment?
+
+### Contract + Proposed Change
+
+Each Card version contains:
+- `contract` (the approved scope + invariants)
+- `proposal` (what is being requested/changed)
+- `tests` (pure functions) that return:
+  - PASS (compatible)
+  - FAIL (violates/expands scope)
+  - WARN (compatible but noteworthy)
+
+### Example: Scope Expansion (Schwab Strategy)
+
+Existing approved contract:
+- “Index funds only”
+- “Monitor only purchases of QQQ / SPY / VTI”
+- “No alerts for individual stocks”
+
+Proposal:
+- “Alert me when I buy individual stocks”
+
+Result:
+- FAIL — expands monitoring scope beyond the approved contract.
+
+### Resolution Paths (explicit)
+
+On FAIL, the user must choose one:
+
+1. **Revise proposal** to fit the contract  
+   - Remove the scope-expanding behavior.
+
+2. **Rewind + update contract**  
+   - Create a new approved contract that includes the expanded scope.
+   - (History remains; accountability shifts.)
+
+3. **Approve a bounded exception**
+   - Add a narrowly scoped exception (time-boxed, symbol-boxed, or action-boxed)
+   - Example: “Allow alerts for AAPL only, for 7 days.”
+
+### Non-goal
+
+Kairik tests do not prove “the world is correct.”
+They prove: **the new version stays inside (or explicitly updates) what you previously approved.**
+
 ## State Machine
 
 The system models work as a strict, explicit state machine with the following states:
