@@ -1,3 +1,5 @@
+Confidential & Proprietary. Not for distribution.
+
 # Architecture
 
 ## v0 Execution Surface

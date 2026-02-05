@@ -1,3 +1,5 @@
+Confidential & Proprietary. Not for distribution.
+
 # Kairik
 
 ## One-sentence definition
