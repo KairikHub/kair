@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "kairik": "tsx src/kairik.ts"
+    "kairik": "tsx src/kairik.ts",
+    "ui": "tsx src/ui.ts"
   },
   "dependencies": {
     "tsx": "latest"

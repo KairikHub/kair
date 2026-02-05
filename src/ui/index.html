@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kairik UI</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <p class="badge">Kairik UI — Local Only</p>
+          <h1>Contract Authority Console</h1>
+          <p class="subtitle">
+            Propose a Kairik Contract, gate it with Controls, approve with explicit responsibility,
+            and rewind without erasing history.
+          </p>
+        </div>
+        <div class="hero-card">
+          <p class="label">Authority Pillars</p>
+          <ul class="pillars">
+            <li>Controls = killable grants</li>
+            <li>Approval = commit-like</li>
+            <li>Rewind = revert-like</li>
+          </ul>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Contracts</h2>
+            <button id="refresh" class="ghost">Refresh</button>
+          </div>
+          <div id="contract-list" class="list"></div>
+          <div class="divider"></div>
+          <h3>Propose a Kairik Contract</h3>
+          <form id="propose-form" class="form">
+            <label>
+              Intent
+              <input id="intent" type="text" placeholder="Upgrade Laravel 9 to 10" required />
+            </label>
+            <label>
+              Required Controls (comma separated)
+              <input
+                id="controls"
+                type="text"
+                placeholder="local:write, github:read"
+              />
+            </label>
+            <button type="submit">Propose Contract</button>
+          </form>
+          <p class="hint">Controls are explicit authority grants. Missing ones block approval.</p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Selected Contract</h2>
+            <span id="selected-id" class="mono"></span>
+          </div>
+          <div id="notice" class="notice hidden"></div>
+          <div id="contract-detail" class="detail"></div>
+          <div class="divider"></div>
+          <h3>Actions</h3>
+          <div class="actions">
+            <label>
+              Plan
+              <input id="plan" type="text" placeholder="Upgrade deps, run validation" />
+              <button id="plan-btn">Plan</button>
+            </label>
+            <label>
+              Approver / Authority
+              <input id="approver" type="text" value="Damien" />
+            </label>
+            <div class="button-row">
+              <button id="request-approval">Request Approval</button>
+              <button id="approve">Approve Contract</button>
+              <button id="run">Run</button>
+              <button id="pause">Pause</button>
+              <button id="rewind">Rewind</button>
+            </div>
+            <label>
+              Rewind reason
+              <input id="rewind-reason" type="text" placeholder="Scope risk; rewind to review" />
+            </label>
+          </div>
+          <div class="divider"></div>
+          <h3>Controls</h3>
+          <div id="controls-detail" class="controls"></div>
+          <div class="divider"></div>
+          <h3>Audit Log</h3>
+          <div id="history" class="history"></div>
+        </section>
+      </main>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
