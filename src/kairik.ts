@@ -23,6 +23,9 @@ const CONTROL_REGISTRY = new Set([
   "local:write",
 ]);
 
+const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_FILE = path.join(DATA_DIR, "contracts.json");
+
 const contractStore = {
   contracts: new Map(),
   nextId: 1,
@@ -39,6 +42,40 @@ function fail(message) {
 
 function logAudit(contractId, label, message, timestamp = now()) {
   console.log(`${timestamp} | ${contractId} | ${label} | ${message}`);
+}
+
+function loadStore() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, "utf8");
+    if (!raw.trim()) {
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.contracts)) {
+      return;
+    }
+    contractStore.contracts.clear();
+    for (const contract of parsed.contracts) {
+      if (contract && contract.id) {
+        contractStore.contracts.set(contract.id, contract);
+      }
+    }
+    contractStore.nextId = Number(parsed.nextId) || contractStore.contracts.size + 1;
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return;
+    }
+    fail(`Failed to load contracts store: ${error.message}`);
+  }
+}
+
+function saveStore() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const payload = {
+    nextId: contractStore.nextId,
+    contracts: [...contractStore.contracts.values()],
+  };
+  fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2));
 }
 
 function getContract(id) {
@@ -68,6 +105,7 @@ function recordHistory(contract, label, message) {
     message,
   });
   logAudit(contract.id, label, message, timestamp);
+  saveStore();
 }
 
 function transition(contract, nextState, reason) {
@@ -163,9 +201,8 @@ function proposeContract(intent, controlsRequired) {
   const controlsNote = controlsRequired.length
     ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
     : " Controls required by this proposal: none.";
-  const reason = `Proposed Contract because intent was provided: "${intent}".${controlsNote}`;
-  contract.history.push({ at: timestamp, state: "DRAFT", message: reason });
-  logAudit(id, "DRAFT", reason, timestamp);
+  const reason = `Propose a Kairik Contract: "${intent}".${controlsNote}`;
+  recordHistory(contract, "DRAFT", reason);
   return contract;
 }
 
@@ -209,6 +246,11 @@ function showContractStatus(contract) {
   console.log(`Controls approved: ${describeControls(contract.controlsApproved)}`);
   const missing = missingControls(contract);
   console.log(`Controls missing: ${describeControls(missing)}`);
+  const gatingSummary = missing.length
+    ? `BLOCKED (missing: ${missing.join(", ")})`
+    : "CLEAR";
+  const activeLabel = contract.activeVersion ? `v${contract.activeVersion}` : "none";
+  console.log(`Summary: Active version ${activeLabel}. Controls gating: ${gatingSummary}.`);
   console.log("Approvals:");
   if (contract.approvals.length === 0) {
     console.log("- none recorded");
@@ -396,7 +438,7 @@ async function executeCommand(tokens) {
         plan: contract.plan,
         intent: contract.intent,
       });
-      transition(contract, "APPROVED", `Approved Contract by ${approver}.`);
+      transition(contract, "APPROVED", `Approve a Kairik Contract: approved by ${approver}.`);
       break;
     }
     case "approve-control":
@@ -459,7 +501,7 @@ async function executeCommand(tokens) {
         intent: contract.intent,
       });
       const reasonChunks = [
-        "Rewound Contract because a rewind was requested.",
+        "Rewind a Kairik Contract because a rewind was requested.",
         `Authority: ${authority}.`,
       ];
       if (reasonText) {
@@ -487,6 +529,8 @@ async function main() {
   if (rawArgs.length === 0) {
     fail("No command provided.");
   }
+
+  loadStore();
 
   const commandGroups = [];
   let current = [];

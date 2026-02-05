@@ -5,6 +5,9 @@ Confidential & Proprietary. Not for distribution.
 ## v0 Execution Surface
 Kairik v0 is a CLI-first control plane.
 
+## Persistence (v0)
+Contracts are persisted to a local JSON store (`data/contracts.json`) so audits survive across runs.
+
 ## Contract = Repo (Authority Boundary)
 
 A **Contract** is the unit of authority in Kairik. It behaves like a Git repo:
