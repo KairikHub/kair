@@ -1,3 +1,8 @@
+# Kairik
+
+## Kairik Cards 
+A Kairik card is a repository for decisions that affect the real world.
+
 ## Run via Docker
 
 Build the image:
@@ -14,6 +19,9 @@ docker compose run --rm kairik create "..." -- plan task_1 "..." -- request-appr
 
 Args after the service name are passed directly to Kairik because the image ENTRYPOINT is `npm run kairik --`.
 The compose config mounts `/app/node_modules` as a separate volume so the image dependencies stay available.
+
+## Card/Contract Model
+See `docs/ARCHITECTURE.md` for the card/repo model and contract testing rules.
 
 ## Damien Walkthrough
 

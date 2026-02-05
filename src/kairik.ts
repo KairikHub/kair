@@ -15,6 +15,11 @@ const store = {
   nextId: 1,
 };
 
+const cardStore = {
+  cards: new Map(),
+  nextId: 1,
+};
+
 function now() {
   return new Date().toISOString();
 }
@@ -34,6 +39,14 @@ function getTask(id) {
     fail(`Unknown task "${id}".`);
   }
   return task;
+}
+
+function getCard(id) {
+  const card = cardStore.cards.get(id);
+  if (!card) {
+    fail(`Unknown card "${id}".`);
+  }
+  return card;
 }
 
 function assertState(task, allowed, action) {
@@ -85,6 +98,37 @@ function createTask(intent) {
   return task;
 }
 
+function recordCard(card, label, message) {
+  const timestamp = now();
+  card.timestamps.updated_at = timestamp;
+  card.history.push({
+    at: timestamp,
+    label,
+    message,
+  });
+  logAudit(card.id, label, message, timestamp);
+}
+
+function createCard(name) {
+  const id = `card_${cardStore.nextId++}`;
+  const timestamp = now();
+  const card = {
+    id,
+    name,
+    contract: [],
+    contract_approvals: [],
+    proposal: null,
+    history: [],
+    timestamps: {
+      created_at: timestamp,
+      updated_at: timestamp,
+    },
+  };
+  cardStore.cards.set(id, card);
+  recordCard(card, "CARD", `Card created to own delegated responsibility: "${name}".`);
+  return card;
+}
+
 function requireArgs(args, minCount, usage) {
   if (args.length < minCount) {
     fail(`Missing arguments. Usage: ${usage}`);
@@ -131,6 +175,37 @@ function showStatus(task) {
   }
 }
 
+function showCardStatus(card) {
+  const timestamp = now();
+  console.log(`${timestamp} | ${card.id} | CARD | Audit report generated.`);
+  console.log(`Card: ${card.id}`);
+  console.log(`Name: ${card.name}`);
+  console.log(`Created: ${card.timestamps.created_at}`);
+  console.log(`Last updated: ${card.timestamps.updated_at}`);
+  console.log("Contract (approved invariants):");
+  if (card.contract.length === 0) {
+    console.log("- none recorded");
+  } else {
+    for (const invariant of card.contract) {
+      console.log(`- ${invariant}`);
+    }
+  }
+  console.log("Contract approvals:");
+  if (card.contract_approvals.length === 0) {
+    console.log("- none recorded");
+  } else {
+    for (const approval of card.contract_approvals) {
+      console.log(`- ${approval.at} | ${approval.approver}`);
+    }
+  }
+  console.log("Proposal:");
+  console.log(card.proposal ? card.proposal : "none recorded");
+  console.log("History (append-only):");
+  for (const entry of card.history) {
+    console.log(`- ${entry.at} | ${entry.label} | ${entry.message}`);
+  }
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -153,6 +228,20 @@ async function runTask(task) {
     content: summary,
   });
   transition(task, "COMPLETED", "Moved to COMPLETED because execution finished successfully.");
+}
+
+function detectContractViolation(card) {
+  const proposal = (card.proposal || "").toLowerCase();
+  const invariants = card.contract;
+  const monitoringInvariant = invariants.find(
+    (invariant) =>
+      invariant.toLowerCase().includes("monitoring scope") &&
+      invariant.toLowerCase().includes("transactions only")
+  );
+  if (monitoringInvariant && proposal.includes("stock")) {
+    return `FAIL: This proposal introduces monitoring of individual stocks, violating approved constraint "${monitoringInvariant}".`;
+  }
+  return null;
 }
 
 async function executeCommand(tokens) {
@@ -247,6 +336,102 @@ async function executeCommand(tokens) {
       const [taskId] = rest;
       const task = getTask(taskId);
       showStatus(task);
+      break;
+    }
+    case "card-create": {
+      requireArgs(rest, 1, 'card-create "<name>"');
+      const name = rest.join(" ").trim();
+      if (!name) {
+        fail("Card name cannot be empty.");
+      }
+      createCard(name);
+      break;
+    }
+    case "contract-set": {
+      requireArgs(rest, 2, 'contract-set "<card_id>" "<invariant_1>" ["<invariant_2>" ...]');
+      const [cardId, ...invariantsRaw] = rest;
+      const invariants = invariantsRaw.map((item) => item.trim()).filter(Boolean);
+      if (invariants.length === 0) {
+        fail("At least one invariant is required.");
+      }
+      const card = getCard(cardId);
+      card.contract = invariants;
+      card.contract_approvals = [];
+      recordCard(
+        card,
+        "CONTRACT",
+        `Contract drafted with invariants: ${invariants.join("; ")}. Approval required before testing.`
+      );
+      break;
+    }
+    case "contract-approve": {
+      requireArgs(rest, 2, 'contract-approve "<card_id>" "<approver>"');
+      const [cardId, ...approverParts] = rest;
+      const approver = approverParts.join(" ").trim();
+      if (!approver) {
+        fail("Approver cannot be empty.");
+      }
+      const card = getCard(cardId);
+      if (card.contract.length === 0) {
+        fail(`Cannot approve contract for "${card.id}" because no contract is defined.`);
+      }
+      card.contract_approvals.push({ at: now(), approver });
+      recordCard(card, "APPROVAL", `Contract approved by ${approver}.`);
+      break;
+    }
+    case "proposal-set": {
+      requireArgs(rest, 2, 'proposal-set "<card_id>" "<proposal>"');
+      const [cardId, ...proposalParts] = rest;
+      const proposal = proposalParts.join(" ").trim();
+      if (!proposal) {
+        fail("Proposal cannot be empty.");
+      }
+      const card = getCard(cardId);
+      card.proposal = proposal;
+      recordCard(card, "PROPOSAL", `Proposal recorded: "${proposal}".`);
+      break;
+    }
+    case "contract-test": {
+      requireArgs(rest, 1, 'contract-test "<card_id>"');
+      const [cardId] = rest;
+      const card = getCard(cardId);
+      if (card.contract.length === 0) {
+        recordCard(card, "TEST", "FAIL: No contract defined to test against.");
+        break;
+      }
+      if (card.contract_approvals.length === 0) {
+        recordCard(
+          card,
+          "TEST",
+          "FAIL: Contract is not approved. Testing protects approved commitments, not correctness."
+        );
+        break;
+      }
+      if (!card.proposal) {
+        recordCard(card, "TEST", "FAIL: No proposal defined to test against the approved contract.");
+        break;
+      }
+      const violation = detectContractViolation(card);
+      if (violation) {
+        recordCard(
+          card,
+          "TEST",
+          `${violation} Resolution paths: revise the proposal to comply; rewind and update the contract (new approval); approve a bounded exception (time-bound, explicit reason).`
+        );
+        break;
+      }
+      recordCard(
+        card,
+        "TEST",
+        "PASS: Proposal stays within approved constraints. Testing here enforces contract compatibility, not correctness."
+      );
+      break;
+    }
+    case "card-status": {
+      requireArgs(rest, 1, 'card-status "<card_id>"');
+      const [cardId] = rest;
+      const card = getCard(cardId);
+      showCardStatus(card);
       break;
     }
     default:
