@@ -27,20 +27,29 @@ See `docs/ARCHITECTURE.md` for the Contract model and Controls rules.
 
 ## Damien Walkthrough
 
-Copy/paste demo (one command):
+Copy/paste demo:
 
 ```bash
-docker compose run --rm kairik contract propose "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write -- contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout" -- contract request-approval contract_1 -- contract add-control contract_1 local:write Damien -- contract request-approval contract_1 -- contract approve contract_1 Damien -- contract run contract_1 -- contract rewind contract_1 Damien "Checkout regression risk identified; rewind to review migration plan." -- contract status contract_1
+docker compose run --rm kairik \
+  contract propose "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write \
+  -- contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout" \
+  -- contract request-approval contract_1 \
+  -- contract add-control contract_1 local:write Damien \
+  -- contract request-approval contract_1 \
+  -- contract approve contract_1 Damien \
+  -- contract run contract_1 \
+  -- contract rewind contract_1 Damien "Checkout regression risk identified; rewind to review migration plan." \
+  -- contract status contract_1
 ```
 
 Narrative:
-- Propose a Kairik Contract in plain English.
-- The request for approval is blocked because `local:write` is missing.
-- Damien explicitly approves the missing Control, then requests approval again.
-- Approve a Kairik Contract, establishing responsibility before execution.
-- Run/execute produces a durable artifact on disk.
+- Propose a Kairik Contract in plain English, including required Controls.
+- Controls are killable authority grants; missing Controls block approval and execution.
+- The request for approval is blocked because `local:write` is missing, then Damien approves the Control and approval succeeds.
+- Approve a Kairik Contract to accept responsibility before execution.
+- Run produces a durable artifact on disk.
 - Rewind a Kairik Contract with a stated reason and authority.
-- Status prints an audit report with history, approvals, controls, versions, and artifacts.
+- Status shows append-only history, active version, and approved Controls.
 
 ## Controls Demo (Blocked Proposal)
 
