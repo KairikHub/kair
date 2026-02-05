@@ -1,9 +1,18 @@
 # Flow
 
-## Intent
+## Propose
+
 ## Plan
-## Approval
-## Execution
-## Observation
+
+## Request Approval
+Controls enforcement: missing Control blocks the proposal until explicitly approved or revised.
+
+## Approve
+
+## Run/Execute
+
+## Observe
+
 ## Rewind
+
 ## Artifact

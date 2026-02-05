@@ -10,13 +10,18 @@ const STATES = [
   "REWOUND",
 ];
 
-const store = {
-  tasks: new Map(),
-  nextId: 1,
-};
+const CONTROL_REGISTRY = new Set([
+  "cloudflare:read",
+  "cloudflare:write",
+  "github:read",
+  "github:write",
+  "schwab:read",
+  "local:read",
+  "local:write",
+]);
 
-const cardStore = {
-  cards: new Map(),
+const contractStore = {
+  contracts: new Map(),
   nextId: 1,
 };
 
@@ -29,55 +34,107 @@ function fail(message) {
   process.exit(1);
 }
 
-function logAudit(taskId, state, message, timestamp = now()) {
-  console.log(`${timestamp} | ${taskId} | ${state} | ${message}`);
+function logAudit(contractId, label, message, timestamp = now()) {
+  console.log(`${timestamp} | ${contractId} | ${label} | ${message}`);
 }
 
-function getTask(id) {
-  const task = store.tasks.get(id);
-  if (!task) {
-    fail(`Unknown task "${id}".`);
+function getContract(id) {
+  const contract = contractStore.contracts.get(id);
+  if (!contract) {
+    fail(`Unknown Contract "${id}".`);
   }
-  return task;
+  return contract;
 }
 
-function getCard(id) {
-  const card = cardStore.cards.get(id);
-  if (!card) {
-    fail(`Unknown card "${id}".`);
-  }
-  return card;
-}
-
-function assertState(task, allowed, action) {
-  if (!allowed.includes(task.current_state)) {
+function assertState(contract, allowed, action) {
+  if (!allowed.includes(contract.current_state)) {
     fail(
-      `Cannot ${action} task "${task.id}" because state is ${task.current_state}. Allowed: ${allowed.join(
+      `Cannot ${action} Contract "${contract.id}" because state is ${contract.current_state}. Allowed: ${allowed.join(
         ", "
       )}.`
     );
   }
 }
 
-function transition(task, nextState, reason) {
+function recordHistory(contract, label, message) {
+  const timestamp = now();
+  contract.timestamps.updated_at = timestamp;
+  contract.history.push({
+    at: timestamp,
+    state: label,
+    message,
+  });
+  logAudit(contract.id, label, message, timestamp);
+}
+
+function transition(contract, nextState, reason) {
   if (!STATES.includes(nextState)) {
     fail(`Invalid state "${nextState}".`);
   }
-  const timestamp = now();
-  task.current_state = nextState;
-  task.timestamps.updated_at = timestamp;
-  task.history.push({
-    at: timestamp,
-    state: nextState,
-    message: reason,
-  });
-  logAudit(task.id, nextState, reason, timestamp);
+  contract.current_state = nextState;
+  recordHistory(contract, nextState, reason);
 }
 
-function createTask(intent) {
-  const id = `task_${store.nextId++}`;
+function parseControls(input) {
+  if (!input) {
+    return [];
+  }
+  return input
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeControls(list) {
+  const seen = new Set();
+  const result = [];
+  for (const item of list) {
+    if (!seen.has(item)) {
+      seen.add(item);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+function validateControls(list) {
+  const invalid = list.filter((control) => !CONTROL_REGISTRY.has(control));
+  if (invalid.length > 0) {
+    fail(`Unknown Controls: ${invalid.join(", ")}. Allowed: ${[...CONTROL_REGISTRY].join(", ")}.`);
+  }
+}
+
+function missingControls(contract) {
+  const approved = new Set(contract.controls_approved);
+  return contract.controls_required.filter((control) => !approved.has(control));
+}
+
+function describeControls(list) {
+  return list.length === 0 ? "none" : list.join(", ");
+}
+
+function enforceControls(contract, context) {
+  const missing = missingControls(contract);
+  if (missing.length > 0) {
+    const message = `Blocked: proposal requires missing Controls: ${missing.join(
+      ", "
+    )}. Resolution paths: revise the proposal; add/approve the required Controls; rewind to update the Contract; or fork into a new Contract.`;
+    recordHistory(contract, "CONTROLS", message);
+    fail(`Contract "${contract.id}" blocked due to missing Controls: ${missing.join(", ")}.`);
+  }
+  recordHistory(
+    contract,
+    "CONTROLS",
+    `Controls check passed for ${context}. Required: ${describeControls(
+      contract.controls_required
+    )}. Approved: ${describeControls(contract.controls_approved)}.`
+  );
+}
+
+function proposeContract(intent, controlsRequired) {
+  const id = `contract_${contractStore.nextId++}`;
   const timestamp = now();
-  const task = {
+  const contract = {
     id,
     intent,
     plan: null,
@@ -86,47 +143,21 @@ function createTask(intent) {
     approvals: [],
     executor_ref: null,
     artifacts: [],
+    controls_required: controlsRequired,
+    controls_approved: [],
     timestamps: {
       created_at: timestamp,
       updated_at: timestamp,
     },
   };
-  store.tasks.set(id, task);
-  const reason = `Created because intent was provided: "${intent}".`;
-  task.history.push({ at: timestamp, state: "DRAFT", message: reason });
+  contractStore.contracts.set(id, contract);
+  const controlsNote = controlsRequired.length
+    ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
+    : " Controls required by this proposal: none.";
+  const reason = `Proposed Contract because intent was provided: "${intent}".${controlsNote}`;
+  contract.history.push({ at: timestamp, state: "DRAFT", message: reason });
   logAudit(id, "DRAFT", reason, timestamp);
-  return task;
-}
-
-function recordCard(card, label, message) {
-  const timestamp = now();
-  card.timestamps.updated_at = timestamp;
-  card.history.push({
-    at: timestamp,
-    label,
-    message,
-  });
-  logAudit(card.id, label, message, timestamp);
-}
-
-function createCard(name) {
-  const id = `card_${cardStore.nextId++}`;
-  const timestamp = now();
-  const card = {
-    id,
-    name,
-    contract: [],
-    contract_approvals: [],
-    proposal: null,
-    history: [],
-    timestamps: {
-      created_at: timestamp,
-      updated_at: timestamp,
-    },
-  };
-  cardStore.cards.set(id, card);
-  recordCard(card, "CARD", `Card created to own delegated responsibility: "${name}".`);
-  return card;
+  return contract;
 }
 
 function requireArgs(args, minCount, usage) {
@@ -135,25 +166,29 @@ function requireArgs(args, minCount, usage) {
   }
 }
 
-function showStatus(task) {
+function showContractStatus(contract) {
   const timestamp = now();
-  console.log(`${timestamp} | ${task.id} | STATUS | Audit report generated.`);
-  console.log(`Task: ${task.id}`);
-  console.log(`Created: ${task.timestamps.created_at}`);
-  console.log(`Last updated: ${task.timestamps.updated_at}`);
-  console.log(`Intent: ${task.intent}`);
-  console.log(`Plan: ${task.plan ? task.plan : "none"}`);
-  console.log(`Current state: ${task.current_state}`);
+  console.log(`${timestamp} | ${contract.id} | STATUS | Audit report generated.`);
+  console.log(`Contract: ${contract.id}`);
+  console.log(`Created: ${contract.timestamps.created_at}`);
+  console.log(`Last updated: ${contract.timestamps.updated_at}`);
+  console.log(`Intent: ${contract.intent}`);
+  console.log(`Plan: ${contract.plan ? contract.plan : "none"}`);
+  console.log(`Current state: ${contract.current_state}`);
+  console.log(`Controls required: ${describeControls(contract.controls_required)}`);
+  console.log(`Controls approved: ${describeControls(contract.controls_approved)}`);
+  const missing = missingControls(contract);
+  console.log(`Controls missing: ${describeControls(missing)}`);
   console.log("Approvals:");
-  if (task.approvals.length === 0) {
+  if (contract.approvals.length === 0) {
     console.log("- none recorded");
   } else {
-    for (const approval of task.approvals) {
+    for (const approval of contract.approvals) {
       console.log(`- ${approval.at} | ${approval.approver}`);
     }
   }
   console.log("Rewinds:");
-  const rewindEntries = task.history.filter((entry) => entry.state === "REWOUND");
+  const rewindEntries = contract.history.filter((entry) => entry.state === "REWOUND");
   if (rewindEntries.length === 0) {
     console.log("- none recorded");
   } else {
@@ -162,47 +197,16 @@ function showStatus(task) {
     }
   }
   console.log("History (append-only):");
-  for (const entry of task.history) {
+  for (const entry of contract.history) {
     console.log(`- ${entry.at} | ${entry.state} | ${entry.message}`);
   }
   console.log("Artifacts:");
-  if (task.artifacts.length === 0) {
+  if (contract.artifacts.length === 0) {
     console.log("- none recorded");
   } else {
-    for (const artifact of task.artifacts) {
+    for (const artifact of contract.artifacts) {
       console.log(`- ${artifact.type} | ${artifact.content}`);
     }
-  }
-}
-
-function showCardStatus(card) {
-  const timestamp = now();
-  console.log(`${timestamp} | ${card.id} | CARD | Audit report generated.`);
-  console.log(`Card: ${card.id}`);
-  console.log(`Name: ${card.name}`);
-  console.log(`Created: ${card.timestamps.created_at}`);
-  console.log(`Last updated: ${card.timestamps.updated_at}`);
-  console.log("Contract (approved invariants):");
-  if (card.contract.length === 0) {
-    console.log("- none recorded");
-  } else {
-    for (const invariant of card.contract) {
-      console.log(`- ${invariant}`);
-    }
-  }
-  console.log("Contract approvals:");
-  if (card.contract_approvals.length === 0) {
-    console.log("- none recorded");
-  } else {
-    for (const approval of card.contract_approvals) {
-      console.log(`- ${approval.at} | ${approval.approver}`);
-    }
-  }
-  console.log("Proposal:");
-  console.log(card.proposal ? card.proposal : "none recorded");
-  console.log("History (append-only):");
-  for (const entry of card.history) {
-    console.log(`- ${entry.at} | ${entry.label} | ${entry.message}`);
   }
 }
 
@@ -210,110 +214,170 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runTask(task) {
-  assertState(task, ["APPROVED"], "run");
-  transition(task, "RUNNING", "Moved to RUNNING because the approved plan is being executed.");
+async function runContract(contract) {
+  assertState(contract, ["APPROVED"], "run");
+  enforceControls(contract, "execution");
+  transition(contract, "RUNNING", "Execution started for the approved Contract.");
   await wait(400);
-  logAudit(task.id, task.current_state, "Checkpoint: execution is underway.");
+  logAudit(contract.id, contract.current_state, "Checkpoint: execution is underway.");
   await wait(400);
-  logAudit(task.id, task.current_state, "Checkpoint: validation completed.");
+  logAudit(contract.id, contract.current_state, "Checkpoint: validation completed.");
   await wait(400);
-  const lastApproval = task.approvals[task.approvals.length - 1];
+  const lastApproval = contract.approvals[contract.approvals.length - 1];
   const approver = lastApproval ? lastApproval.approver : "an authorized approver";
   const approvalAt = lastApproval ? lastApproval.at : "an unknown time";
-  const planText = task.plan ? `Plan executed: "${task.plan}".` : "Plan text was not recorded.";
-  const summary = `Completed because the approved plan ran through execution and validation checkpoints without failure. ${planText} Approval recorded from ${approver} at ${approvalAt}.`;
-  task.artifacts.push({
+  const planText = contract.plan
+    ? `Plan executed: "${contract.plan}".`
+    : "Plan text was not recorded.";
+  const summary = `Completed because the approved Contract ran through execution and validation checkpoints without failure. ${planText} Approval recorded from ${approver} at ${approvalAt}.`;
+  contract.artifacts.push({
     type: "summary",
     content: summary,
   });
-  transition(task, "COMPLETED", "Moved to COMPLETED because execution finished successfully.");
+  transition(contract, "COMPLETED", "Execution completed successfully for the approved Contract.");
 }
 
-function detectContractViolation(card) {
-  const proposal = (card.proposal || "").toLowerCase();
-  const invariants = card.contract;
-  const monitoringInvariant = invariants.find(
-    (invariant) =>
-      invariant.toLowerCase().includes("monitoring scope") &&
-      invariant.toLowerCase().includes("transactions only")
-  );
-  if (monitoringInvariant && proposal.includes("stock")) {
-    return `FAIL: This proposal introduces monitoring of individual stocks, violating approved constraint "${monitoringInvariant}".`;
+function parseContractCommand(tokens) {
+  let command = tokens[0];
+  let args = tokens.slice(1);
+  if (command === "contract") {
+    if (args.length === 0) {
+      fail("Missing contract subcommand.");
+    }
+    command = args[0];
+    args = args.slice(1);
   }
-  return null;
+  return { command, args };
+}
+
+function extractRequires(args) {
+  const remaining = [];
+  let requiredRaw = "";
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--requires") {
+      requiredRaw = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    remaining.push(args[i]);
+  }
+  return { remaining, requiredRaw };
 }
 
 async function executeCommand(tokens) {
-  const [command, ...rest] = tokens;
+  const parsed = parseContractCommand(tokens);
+  const command = parsed.command;
+  const rest = parsed.args;
   if (!command) {
     fail("No command provided.");
   }
 
   switch (command) {
+    case "propose":
     case "create": {
-      requireArgs(rest, 1, 'create "<intent>"');
-      const intent = rest.join(" ").trim();
+      const { remaining, requiredRaw } = extractRequires(rest);
+      requireArgs(remaining, 1, 'contract propose "<intent>" [--requires <controls_csv>]');
+      const intent = remaining.join(" ").trim();
       if (!intent) {
         fail("Intent cannot be empty.");
       }
-      createTask(intent);
+      const controlsRequired = normalizeControls(parseControls(requiredRaw));
+      validateControls(controlsRequired);
+      proposeContract(intent, controlsRequired);
       break;
     }
     case "plan": {
-      requireArgs(rest, 2, 'plan "<task_id>" "<plan>"');
-      const [taskId, ...planParts] = rest;
+      requireArgs(rest, 2, 'contract plan "<contract_id>" "<plan>"');
+      const [contractId, ...planParts] = rest;
       const plan = planParts.join(" ").trim();
       if (!plan) {
         fail("Plan cannot be empty.");
       }
-      const task = getTask(taskId);
-      assertState(task, ["DRAFT"], "plan");
-      task.plan = plan;
-      transition(task, "PLANNED", `Moved to PLANNED because a plan was captured: "${plan}".`);
+      const contract = getContract(contractId);
+      assertState(contract, ["DRAFT"], "plan");
+      contract.plan = plan;
+      transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
+      break;
+    }
+    case "require-controls": {
+      requireArgs(rest, 2, 'contract require-controls "<contract_id>" "<controls_csv>"');
+      const [contractId, ...controlsParts] = rest;
+      const controlsRaw = controlsParts.join(" ").trim();
+      if (!controlsRaw) {
+        fail("Controls list cannot be empty.");
+      }
+      const controlsRequired = normalizeControls(parseControls(controlsRaw));
+      validateControls(controlsRequired);
+      const contract = getContract(contractId);
+      contract.controls_required = controlsRequired;
+      recordHistory(
+        contract,
+        "CONTROLS",
+        `Controls required by this proposal set to: ${describeControls(controlsRequired)}.`
+      );
       break;
     }
     case "request-approval": {
-      requireArgs(rest, 1, 'request-approval "<task_id>"');
-      const [taskId] = rest;
-      const task = getTask(taskId);
-      assertState(task, ["PLANNED"], "request-approval");
-      transition(task, "AWAITING_APPROVAL", "Moved to AWAITING_APPROVAL because approval was requested.");
+      requireArgs(rest, 1, 'contract request-approval "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      assertState(contract, ["PLANNED"], "request-approval");
+      enforceControls(contract, "approval request");
+      transition(contract, "AWAITING_APPROVAL", "Approval requested for Contract.");
       break;
     }
     case "approve": {
-      requireArgs(rest, 2, 'approve "<task_id>" "<approver>"');
-      const [taskId, ...approverParts] = rest;
+      requireArgs(rest, 2, 'contract approve "<contract_id>" "<approver>"');
+      const [contractId, ...approverParts] = rest;
       const approver = approverParts.join(" ").trim();
       if (!approver) {
         fail("Approver cannot be empty.");
       }
-      const task = getTask(taskId);
-      assertState(task, ["AWAITING_APPROVAL"], "approve");
-      task.approvals.push({ at: now(), approver });
-      transition(task, "APPROVED", `Moved to APPROVED because ${approver} approved the work.`);
+      const contract = getContract(contractId);
+      assertState(contract, ["AWAITING_APPROVAL"], "approve");
+      contract.approvals.push({ at: now(), approver });
+      transition(contract, "APPROVED", `Approved Contract by ${approver}.`);
       break;
     }
-    case "run": {
-      requireArgs(rest, 1, 'run "<task_id>"');
-      const [taskId] = rest;
-      const task = getTask(taskId);
-      await runTask(task);
+    case "approve-control":
+    case "add-control": {
+      requireArgs(rest, 3, 'contract approve-control "<contract_id>" "<control>" "<approver>"');
+      const [contractId, control, ...approverParts] = rest;
+      const approver = approverParts.join(" ").trim();
+      if (!approver) {
+        fail("Approver cannot be empty.");
+      }
+      validateControls([control]);
+      const contract = getContract(contractId);
+      if (!contract.controls_approved.includes(control)) {
+        contract.controls_approved.push(control);
+        recordHistory(contract, "CONTROLS", `Control "${control}" approved by ${approver}.`);
+      } else {
+        recordHistory(contract, "CONTROLS", `Control "${control}" reaffirmed by ${approver}.`);
+      }
+      break;
+    }
+    case "run":
+    case "execute": {
+      requireArgs(rest, 1, 'contract run "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      await runContract(contract);
       break;
     }
     case "pause": {
-      requireArgs(rest, 1, 'pause "<task_id>"');
-      const [taskId] = rest;
-      const task = getTask(taskId);
-      assertState(task, ["RUNNING"], "pause");
-      transition(task, "PAUSED", "Moved to PAUSED because a pause was requested.");
+      requireArgs(rest, 1, 'contract pause "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      assertState(contract, ["RUNNING"], "pause");
+      transition(contract, "PAUSED", "Paused Contract execution.");
       break;
     }
     case "rewind": {
-      requireArgs(rest, 1, 'rewind "<task_id>" [<authority>] [<reason>]');
-      const [taskId, ...reasonParts] = rest;
-      const task = getTask(taskId);
-      assertState(task, ["RUNNING", "PAUSED", "FAILED", "COMPLETED"], "rewind");
+      requireArgs(rest, 1, 'contract rewind "<contract_id>" [<authority>] [<reason>]');
+      const [contractId, ...reasonParts] = rest;
+      const contract = getContract(contractId);
+      assertState(contract, ["RUNNING", "PAUSED", "FAILED", "COMPLETED"], "rewind");
       let authority = "operator";
       let reasonText = "";
       if (reasonParts.length >= 2) {
@@ -322,116 +386,23 @@ async function executeCommand(tokens) {
       } else if (reasonParts.length === 1) {
         reasonText = reasonParts[0].trim();
       }
-      const reasonChunks = ["Moved to REWOUND because a rewind was requested.", `Authority: ${authority}.`];
+      const reasonChunks = [
+        "Rewound Contract because a rewind was requested.",
+        `Authority: ${authority}.`,
+      ];
       if (reasonText) {
         reasonChunks.push(`Reason: "${reasonText}".`);
       } else {
         reasonChunks.push("Reason: not provided.");
       }
-      transition(task, "REWOUND", reasonChunks.join(" "));
+      transition(contract, "REWOUND", reasonChunks.join(" "));
       break;
     }
     case "status": {
-      requireArgs(rest, 1, 'status "<task_id>"');
-      const [taskId] = rest;
-      const task = getTask(taskId);
-      showStatus(task);
-      break;
-    }
-    case "card-create": {
-      requireArgs(rest, 1, 'card-create "<name>"');
-      const name = rest.join(" ").trim();
-      if (!name) {
-        fail("Card name cannot be empty.");
-      }
-      createCard(name);
-      break;
-    }
-    case "contract-set": {
-      requireArgs(rest, 2, 'contract-set "<card_id>" "<invariant_1>" ["<invariant_2>" ...]');
-      const [cardId, ...invariantsRaw] = rest;
-      const invariants = invariantsRaw.map((item) => item.trim()).filter(Boolean);
-      if (invariants.length === 0) {
-        fail("At least one invariant is required.");
-      }
-      const card = getCard(cardId);
-      card.contract = invariants;
-      card.contract_approvals = [];
-      recordCard(
-        card,
-        "CONTRACT",
-        `Contract drafted with invariants: ${invariants.join("; ")}. Approval required before testing.`
-      );
-      break;
-    }
-    case "contract-approve": {
-      requireArgs(rest, 2, 'contract-approve "<card_id>" "<approver>"');
-      const [cardId, ...approverParts] = rest;
-      const approver = approverParts.join(" ").trim();
-      if (!approver) {
-        fail("Approver cannot be empty.");
-      }
-      const card = getCard(cardId);
-      if (card.contract.length === 0) {
-        fail(`Cannot approve contract for "${card.id}" because no contract is defined.`);
-      }
-      card.contract_approvals.push({ at: now(), approver });
-      recordCard(card, "APPROVAL", `Contract approved by ${approver}.`);
-      break;
-    }
-    case "proposal-set": {
-      requireArgs(rest, 2, 'proposal-set "<card_id>" "<proposal>"');
-      const [cardId, ...proposalParts] = rest;
-      const proposal = proposalParts.join(" ").trim();
-      if (!proposal) {
-        fail("Proposal cannot be empty.");
-      }
-      const card = getCard(cardId);
-      card.proposal = proposal;
-      recordCard(card, "PROPOSAL", `Proposal recorded: "${proposal}".`);
-      break;
-    }
-    case "contract-test": {
-      requireArgs(rest, 1, 'contract-test "<card_id>"');
-      const [cardId] = rest;
-      const card = getCard(cardId);
-      if (card.contract.length === 0) {
-        recordCard(card, "TEST", "FAIL: No contract defined to test against.");
-        break;
-      }
-      if (card.contract_approvals.length === 0) {
-        recordCard(
-          card,
-          "TEST",
-          "FAIL: Contract is not approved. Testing protects approved commitments, not correctness."
-        );
-        break;
-      }
-      if (!card.proposal) {
-        recordCard(card, "TEST", "FAIL: No proposal defined to test against the approved contract.");
-        break;
-      }
-      const violation = detectContractViolation(card);
-      if (violation) {
-        recordCard(
-          card,
-          "TEST",
-          `${violation} Resolution paths: revise the proposal to comply; rewind and update the contract (new approval); approve a bounded exception (time-bound, explicit reason).`
-        );
-        break;
-      }
-      recordCard(
-        card,
-        "TEST",
-        "PASS: Proposal stays within approved constraints. Testing here enforces contract compatibility, not correctness."
-      );
-      break;
-    }
-    case "card-status": {
-      requireArgs(rest, 1, 'card-status "<card_id>"');
-      const [cardId] = rest;
-      const card = getCard(cardId);
-      showCardStatus(card);
+      requireArgs(rest, 1, 'contract status "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      showContractStatus(contract);
       break;
     }
     default:

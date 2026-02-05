@@ -19,6 +19,12 @@ Kairik is the human authority layer that makes powerful software execution safe,
 - Work artifacts are organized and review-ready, not scattered across terminals and chat logs.
 - You can explain what happened and why, in plain English, without rereading long conversations.
 
+## Mental model
+- Contract = Git repo / unit of authority
+- Approval = commit-like approval
+- Execution = deploy-like run
+- Rewind = revert-like supersession (append-only history)
+
 ## First customer: Damien (Generation Tux)
 Damien is the first customer because he already runs high‑value work through AI, he owns delivery quality as Director of Engineering, and he feels the trust and explanation gap most sharply. If Kairik can make Damien’s workflow rewindable, visible, and governable, it will make sense for any team that needs to ship safely.
 
@@ -57,7 +63,7 @@ Intent → Damien writes, in plain English, that he wants to upgrade a productio
 Kairik is not a replacement for engineering judgment or team accountability.
 
 ## The wedge (v0 scope)
-- Does: capture intent, generate a step plan, and provide pause/approve/rewind controls with a readable history.
+- Does: capture intent, generate a step plan, and provide pause/approve/rewind controls for Contracts with a readable history.
 - Does: produce a single review‑ready change summary and PR package for one repository.
 - Does not: support multi‑repo programs, long‑running automations, or custom policy engines.
 
