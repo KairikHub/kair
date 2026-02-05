@@ -24,8 +24,8 @@ function fail(message) {
   process.exit(1);
 }
 
-function logAudit(taskId, state, message) {
-  console.log(`${now()} | ${taskId} | ${state} | ${message}`);
+function logAudit(taskId, state, message, timestamp = now()) {
+  console.log(`${timestamp} | ${taskId} | ${state} | ${message}`);
 }
 
 function getTask(id) {
@@ -50,14 +50,15 @@ function transition(task, nextState, reason) {
   if (!STATES.includes(nextState)) {
     fail(`Invalid state "${nextState}".`);
   }
+  const timestamp = now();
   task.current_state = nextState;
-  task.timestamps.updated_at = now();
+  task.timestamps.updated_at = timestamp;
   task.history.push({
-    at: now(),
+    at: timestamp,
     state: nextState,
     message: reason,
   });
-  logAudit(task.id, nextState, reason);
+  logAudit(task.id, nextState, reason, timestamp);
 }
 
 function createTask(intent) {
@@ -80,7 +81,7 @@ function createTask(intent) {
   store.tasks.set(id, task);
   const reason = `Created because intent was provided: "${intent}".`;
   task.history.push({ at: timestamp, state: "DRAFT", message: reason });
-  logAudit(id, "DRAFT", reason);
+  logAudit(id, "DRAFT", reason, timestamp);
   return task;
 }
 
@@ -91,23 +92,38 @@ function requireArgs(args, minCount, usage) {
 }
 
 function showStatus(task) {
-  console.log(`${now()} | ${task.id} | STATUS | Current state: ${task.current_state}`);
+  const timestamp = now();
+  console.log(`${timestamp} | ${task.id} | STATUS | Audit report generated.`);
+  console.log(`Task: ${task.id}`);
+  console.log(`Created: ${task.timestamps.created_at}`);
+  console.log(`Last updated: ${task.timestamps.updated_at}`);
   console.log(`Intent: ${task.intent}`);
-  console.log("History:");
-  for (const entry of task.history) {
-    console.log(`- ${entry.at} | ${entry.state} | ${entry.message}`);
-  }
+  console.log(`Plan: ${task.plan ? task.plan : "none"}`);
+  console.log(`Current state: ${task.current_state}`);
   console.log("Approvals:");
   if (task.approvals.length === 0) {
-    console.log("- none");
+    console.log("- none recorded");
   } else {
     for (const approval of task.approvals) {
       console.log(`- ${approval.at} | ${approval.approver}`);
     }
   }
+  console.log("Rewinds:");
+  const rewindEntries = task.history.filter((entry) => entry.state === "REWOUND");
+  if (rewindEntries.length === 0) {
+    console.log("- none recorded");
+  } else {
+    for (const entry of rewindEntries) {
+      console.log(`- ${entry.at} | ${entry.message}`);
+    }
+  }
+  console.log("History (append-only):");
+  for (const entry of task.history) {
+    console.log(`- ${entry.at} | ${entry.state} | ${entry.message}`);
+  }
   console.log("Artifacts:");
   if (task.artifacts.length === 0) {
-    console.log("- none");
+    console.log("- none recorded");
   } else {
     for (const artifact of task.artifacts) {
       console.log(`- ${artifact.type} | ${artifact.content}`);
@@ -127,9 +143,14 @@ async function runTask(task) {
   await wait(400);
   logAudit(task.id, task.current_state, "Checkpoint: validation completed.");
   await wait(400);
+  const lastApproval = task.approvals[task.approvals.length - 1];
+  const approver = lastApproval ? lastApproval.approver : "an authorized approver";
+  const approvalAt = lastApproval ? lastApproval.at : "an unknown time";
+  const planText = task.plan ? `Plan executed: "${task.plan}".` : "Plan text was not recorded.";
+  const summary = `Completed because the approved plan ran through execution and validation checkpoints without failure. ${planText} Approval recorded from ${approver} at ${approvalAt}.`;
   task.artifacts.push({
     type: "summary",
-    content: "Why this task completed successfully",
+    content: summary,
   });
   transition(task, "COMPLETED", "Moved to COMPLETED because execution finished successfully.");
 }
@@ -200,15 +221,25 @@ async function executeCommand(tokens) {
       break;
     }
     case "rewind": {
-      requireArgs(rest, 1, 'rewind "<task_id>"');
+      requireArgs(rest, 1, 'rewind "<task_id>" [<authority>] [<reason>]');
       const [taskId, ...reasonParts] = rest;
       const task = getTask(taskId);
       assertState(task, ["RUNNING", "PAUSED", "FAILED", "COMPLETED"], "rewind");
-      const reasonInput = reasonParts.join(" ").trim();
-      const reason = reasonInput
-        ? `Moved to REWOUND because a rewind was requested: "${reasonInput}".`
-        : "Moved to REWOUND because a rewind was requested.";
-      transition(task, "REWOUND", reason);
+      let authority = "operator";
+      let reasonText = "";
+      if (reasonParts.length >= 2) {
+        authority = reasonParts[0].trim() || "operator";
+        reasonText = reasonParts.slice(1).join(" ").trim();
+      } else if (reasonParts.length === 1) {
+        reasonText = reasonParts[0].trim();
+      }
+      const reasonChunks = ["Moved to REWOUND because a rewind was requested.", `Authority: ${authority}.`];
+      if (reasonText) {
+        reasonChunks.push(`Reason: "${reasonText}".`);
+      } else {
+        reasonChunks.push("Reason: not provided.");
+      }
+      transition(task, "REWOUND", reasonChunks.join(" "));
       break;
     }
     case "status": {
