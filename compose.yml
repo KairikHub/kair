@@ -1,0 +1,6 @@
+services:
+  kairik:
+    build: .
+    volumes:
+      - .:/app
+    command: ["npm", "run", "kairik", "--"]

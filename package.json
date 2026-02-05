@@ -1,0 +1,11 @@
+{
+  "name": "kairik",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "kairik": "tsx src/kairik.ts"
+  },
+  "dependencies": {
+    "tsx": "latest"
+  }
+}
