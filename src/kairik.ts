@@ -70,6 +70,10 @@ function heading(text) {
   return style(text, COLORS.bold, COLORS.cyan);
 }
 
+function title(text) {
+  return style(text, COLORS.bold, COLORS.yellow);
+}
+
 function stateColor(state) {
   switch (state) {
     case "DRAFT":
@@ -145,7 +149,7 @@ function validateContractId(id) {
 }
 
 function printTopHelp() {
-  console.log(`${heading("Kairik CLI")}
+  console.log(`${title("Kairik CLI")}
 
 ${label("Usage:")}
   kairik contract <subcommand> [args]
@@ -178,7 +182,7 @@ Run "kairik contract --help" for full details.`);
 }
 
 function printContractHelp() {
-  console.log(`${heading("Kairik Contract Commands")}
+  console.log(`${title("Kairik Contract Commands")}
 
 ${label("Usage:")}
   kairik contract <subcommand> [args]
