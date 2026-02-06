@@ -5,6 +5,58 @@ Confidential & Proprietary. Not for distribution.
 ## Monday Demo Definition of Done
 A 5–10 minute demo that shows Propose → Controls block → Controls approval → Approve → Run (artifact) → Rewind → Status, with auditability and append‑only history, in a single Docker‑first flow.
 
+## Strategic Decisions (Distribution + Execution Backends)
+### Distribution Philosophy
+- CLI‑first distribution; the CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.
+- Local‑first adoption via Docker and desktop app; no cloud dependency for core functionality.
+- Trust‑first posture: Kairik runs next to the code it governs.
+
+### Desktop App Path (Tauri)
+- Target packaging: **Tauri**.
+- Rationale:
+  - Reuse the existing UI (no rewrite).
+  - Secure, small native binaries.
+  - Explicit API permissions and isolation aligned with Controls.
+  - No Electron bloat.
+- CLI remains unchanged; Tauri wraps the UI and invokes the same core engine.
+- Migration expectation: minimal UI changes, ~½ day to polish once pursued.
+- Acceptance criteria:
+  - User can double‑click Kairik (no Docker required).
+  - Same lifecycle works: Propose → Plan → Controls → Approve → Run → Pause → Rewind → Status.
+  - Contracts, artifacts, and audit logs persist locally.
+  - Fully offline‑capable.
+- Note:
+  - Docker is acceptable for early demos (including Damien).
+  - Desktop app is a distribution multiplier, not a prerequisite.
+
+### OpenClaw Integration & Controls Mapping
+- Principle:
+  - Kairik is the authority/governance layer.
+  - OpenClaw is an execution backend.
+  - Skills are never the user‑facing mental model.
+- Packaging:
+  - OpenClaw is packaged as a local dependency/runtime.
+  - Invoked only during `run`, under an approved Contract.
+  - Output captured as Kairik Artifacts and included in audit history.
+  - Rewind remains available regardless of execution backend.
+- Controls ↔ Skills Mapping:
+  - Controls are coarse, user‑facing grants (e.g., github:read, local:write).
+  - Skills are implementation details.
+  - Each Control maps internally to one or more OpenClaw skills.
+  - Multiple skills may satisfy a single Control.
+  - Skills are never shown by default in the UI.
+- UX expectations:
+  - Users approve Controls, not skills.
+  - Missing Controls block approval/execution.
+  - UI explains the blast radius of Controls.
+  - Optional advanced view may show which skills a Control enables (future).
+- Acceptance criteria:
+  - A Contract can require OpenClaw‑backed Controls.
+  - Missing Controls block approval/execution.
+  - Approved Controls enable correct OpenClaw skills at runtime.
+  - Execution produces auditable artifacts.
+  - Rewind does not erase OpenClaw execution history.
+
 ## Friday (Tomorrow) — Lock the CLI Demo + Add Persistence
 ### Deliverable 1: Damien‑ready CLI script (single command, no surprises)
 - Files likely to change:
@@ -33,8 +85,8 @@ A 5–10 minute demo that shows Propose → Controls block → Controls approval
   - Makes the system feel like a control plane rather than a one‑shot script.
 
 ## Saturday — UI Skeleton (Local‑Only)
-### Deliverable 3: Minimal UI (choose Next.js)
-- Architecture choice: **Next.js minimal app**.
+### Deliverable 3: Minimal UI (local‑first shell)
+- Architecture choice: **thin UI shell over the CLI engine**.
 - Files likely to change:
   - `package.json`
   - `src/ui/*` (new)
