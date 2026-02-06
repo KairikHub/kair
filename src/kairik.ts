@@ -37,6 +37,66 @@ const contractStore = {
   nextId: 1,
 };
 
+const USE_COLOR = process.stdout.isTTY;
+const COLORS = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+  gray: "\x1b[90m",
+};
+
+function style(text, ...styles) {
+  if (!USE_COLOR) {
+    return text;
+  }
+  return `${styles.join("")}${text}${COLORS.reset}`;
+}
+
+function label(text) {
+  return style(text, COLORS.dim);
+}
+
+function heading(text) {
+  return style(text, COLORS.bold, COLORS.cyan);
+}
+
+function stateColor(state) {
+  switch (state) {
+    case "DRAFT":
+      return COLORS.gray;
+    case "PLANNED":
+      return COLORS.blue;
+    case "AWAITING_APPROVAL":
+      return COLORS.yellow;
+    case "APPROVED":
+      return COLORS.green;
+    case "RUNNING":
+      return COLORS.blue;
+    case "PAUSED":
+      return COLORS.yellow;
+    case "FAILED":
+      return COLORS.red;
+    case "COMPLETED":
+      return COLORS.green;
+    case "REWOUND":
+      return COLORS.magenta;
+    case "RESUMED":
+      return COLORS.cyan;
+    default:
+      return COLORS.gray;
+  }
+}
+
+function formatState(state) {
+  return style(state, stateColor(state), COLORS.bold);
+}
+
 function printTopHelp() {
   console.log(`Kairik CLI
 
@@ -303,26 +363,29 @@ function writeArtifact(contract, proposalSummary) {
 function showContractStatus(contract) {
   const timestamp = now();
   console.log(`${timestamp} | ${contract.id} | STATUS | Audit report generated.`);
-  console.log(`Contract: ${contract.id}`);
-  console.log(`Created: ${contract.timestamps.created_at}`);
-  console.log(`Last updated: ${contract.timestamps.updated_at}`);
-  console.log(`Intent: ${contract.intent}`);
-  console.log(`Plan: ${contract.plan ? contract.plan : "none"}`);
-  console.log(`Current state: ${contract.current_state}`);
-  console.log(`Active version: ${contract.activeVersion ?? "none"}`);
+  console.log(`\n${heading("Contract Summary")}`);
+  console.log(`${label("Contract")}: ${contract.id}`);
+  console.log(`${label("Created")}: ${contract.timestamps.created_at}`);
+  console.log(`${label("Last updated")}: ${contract.timestamps.updated_at}`);
+  console.log(`${label("Intent")}: ${contract.intent}`);
+  console.log(`${label("Plan")}: ${contract.plan ? contract.plan : "none"}`);
+  console.log(`${label("Current state")}: ${formatState(contract.current_state)}`);
+  console.log(`${label("Active version")}: ${contract.activeVersion ?? "none"}`);
   if (contract.current_state === "PAUSED" && contract.pauseContext?.at) {
-    console.log(`Paused at: ${contract.pauseContext.at}`);
+    console.log(`${label("Paused at")}: ${contract.pauseContext.at}`);
   }
-  console.log(`Controls required: ${describeControls(contract.controlsRequired)}`);
-  console.log(`Controls approved: ${describeControls(contract.controlsApproved)}`);
+  console.log(`${label("Controls required")}: ${describeControls(contract.controlsRequired)}`);
+  console.log(`${label("Controls approved")}: ${describeControls(contract.controlsApproved)}`);
   const missing = missingControls(contract);
-  console.log(`Controls missing: ${describeControls(missing)}`);
+  console.log(`${label("Controls missing")}: ${describeControls(missing)}`);
   const gatingSummary = missing.length
-    ? `BLOCKED (missing: ${missing.join(", ")})`
-    : "CLEAR";
+    ? style(`BLOCKED (missing: ${missing.join(", ")})`, COLORS.red, COLORS.bold)
+    : style("CLEAR", COLORS.green, COLORS.bold);
   const activeLabel = contract.activeVersion ? `v${contract.activeVersion}` : "none";
-  console.log(`Summary: Active version ${activeLabel}. Controls gating: ${gatingSummary}.`);
-  console.log("Approvals:");
+  console.log(
+    `${label("Summary")}: Active version ${activeLabel}. Controls gating: ${gatingSummary}.`
+  );
+  console.log(`\n${heading("Approvals")}`);
   if (contract.approvals.length === 0) {
     console.log("- none recorded");
   } else {
@@ -330,7 +393,7 @@ function showContractStatus(contract) {
       console.log(`- ${approval.at} | ${approval.approver}`);
     }
   }
-  console.log("Versions (append-only):");
+  console.log(`\n${heading("Versions (append-only)")}`);
   if (contract.versions.length === 0) {
     console.log("- none recorded");
   } else {
@@ -341,7 +404,7 @@ function showContractStatus(contract) {
       );
     }
   }
-  console.log("Rewinds:");
+  console.log(`\n${heading("Rewinds")}`);
   const rewindEntries = contract.history.filter((entry) => entry.state === "REWOUND");
   if (rewindEntries.length === 0) {
     console.log("- none recorded");
@@ -350,11 +413,12 @@ function showContractStatus(contract) {
       console.log(`- ${entry.at} | ${entry.message}`);
     }
   }
-  console.log("History (append-only):");
+  console.log(`\n${heading("History (append-only)")}`);
   for (const entry of contract.history) {
-    console.log(`- ${entry.at} | ${entry.state} | ${entry.message}`);
+    const stateText = formatState(entry.state);
+    console.log(`- ${entry.at} | ${stateText} | ${entry.message}`);
   }
-  console.log("Artifacts:");
+  console.log(`\n${heading("Artifacts")}`);
   if (contract.artifacts.length === 0) {
     console.log("- none recorded");
   } else {
