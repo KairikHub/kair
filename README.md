@@ -33,7 +33,9 @@ docker compose --profile cli run --rm kairik \
   -- contract add-control contract_1 local:write Damien \
   -- contract request-approval contract_1 \
   -- contract approve contract_1 Damien \
-  -- contract run contract_1 \
+  -- contract run contract_1 --pause-at checkpoint_1 --pause-authority Damien --pause-reason "Hold for checkout verification" \
+  -- contract status contract_1 \
+  -- contract resume contract_1 Damien \
   -- contract rewind contract_1 Damien "Checkout regression risk identified; rewind to review migration plan." \
   -- contract status contract_1
 ```
@@ -44,7 +46,8 @@ What it proves:
 - Missing Controls block approval/execution until explicitly approved.
 - Approve a Kairik Contract before execution.
 - Run produces a durable artifact on disk.
-- Pause is a temporary stop during execution; it records state/history without deleting anything.
+- Pause is a deterministic checkpoint stop; `status` shows PAUSED and history stays append-only.
+- Resume continues execution to completion without losing history.
 - Rewind a Kairik Contract changes the active version without deleting history.
 
 ## Core Concepts

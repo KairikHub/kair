@@ -23,6 +23,12 @@ const CONTROL_REGISTRY = new Set([
   "local:write",
 ]);
 
+const RUN_CHECKPOINTS = [
+  { id: "checkpoint_1", message: "Checkpoint: execution is underway." },
+  { id: "checkpoint_2", message: "Checkpoint: validation completed." },
+];
+const RUN_CHECKPOINT_IDS = new Set(RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id));
+
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "contracts.json");
 
@@ -192,6 +198,7 @@ function proposeContract(intent, controlsRequired) {
     controlsApproved: [],
     activeVersion: null,
     versions: [],
+    pauseContext: null,
     timestamps: {
       created_at: timestamp,
       updated_at: timestamp,
@@ -242,6 +249,9 @@ function showContractStatus(contract) {
   console.log(`Plan: ${contract.plan ? contract.plan : "none"}`);
   console.log(`Current state: ${contract.current_state}`);
   console.log(`Active version: ${contract.activeVersion ?? "none"}`);
+  if (contract.current_state === "PAUSED" && contract.pauseContext?.at) {
+    console.log(`Paused at: ${contract.pauseContext.at}`);
+  }
   console.log(`Controls required: ${describeControls(contract.controlsRequired)}`);
   console.log(`Controls approved: ${describeControls(contract.controlsApproved)}`);
   const missing = missingControls(contract);
@@ -297,17 +307,34 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runContract(contract) {
-  assertState(contract, ["APPROVED"], "run");
-  if (!enforceControls(contract, "execution", { fatal: true })) {
-    return;
+async function runCheckpoints(contract, startIndex, options) {
+  for (let i = startIndex; i < RUN_CHECKPOINTS.length; i += 1) {
+    const checkpoint = RUN_CHECKPOINTS[i];
+    await wait(400);
+    logAudit(contract.id, contract.current_state, checkpoint.message);
+    if (options.pauseAt && options.pauseAt === checkpoint.id) {
+      const authority = options.pauseAuthority || "operator";
+      const reasonChunks = [
+        `Paused Contract execution at ${checkpoint.id}.`,
+        `Authority: ${authority}.`,
+      ];
+      if (options.pauseReason) {
+        reasonChunks.push(`Reason: "${options.pauseReason}".`);
+      } else {
+        reasonChunks.push("Reason: not provided.");
+      }
+      contract.pauseContext = {
+        at: checkpoint.id,
+        nextIndex: i + 1,
+      };
+      transition(contract, "PAUSED", reasonChunks.join(" "));
+      return true;
+    }
   }
-  transition(contract, "RUNNING", "Execution started for the approved Contract.");
-  await wait(400);
-  logAudit(contract.id, contract.current_state, "Checkpoint: execution is underway.");
-  await wait(400);
-  logAudit(contract.id, contract.current_state, "Checkpoint: validation completed.");
-  await wait(400);
+  return false;
+}
+
+function finalizeRun(contract) {
   const lastApproval = contract.approvals[contract.approvals.length - 1];
   const approver = lastApproval ? lastApproval.approver : "an authorized approver";
   const approvalAt = lastApproval ? lastApproval.at : "an unknown time";
@@ -323,7 +350,44 @@ async function runContract(contract) {
     intent: contract.intent,
     plan: contract.plan,
   });
+  contract.pauseContext = null;
   transition(contract, "COMPLETED", "Execution completed successfully for the approved Contract.");
+}
+
+async function runContract(contract, options = {}) {
+  assertState(contract, ["APPROVED"], "run");
+  if (!enforceControls(contract, "execution", { fatal: true })) {
+    return;
+  }
+  contract.pauseContext = null;
+  transition(contract, "RUNNING", "Execution started for the approved Contract.");
+  const paused = await runCheckpoints(contract, 0, options);
+  if (paused) {
+    return;
+  }
+  await wait(400);
+  finalizeRun(contract);
+}
+
+async function resumeContract(contract, authority) {
+  assertState(contract, ["PAUSED"], "resume");
+  if (!enforceControls(contract, "execution", { fatal: true })) {
+    return;
+  }
+  const resumeAuthority = authority || "operator";
+  const pauseContext = contract.pauseContext || { at: "unknown", nextIndex: 0 };
+  contract.current_state = "RUNNING";
+  recordHistory(
+    contract,
+    "RESUMED",
+    `Resumed Contract execution after pause at ${pauseContext.at}. Authority: ${resumeAuthority}.`
+  );
+  const paused = await runCheckpoints(contract, pauseContext.nextIndex, {});
+  if (paused) {
+    return;
+  }
+  await wait(400);
+  finalizeRun(contract);
 }
 
 function parseContractCommand(tokens) {
@@ -351,6 +415,50 @@ function extractRequires(args) {
     remaining.push(args[i]);
   }
   return { remaining, requiredRaw };
+}
+
+function extractRunOptions(args) {
+  const remaining = [];
+  let pauseAt = "";
+  let pauseAuthority = "";
+  let pauseReason = "";
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--pause-at") {
+      pauseAt = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (args[i] === "--pause-authority") {
+      pauseAuthority = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (args[i] === "--pause-reason") {
+      pauseReason = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    remaining.push(args[i]);
+  }
+  return { remaining, pauseAt, pauseAuthority, pauseReason };
+}
+
+function normalizePauseAt(pauseAtRaw) {
+  if (!pauseAtRaw) {
+    return null;
+  }
+  const pauseAt = pauseAtRaw.trim();
+  if (!pauseAt) {
+    return null;
+  }
+  if (!RUN_CHECKPOINT_IDS.has(pauseAt)) {
+    fail(
+      `Unknown pause checkpoint "${pauseAt}". Allowed: ${RUN_CHECKPOINTS.map(
+        (checkpoint) => checkpoint.id
+      ).join(", ")}.`
+    );
+  }
+  return pauseAt;
 }
 
 async function executeCommand(tokens) {
@@ -461,10 +569,20 @@ async function executeCommand(tokens) {
     }
     case "run":
     case "execute": {
-      requireArgs(rest, 1, 'contract run "<contract_id>"');
-      const [contractId] = rest;
+      const { remaining, pauseAt, pauseAuthority, pauseReason } = extractRunOptions(rest);
+      requireArgs(
+        remaining,
+        1,
+        'contract run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]'
+      );
+      const [contractId] = remaining;
       const contract = getContract(contractId);
-      await runContract(contract);
+      const normalizedPauseAt = normalizePauseAt(pauseAt);
+      await runContract(contract, {
+        pauseAt: normalizedPauseAt,
+        pauseAuthority: pauseAuthority ? pauseAuthority.trim() : "",
+        pauseReason: pauseReason ? pauseReason.trim() : "",
+      });
       break;
     }
     case "pause": {
@@ -473,6 +591,14 @@ async function executeCommand(tokens) {
       const contract = getContract(contractId);
       assertState(contract, ["RUNNING"], "pause");
       transition(contract, "PAUSED", "Paused Contract execution.");
+      break;
+    }
+    case "resume": {
+      requireArgs(rest, 1, 'contract resume "<contract_id>" [<authority>]');
+      const [contractId, ...authorityParts] = rest;
+      const authority = authorityParts.join(" ").trim();
+      const contract = getContract(contractId);
+      await resumeContract(contract, authority);
       break;
     }
     case "rewind": {
