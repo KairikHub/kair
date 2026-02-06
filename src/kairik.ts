@@ -145,13 +145,13 @@ function validateContractId(id) {
 }
 
 function printTopHelp() {
-  console.log(`Kairik CLI
+  console.log(`${heading("Kairik CLI")}
 
-Usage:
+${label("Usage:")}
   kairik contract <subcommand> [args]
   kairik propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
 
-Common subcommands:
+${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
@@ -165,25 +165,25 @@ Common subcommands:
   status "<contract_id>"
   list
 
-Advanced/demo:
+${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
-Alias:
+${label("Alias:")}
   kairik propose (shorthand for contract propose)
 
-Actor flags:
+${label("Actor flags:")}
   --actor <name> (alias: --by)
 
 Run "kairik contract --help" for full details.`);
 }
 
 function printContractHelp() {
-  console.log(`Kairik Contract Commands
+  console.log(`${heading("Kairik Contract Commands")}
 
-Usage:
+${label("Usage:")}
   kairik contract <subcommand> [args]
 
-Subcommands:
+${label("Subcommands:")}
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
@@ -197,13 +197,13 @@ Subcommands:
   status "<contract_id>"
   list
 
-Advanced/demo:
+${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
-Alias:
+${label("Alias:")}
   kairik propose (shorthand for contract propose)
 
-Actor flags:
+${label("Actor flags:")}
   --actor <name> (alias: --by)
 `);
 }
