@@ -22,6 +22,12 @@ docker compose --profile cli run --rm kairik contract propose "..." -- contract 
 
 All commands run inside containers; no host `npm install` is required.
 
+Verify OpenClaw runs inside the CLI container:
+
+```bash
+docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs --help
+```
+
 ## Damien Walkthrough (CLI)
 Copy/paste demo:
 

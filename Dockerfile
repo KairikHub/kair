@@ -17,4 +17,4 @@ RUN cd /app/vendor/openclaw && pnpm -r build
 COPY . .
 RUN npm link
 
-ENTRYPOINT ["npm", "run", "kairik", "--"]
+ENTRYPOINT ["/app/bin/docker-entrypoint.sh"]
