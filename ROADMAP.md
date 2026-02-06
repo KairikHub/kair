@@ -88,3 +88,7 @@ Pause (v0) is a temporary halt during execution that records state/history witho
 - Custom Controls config + advanced UI editor.
 - OpenClaw execution backend stub and mapping layer.
 - Tauri desktop packaging proof‑of‑concept.
+- Future checkpoints (post‑OpenClaw):
+  - Contract‑defined review gates emitted by execution backends (OpenClaw).
+  - Purpose: trust‑building pause points for human review/ack before continuing.
+  - Note: today’s `--pause-at` is a demo‑only internal mechanism.

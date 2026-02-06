@@ -165,8 +165,8 @@ Common subcommands:
   status "<contract_id>"
   list
 
-Checkpoints:
-  ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
+Advanced/demo:
+  --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 Alias:
   kairik propose (shorthand for contract propose)
@@ -197,8 +197,8 @@ Subcommands:
   status "<contract_id>"
   list
 
-Checkpoints:
-  ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
+Advanced/demo:
+  --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 Alias:
   kairik propose (shorthand for contract propose)
