@@ -116,5 +116,5 @@ Do NOT add implementation notes.
 ## CLI Demo (Controls Enforcement)
 
 ```bash
-docker compose run --rm kairik contract propose "Schwab Strategy" --requires schwab:read -- contract plan contract_1 "Alert on individual stock buys" -- contract request-approval contract_1
+docker compose --profile cli run --rm kairik contract propose "Schwab Strategy" --requires schwab:read -- contract plan contract_1 "Alert on individual stock buys" -- contract request-approval contract_1
 ```

@@ -120,7 +120,7 @@ A 5–10 minute demo that shows Propose → Controls block → Controls approval
 
 ## Monday Runbook (5–10 Minutes)
 ### CLI‑only flow (primary)
-1. Build: `docker compose build`
+1. Start UI + services: `docker compose up -d --build`
 2. Run demo command (from README Damien Walkthrough).
 3. Point out in output:
    - Blocked approval due to missing control.
@@ -130,7 +130,7 @@ A 5–10 minute demo that shows Propose → Controls block → Controls approval
    - “Rewind a Kairik Contract” line and active version change.
 
 ### Optional UI flow (if ready)
-1. Start UI (`npm run ui` or equivalent).
+1. Start UI with `docker compose up -d --build`.
 2. Create/Select Contract.
 3. Show missing controls banner and resolution.
 4. Show audit log with approvals and rewind.

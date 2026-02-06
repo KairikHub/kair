@@ -7,20 +7,21 @@ A Kairik Contract is a repository for delegated authority and responsibility.
 
 ## Run via Docker
 
-Build the image:
+Start everything (UI + API) with one command:
 
 ```bash
-docker compose build
+docker compose up -d --build
 ```
 
-Run the full demo sequence in one container invocation:
+Open the UI at `http://localhost:3000`.
+
+Run the full CLI demo sequence in one container invocation:
 
 ```bash
-docker compose run --rm kairik contract propose "..." -- contract plan contract_1 "..." -- contract request-approval contract_1 -- contract approve contract_1 Damien -- contract run contract_1 -- contract status contract_1
+docker compose --profile cli run --rm kairik contract propose "..." -- contract plan contract_1 "..." -- contract request-approval contract_1 -- contract approve contract_1 Damien -- contract run contract_1 -- contract status contract_1
 ```
 
-Args after the service name are passed directly to Kairik because the image ENTRYPOINT is `npm run kairik --`.
-The compose config mounts `/app/node_modules` as a separate volume so the image dependencies stay available.
+All commands run inside containers; no host `npm install` is required.
 
 ## Contract Model
 See `docs/ARCHITECTURE.md` for the Contract model and Controls rules.
@@ -30,7 +31,7 @@ See `docs/ARCHITECTURE.md` for the Contract model and Controls rules.
 Copy/paste demo:
 
 ```bash
-docker compose run --rm kairik \
+docker compose --profile cli run --rm kairik \
   contract propose "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write \
   -- contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout" \
   -- contract request-approval contract_1 \
@@ -56,7 +57,7 @@ Narrative:
 This command intentionally blocks approval because the proposal requires a Control that is not approved:
 
 ```bash
-docker compose run --rm kairik contract propose "Schwab Strategy: alert on individual stock buys" --requires schwab:read -- contract plan contract_1 "Alert on individual stock buys" -- contract request-approval contract_1
+docker compose --profile cli run --rm kairik contract propose "Schwab Strategy: alert on individual stock buys" --requires schwab:read -- contract plan contract_1 "Alert on individual stock buys" -- contract request-approval contract_1
 ```
 
 Resolution paths:

@@ -1,6 +1,16 @@
 services:
-  kairik:
+  kairik-ui:
     build: .
+    entrypoint: ["npm", "run", "ui", "--"]
+    ports:
+      - "3000:3000"
     volumes:
       - .:/app
       - /app/node_modules
+  kairik:
+    build: .
+    entrypoint: ["npm", "run", "kairik", "--"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+    profiles: ["cli"]
