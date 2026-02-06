@@ -81,60 +81,60 @@ A 5–10 minute demo that shows Propose → Controls block → Controls approval
   - Audit trail reflects the Custom Control exactly.
 
 ## Friday (Tomorrow) — Lock the CLI Demo + Add Persistence
-### Deliverable 1: Damien‑ready CLI script (single command, no surprises)
-- Files likely to change:
-  - `README.md`
-  - `src/kairik.ts`
-- Tasks:
-  - Validate the Damien walkthrough command runs end‑to‑end in one invocation.
-  - Ensure output uses “Propose a Kairik Contract”, “Approve a Kairik Contract”, “Rewind a Kairik Contract”.
-  - Add a small help banner at `contract status` summarizing active version + controls gating outcome.
-- Acceptance criteria:
-  - One docker command shows blocked approval, control approval, successful approval, run artifact, rewind, and status.
-- Demo value:
-  - Reduces cognitive load; Damien sees the full authority chain in one pass.
+### ~~Deliverable 1: Damien‑ready CLI script (single command, no surprises)~~
+- ~~Files likely to change:~~
+  - ~~`README.md`~~
+  - ~~`src/kairik.ts`~~
+- ~~Tasks:~~
+  - ~~Validate the Damien walkthrough command runs end‑to‑end in one invocation.~~
+  - ~~Ensure output uses “Propose a Kairik Contract”, “Approve a Kairik Contract”, “Rewind a Kairik Contract”.~~
+  - ~~Add a small help banner at `contract status` summarizing active version + controls gating outcome.~~
+- ~~Acceptance criteria:~~
+  - ~~One docker command shows blocked approval, control approval, successful approval, run artifact, rewind, and status.~~
+- ~~Demo value:~~
+  - ~~Reduces cognitive load; Damien sees the full authority chain in one pass.~~
 
-### Deliverable 2: Minimal persistence layer (JSON file) for Contracts
-- Files likely to change:
-  - `src/kairik.ts`
-  - `docs/ARCHITECTURE.md`
-- Tasks:
-  - Add a simple disk‑backed store: `data/contracts.json` (auto‑created).
-  - Load at startup and persist after each mutation.
-  - Keep append‑only history intact; do not edit history entries.
-- Acceptance criteria:
-  - Run `propose` in one container, then `status` in a second container and the Contract still exists.
-- Demo value:
-  - Makes the system feel like a control plane rather than a one‑shot script.
+### ~~Deliverable 2: Minimal persistence layer (JSON file) for Contracts~~
+- ~~Files likely to change:~~
+  - ~~`src/kairik.ts`~~
+  - ~~`docs/ARCHITECTURE.md`~~
+- ~~Tasks:~~
+  - ~~Add a simple disk‑backed store: `data/contracts.json` (auto‑created).~~
+  - ~~Load at startup and persist after each mutation.~~
+  - ~~Keep append‑only history intact; do not edit history entries.~~
+- ~~Acceptance criteria:~~
+  - ~~Run `propose` in one container, then `status` in a second container and the Contract still exists.~~
+- ~~Demo value:~~
+  - ~~Makes the system feel like a control plane rather than a one‑shot script.~~
 
 ## Saturday — UI Skeleton (Local‑Only)
-### Deliverable 3: Minimal UI (local‑first shell)
-- Architecture choice: **thin UI shell over the CLI engine**.
-- Files likely to change:
-  - `package.json`
-  - `src/ui/*` (new)
-  - `docs/ARCHITECTURE.md`
-  - `README.md`
-- Tasks:
-  - Create a single screen that lists Contracts and shows a selected Contract.
-  - Show key fields: intent, plan, controls required/approved, active version, audit log.
-  - Provide buttons for Propose, Request Approval, Approve, Run, Rewind.
-  - Wire UI to the persistence layer (no server auth, local‑only).
-- Acceptance criteria:
-  - UI can load persisted Contracts and display audit history after a page reload.
-- Demo value:
-  - Makes authority and history legible to a Director of Engineering.
+### ~~Deliverable 3: Minimal UI (local‑first shell)~~
+- ~~Architecture choice: **thin UI shell over the CLI engine**.~~
+- ~~Files likely to change:~~
+  - ~~`package.json`~~
+  - ~~`src/ui/*` (new)~~
+  - ~~`docs/ARCHITECTURE.md`~~
+  - ~~`README.md`~~
+- ~~Tasks:~~
+  - ~~Create a single screen that lists Contracts and shows a selected Contract.~~
+  - ~~Show key fields: intent, plan, controls required/approved, active version, audit log.~~
+  - ~~Provide buttons for Propose, Request Approval, Approve, Run, Rewind.~~
+  - ~~Wire UI to the persistence layer (no server auth, local‑only).~~
+- ~~Acceptance criteria:~~
+  - ~~UI can load persisted Contracts and display audit history after a page reload.~~
+- ~~Demo value:~~
+  - ~~Makes authority and history legible to a Director of Engineering.~~
 
-### Deliverable 4: Controls Gating Visualization
-- Files likely to change:
-  - `src/ui/*`
-- Tasks:
-  - Visually surface missing controls (red badge) and show a “blocked” banner.
-  - Provide “Approve Control” action that updates `controlsApproved`.
-- Acceptance criteria:
-  - UI clearly shows why approval is blocked and how to resolve it.
-- Demo value:
-  - This is the “trust moment” for Damien.
+### ~~Deliverable 4: Controls Gating Visualization~~
+- ~~Files likely to change:~~
+  - ~~`src/ui/*`~~
+- ~~Tasks:~~
+  - ~~Visually surface missing controls (red badge) and show a “blocked” banner.~~
+  - ~~Provide “Approve Control” action that updates `controlsApproved`.~~
+- ~~Acceptance criteria:~~
+  - ~~UI clearly shows why approval is blocked and how to resolve it.~~
+- ~~Demo value:~~
+  - ~~This is the “trust moment” for Damien.~~
 
 ## Sunday — Demo Polish + Optional Planner Stub
 ### Deliverable 5: Audit‑first UI output
