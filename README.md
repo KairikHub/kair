@@ -6,7 +6,7 @@ Confidential & Proprietary. Not for distribution.
 Kairik is a CLI-first control plane for delegated cognition and AI work, built around Contracts and Controls.
 
 ## Quickstart (Docker Only)
-Start everything (UI + API) with one command:
+Start the local UI service with one command:
 
 ```bash
 docker compose up -d --build
@@ -44,12 +44,14 @@ What it proves:
 - Missing Controls block approval/execution until explicitly approved.
 - Approve a Kairik Contract before execution.
 - Run produces a durable artifact on disk.
+- Pause is a temporary stop during execution; it records state/history without deleting anything.
 - Rewind a Kairik Contract changes the active version without deleting history.
 
 ## Core Concepts
 - **Contract**: unit of authority and responsibility (repo-like boundary).
 - **Approve a Kairik Contract**: commit-like approval that creates a new immutable version.
 - **Run/Execute**: deploy-like execution against the active version.
+- **Pause**: temporary halt during execution; recorded in history with no data loss.
 - **Rewind a Kairik Contract**: revert-like supersession (append-only history).
 - **Controls**: explicit, revocable authority grants (kill switches).
 - **Audit History**: append-only record of who approved what and why.
@@ -57,7 +59,8 @@ What it proves:
 
 ## Architecture (Short)
 - CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.
-- UI is a thin local shell over the same engine (local web today; desktop packaging later).
+- UI is a thin local shell served by the same Node process that exposes a local HTTP API.
+- There is no separate API service/container; the UI and API live together in `kairik-ui`.
 - Persistence is local (`data/contracts.json`).
 - Execution backends (e.g., OpenClaw) are invoked only during `run` under approved Controls.
 

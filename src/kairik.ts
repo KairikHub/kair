@@ -219,7 +219,7 @@ function writeArtifact(contract, proposalSummary) {
   const filename = `${safeTimestamp}-run.json`;
   const payload = {
     contract_id: contract.id,
-    activeVersion: contract.activeVersion,
+    executedVersion: contract.activeVersion,
     controlsApproved: [...contract.controlsApproved],
     proposal: proposalSummary,
     outcome: "mock ok",

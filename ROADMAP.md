@@ -5,6 +5,8 @@ Confidential & Proprietary. Not for distribution.
 ## Monday Demo Definition of Done
 A 5–10 minute demo that shows Propose → Controls block → Controls approval → Approve → Run (artifact) → Rewind → Status, with auditability and append‑only history, in a single Docker‑first flow.
 
+Pause (v0) is a temporary halt during execution that records state/history without deleting anything.
+
 ## Strategic Decisions (Distribution + Execution Backends)
 ### Distribution Philosophy
 - CLI‑first distribution; the CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.

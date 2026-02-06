@@ -14,10 +14,13 @@ Confidential & Proprietary. Not for distribution.
 - **Rewind a Kairik Contract = revert‑like supersession (never reset / force‑push)**.
 
 ## Contract Lifecycle
-Propose → Plan → Controls → Request Approval → Approve → Run/Execute → Observe → Rewind → Artifact
+Propose → Plan → Controls → Request Approval → Approve → Run/Execute → Pause → Observe → Rewind → Artifact
 
 Controls enforcement rule:
 - If required Controls are not approved, approval/execution is blocked until resolved.
+
+Pause definition (v0):
+- Pause is a temporary halt during RUNNING that records state/history without deleting anything.
 
 ## Contract Data Model (v0)
 - id
@@ -48,13 +51,19 @@ Built‑in Controls (v0):
 ## Persistence
 - Local JSON store: `data/contracts.json`.
 - Append‑only history is preserved across runs.
+- v0 best practices:
+  - Write to a temp file, then rename (atomic write).
+  - Avoid partial writes on failure.
+  - Future: contract‑per‑file storage to avoid a single large JSON.
+  - Future: file locking for concurrency.
 
 ## Artifacts
 - Written on `run` to `artifacts/<contract_id>/<timestamp>-run.json`.
-- Artifacts include contract id, active version, controls approved, and outcome.
+- Artifacts include `executedVersion`, `controlsApproved`, an intent/plan snapshot, and outcome.
 
 ## UI Shell
 - Local UI is a thin shell over the same CLI engine and store.
+- The UI server exposes a local HTTP API in the same process; there is no separate API service/container.
 - UI focuses on readability, audit trail, Controls gating, and Rewind visibility.
 
 ## Execution Backends (Planned)
