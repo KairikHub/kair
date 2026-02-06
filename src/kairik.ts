@@ -303,6 +303,22 @@ function showContractStatus(contract) {
   }
 }
 
+function listContracts() {
+  const contracts = [...contractStore.contracts.values()];
+  if (contracts.length === 0) {
+    console.log("No Contracts found.");
+    return;
+  }
+  const sorted = contracts.sort((a, b) => {
+    const aNum = Number(String(a.id).split("_")[1]) || 0;
+    const bNum = Number(String(b.id).split("_")[1]) || 0;
+    return aNum - bNum;
+  });
+  for (const contract of sorted) {
+    console.log(contract.id);
+  }
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -643,6 +659,11 @@ async function executeCommand(tokens) {
       const [contractId] = rest;
       const contract = getContract(contractId);
       showContractStatus(contract);
+      break;
+    }
+    case "list": {
+      requireArgs(rest, 0, "contract list");
+      listContracts();
       break;
     }
     default:
