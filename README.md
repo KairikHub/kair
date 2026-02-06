@@ -2,11 +2,10 @@ Confidential & Proprietary. Not for distribution.
 
 # Kairik
 
-## Kairik Contracts
-A Kairik Contract is a repository for delegated authority and responsibility.
+## What It Is
+Kairik is a CLI-first control plane for delegated cognition and AI work, built around Contracts and Controls.
 
-## Run via Docker
-
+## Quickstart (Docker Only)
 Start everything (UI + API) with one command:
 
 ```bash
@@ -15,7 +14,7 @@ docker compose up -d --build
 
 Open the UI at `http://localhost:3000`.
 
-Run the full CLI demo sequence in one container invocation:
+Run the CLI demo inside the container:
 
 ```bash
 docker compose --profile cli run --rm kairik contract propose "..." -- contract plan contract_1 "..." -- contract request-approval contract_1 -- contract approve contract_1 Damien -- contract run contract_1 -- contract status contract_1
@@ -23,11 +22,7 @@ docker compose --profile cli run --rm kairik contract propose "..." -- contract 
 
 All commands run inside containers; no host `npm install` is required.
 
-## Contract Model
-See `docs/ARCHITECTURE.md` for the Contract model and Controls rules.
-
-## Damien Walkthrough
-
+## Damien Walkthrough (CLI)
 Copy/paste demo:
 
 ```bash
@@ -43,24 +38,30 @@ docker compose --profile cli run --rm kairik \
   -- contract status contract_1
 ```
 
-Narrative:
-- Propose a Kairik Contract in plain English, including required Controls.
-- Controls are killable authority grants; missing Controls block approval and execution.
-- The request for approval is blocked because `local:write` is missing, then Damien approves the Control and approval succeeds.
-- Approve a Kairik Contract to accept responsibility before execution.
+What it proves:
+- Propose a Kairik Contract in plain English.
+- Controls are explicit, killable authority grants.
+- Missing Controls block approval/execution until explicitly approved.
+- Approve a Kairik Contract before execution.
 - Run produces a durable artifact on disk.
-- Rewind a Kairik Contract with a stated reason and authority.
-- Status shows append-only history, active version, and approved Controls.
+- Rewind a Kairik Contract changes the active version without deleting history.
 
-## Controls Demo (Blocked Proposal)
+## Core Concepts
+- **Contract**: unit of authority and responsibility (repo-like boundary).
+- **Approve a Kairik Contract**: commit-like approval that creates a new immutable version.
+- **Run/Execute**: deploy-like execution against the active version.
+- **Rewind a Kairik Contract**: revert-like supersession (append-only history).
+- **Controls**: explicit, revocable authority grants (kill switches).
+- **Audit History**: append-only record of who approved what and why.
+- **Artifacts**: durable outputs written on run.
 
-This command intentionally blocks approval because the proposal requires a Control that is not approved:
+## Architecture (Short)
+- CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.
+- UI is a thin local shell over the same engine (local web today; desktop packaging later).
+- Persistence is local (`data/contracts.json`).
+- Execution backends (e.g., OpenClaw) are invoked only during `run` under approved Controls.
 
-```bash
-docker compose --profile cli run --rm kairik contract propose "Schwab Strategy: alert on individual stock buys" --requires schwab:read -- contract plan contract_1 "Alert on individual stock buys" -- contract request-approval contract_1
-```
-
-Resolution paths:
-- Revise the proposal to avoid the missing Control.
-- Add and approve the missing Control, then request approval again.
-- Rewind to update the Contract (or fork into a new Contract).
+## Documentation
+- Architecture: `docs/ARCHITECTURE.md`
+- Roadmap: `ROADMAP.md`
+- Changelog: `CHANGELOG.md`
