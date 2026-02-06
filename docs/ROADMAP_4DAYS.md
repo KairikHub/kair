@@ -57,6 +57,29 @@ A 5–10 minute demo that shows Propose → Controls block → Controls approval
   - Execution produces auditable artifacts.
   - Rewind does not erase OpenClaw execution history.
 
+#### Custom Controls (Advanced / Escape Hatch)
+- Users can define a Custom Control locally (config file is fine for v0) with:
+  - id (e.g., `jira:write` or `aws:s3:write`)
+  - description (blast radius / what it authorizes)
+  - mappings to one or more OpenClaw skills or capability selectors
+- Custom Controls must be:
+  - explicit
+  - approval‑gated like built‑in Controls
+  - shown in audit history, status output, and artifacts
+- UI behavior:
+  - Default shows curated built‑in Controls
+  - “Advanced” area allows adding/editing Custom Controls
+  - No raw “skills browser” in the default UX (keep the mental model Controls‑first)
+- Safety:
+  - Custom Controls should be namespaced (e.g., `custom:*` or user‑defined prefix) to avoid collisions
+  - Changes to Custom Controls require approval and create a new Contract version (append‑only semantics preserved)
+- Acceptance criteria:
+  - A Custom Control can be created.
+  - A Contract can require it.
+  - Missing Custom Control blocks approval/execution.
+  - Approved Custom Control enables corresponding OpenClaw skills at runtime.
+  - Audit trail reflects the Custom Control exactly.
+
 ## Friday (Tomorrow) — Lock the CLI Demo + Add Persistence
 ### Deliverable 1: Damien‑ready CLI script (single command, no surprises)
 - Files likely to change:
