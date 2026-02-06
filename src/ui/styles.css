@@ -136,6 +136,15 @@ h3 {
   color: var(--muted);
 }
 
+.truncate {
+  display: inline-block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
 .card-item .intent {
   font-weight: 600;
   margin-top: 6px;

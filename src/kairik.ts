@@ -119,7 +119,12 @@ function formatTimestampForId(date = new Date()) {
 
 function suggestContractId(intent) {
   const stamp = formatTimestampForId();
-  const slugBase = slugify(intent) || "contract";
+  const words = intent
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 3);
+  const slugBase = slugify(words.join(" ")) || "contract";
   const maxSlugLength = Math.max(8, MAX_ID_LENGTH - stamp.length - 1);
   const slug = slugBase.slice(0, maxSlugLength);
   return `${slug}-${stamp}`.slice(0, MAX_ID_LENGTH);

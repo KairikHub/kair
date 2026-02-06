@@ -89,7 +89,7 @@ function renderContracts() {
     const div = document.createElement("div");
     div.className = `card-item ${contract.id === state.selectedId ? "active" : ""}`;
     div.innerHTML = `
-      <div class="id">${contract.id}</div>
+      <div class="id truncate">${contract.id}</div>
       <div class="intent">${contract.intent}</div>
       <div class="state">${contract.current_state}</div>
     `;
