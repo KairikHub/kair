@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { createInterface } from "node:readline/promises";
 
 const STATES = [
   "DRAFT",
@@ -28,6 +29,8 @@ const RUN_CHECKPOINTS = [
   { id: "checkpoint_2", message: "Checkpoint: validation completed." },
 ];
 const RUN_CHECKPOINT_IDS = new Set(RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id));
+const MAX_ID_LENGTH = 80;
+const ID_PATTERN = /^[a-z0-9][a-z0-9-_]*$/;
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "contracts.json");
@@ -97,11 +100,50 @@ function formatState(state) {
   return style(state, stateColor(state), COLORS.bold);
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+}
+
+function formatTimestampForId(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${year}${month}${day}-${hour}${minute}`;
+}
+
+function suggestContractId(intent) {
+  const stamp = formatTimestampForId();
+  const slugBase = slugify(intent) || "contract";
+  const maxSlugLength = Math.max(8, MAX_ID_LENGTH - stamp.length - 1);
+  const slug = slugBase.slice(0, maxSlugLength);
+  return `${slug}-${stamp}`.slice(0, MAX_ID_LENGTH);
+}
+
+function validateContractId(id) {
+  if (!id) {
+    return "Contract id cannot be empty.";
+  }
+  if (id.length > MAX_ID_LENGTH) {
+    return `Contract id must be ${MAX_ID_LENGTH} characters or fewer.`;
+  }
+  if (!ID_PATTERN.test(id)) {
+    return "Contract id must use only lowercase letters, numbers, hyphens, or underscores.";
+  }
+  return null;
+}
+
 function printTopHelp() {
   console.log(`Kairik CLI
 
 Usage:
   kairik contract <subcommand> [args]
+  kairik propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
 
 Common subcommands:
   propose "<intent>" [--requires <controls_csv>]
@@ -120,6 +162,9 @@ Common subcommands:
 Checkpoints:
   ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
 
+Alias:
+  kairik propose (shorthand for contract propose)
+
 Run "kairik contract --help" for full details.`);
 }
 
@@ -130,7 +175,7 @@ Usage:
   kairik contract <subcommand> [args]
 
 Subcommands:
-  propose "<intent>" [--requires <controls_csv>]
+  propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   add-control "<contract_id>" "<control>" "<approver>"
@@ -145,6 +190,9 @@ Subcommands:
 
 Checkpoints:
   ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
+
+Alias:
+  kairik propose (shorthand for contract propose)
 `);
 }
 
@@ -303,8 +351,9 @@ function enforceControls(contract, context, options = {}) {
   return true;
 }
 
-function proposeContract(intent, controlsRequired) {
-  const id = `contract_${contractStore.nextId++}`;
+function proposeContract(intent, controlsRequired, idOverride) {
+  const id = idOverride || `contract_${contractStore.nextId}`;
+  contractStore.nextId += 1;
   const timestamp = now();
   const contract = {
     id,
@@ -337,6 +386,41 @@ function proposeContract(intent, controlsRequired) {
 function requireArgs(args, minCount, usage) {
   if (args.length < minCount) {
     fail(`Missing arguments. Usage: ${usage}`);
+  }
+}
+
+async function promptForProposeInput({ intent, idRaw }) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    let finalIntent = intent;
+    while (!finalIntent) {
+      const answer = await rl.question("What is the intent of your proposed contract? ");
+      finalIntent = answer.trim();
+    }
+
+    let finalId = idRaw;
+    if (!finalId) {
+      const suggested = suggestContractId(finalIntent);
+      while (true) {
+        const answer = await rl.question(`Contract id [${suggested}]: `);
+        const candidate = (answer.trim() || suggested).trim();
+        const error = validateContractId(candidate);
+        if (error) {
+          console.log(error);
+          continue;
+        }
+        if (contractStore.contracts.has(candidate)) {
+          console.log(`Contract id "${candidate}" already exists. Choose a different id.`);
+          continue;
+        }
+        finalId = candidate;
+        break;
+      }
+    }
+
+    return { intent: finalIntent, id: finalId };
+  } finally {
+    rl.close();
   }
 }
 
@@ -435,9 +519,12 @@ function listContracts() {
     return;
   }
   const sorted = contracts.sort((a, b) => {
-    const aNum = Number(String(a.id).split("_")[1]) || 0;
-    const bNum = Number(String(b.id).split("_")[1]) || 0;
-    return aNum - bNum;
+    const aTime = new Date(a.timestamps?.created_at || 0).getTime();
+    const bTime = new Date(b.timestamps?.created_at || 0).getTime();
+    if (aTime !== bTime) {
+      return aTime - bTime;
+    }
+    return String(a.id).localeCompare(String(b.id));
   });
   for (const contract of sorted) {
     console.log(contract.id);
@@ -565,6 +652,26 @@ function extractRequires(args) {
   return { remaining, requiredRaw };
 }
 
+function extractProposeOptions(args) {
+  const remaining = [];
+  let requiredRaw = "";
+  let idRaw = "";
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--requires") {
+      requiredRaw = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    if (args[i] === "--id") {
+      idRaw = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    remaining.push(args[i]);
+  }
+  return { remaining, requiredRaw, idRaw };
+}
+
 function extractRunOptions(args) {
   const remaining = [];
   let pauseAt = "";
@@ -609,7 +716,7 @@ function normalizePauseAt(pauseAtRaw) {
   return pauseAt;
 }
 
-async function executeCommand(tokens) {
+async function executeCommand(tokens, options = {}) {
   const parsed = parseContractCommand(tokens);
   const command = parsed.command;
   const rest = parsed.args;
@@ -627,15 +734,55 @@ async function executeCommand(tokens) {
   switch (command) {
     case "propose":
     case "create": {
-      const { remaining, requiredRaw } = extractRequires(rest);
-      requireArgs(remaining, 1, 'contract propose "<intent>" [--requires <controls_csv>]');
-      const intent = remaining.join(" ").trim();
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printContractHelp();
+        return;
+      }
+      const { remaining, requiredRaw, idRaw } = extractProposeOptions(rest);
+      let intent = remaining.join(" ").trim();
+      let id = idRaw.trim();
+      const allowPrompt = options.allowPrompt === true;
+      const isChained = options.isChained === true;
+      if (id) {
+        const error = validateContractId(id);
+        if (error) {
+          fail(error);
+        }
+        if (contractStore.contracts.has(id)) {
+          fail(`Contract id "${id}" already exists.`);
+        }
+      }
+      if (!intent && !allowPrompt) {
+        failWithHelp(
+          "Missing intent. Provide it as an argument or run interactively in a TTY.",
+          "contract"
+        );
+      }
+      if (!intent && allowPrompt) {
+        const prompted = await promptForProposeInput({ intent, idRaw: id || "" });
+        intent = prompted.intent;
+        id = prompted.id;
+      }
       if (!intent) {
         fail("Intent cannot be empty.");
       }
+      if (!id) {
+        id = isChained ? `contract_${contractStore.nextId}` : suggestContractId(intent);
+        const error = validateContractId(id);
+        if (error) {
+          fail(error);
+        }
+        if (contractStore.contracts.has(id)) {
+          fail(`Contract id "${id}" already exists.`);
+        }
+      }
       const controlsRequired = normalizeControls(parseControls(requiredRaw));
       validateControls(controlsRequired);
-      proposeContract(intent, controlsRequired);
+      const contract = proposeContract(intent, controlsRequired, id);
+      console.log(`Proposed a Kairik Contract: ${contract.id}`);
+      console.log(`Intent: ${contract.intent}`);
+      console.log(`Active version: ${contract.activeVersion ?? "none"}`);
+      console.log(`Next: kairik contract plan ${contract.id} "..."`);
       break;
     }
     case "plan": {
@@ -846,8 +993,11 @@ async function main() {
     commandGroups.push(current);
   }
 
+  const allowPrompt = process.stdin.isTTY && process.stdout.isTTY;
+  const isChained = commandGroups.length > 1;
+
   for (const group of commandGroups) {
-    await executeCommand(group);
+    await executeCommand(group, { allowPrompt, isChained });
   }
 }
 
