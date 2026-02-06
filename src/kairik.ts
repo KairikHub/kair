@@ -37,11 +37,72 @@ const contractStore = {
   nextId: 1,
 };
 
+function printTopHelp() {
+  console.log(`Kairik CLI
+
+Usage:
+  kairik contract <subcommand> [args]
+
+Common subcommands:
+  propose "<intent>" [--requires <controls_csv>]
+  plan "<contract_id>" "<plan>"
+  require-controls "<contract_id>" "<controls_csv>"
+  add-control "<contract_id>" "<control>" "<approver>"
+  request-approval "<contract_id>"
+  approve "<contract_id>" "<approver>"
+  run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+  resume "<contract_id>" [<authority>]
+  pause "<contract_id>"
+  rewind "<contract_id>" [<authority>] [<reason>]
+  status "<contract_id>"
+  list
+
+Checkpoints:
+  ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
+
+Run "kairik contract --help" for full details.`);
+}
+
+function printContractHelp() {
+  console.log(`Kairik Contract Commands
+
+Usage:
+  kairik contract <subcommand> [args]
+
+Subcommands:
+  propose "<intent>" [--requires <controls_csv>]
+  plan "<contract_id>" "<plan>"
+  require-controls "<contract_id>" "<controls_csv>"
+  add-control "<contract_id>" "<control>" "<approver>"
+  request-approval "<contract_id>"
+  approve "<contract_id>" "<approver>"
+  run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+  resume "<contract_id>" [<authority>]
+  pause "<contract_id>"
+  rewind "<contract_id>" [<authority>] [<reason>]
+  status "<contract_id>"
+  list
+
+Checkpoints:
+  ${RUN_CHECKPOINTS.map((checkpoint) => checkpoint.id).join(", ")}
+`);
+}
+
 function now() {
   return new Date().toISOString();
 }
 
 function fail(message) {
+  console.error(`Error: ${message}`);
+  process.exit(1);
+}
+
+function failWithHelp(message, context = "top") {
+  if (context === "contract") {
+    printContractHelp();
+  } else {
+    printTopHelp();
+  }
   console.error(`Error: ${message}`);
   process.exit(1);
 }
@@ -409,14 +470,21 @@ async function resumeContract(contract, authority) {
 function parseContractCommand(tokens) {
   let command = tokens[0];
   let args = tokens.slice(1);
+  let isContractGroup = false;
   if (command === "contract") {
+    isContractGroup = true;
     if (args.length === 0) {
-      fail("Missing contract subcommand.");
+      printContractHelp();
+      process.exit(0);
+    }
+    if (args[0] === "-h" || args[0] === "--help") {
+      printContractHelp();
+      process.exit(0);
     }
     command = args[0];
     args = args.slice(1);
   }
-  return { command, args };
+  return { command, args, isContractGroup };
 }
 
 function extractRequires(args) {
@@ -481,8 +549,15 @@ async function executeCommand(tokens) {
   const parsed = parseContractCommand(tokens);
   const command = parsed.command;
   const rest = parsed.args;
+  const isContractGroup = parsed.isContractGroup;
   if (!command) {
-    fail("No command provided.");
+    printTopHelp();
+    process.exit(0);
+  }
+
+  if (command === "-h" || command === "--help") {
+    printTopHelp();
+    return;
   }
 
   switch (command) {
@@ -667,14 +742,26 @@ async function executeCommand(tokens) {
       break;
     }
     default:
-      fail(`Unknown command "${command}".`);
+      if (isContractGroup) {
+        failWithHelp(`Unknown contract subcommand "${command}".`, "contract");
+      } else {
+        failWithHelp(`Unknown command "${command}".`, "top");
+      }
   }
 }
 
 async function main() {
-  const rawArgs = process.argv.slice(2);
+  let rawArgs = process.argv.slice(2);
+  if (rawArgs[0] === "kairik") {
+    rawArgs = rawArgs.slice(1);
+  }
   if (rawArgs.length === 0) {
-    fail("No command provided.");
+    printTopHelp();
+    return;
+  }
+  if (rawArgs.length === 1 && (rawArgs[0] === "-h" || rawArgs[0] === "--help")) {
+    printTopHelp();
+    return;
   }
 
   loadStore();
