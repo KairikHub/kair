@@ -63,7 +63,7 @@ function style(text, ...styles) {
 }
 
 function label(text) {
-  return style(text, COLORS.dim);
+  return style(text, COLORS.cyan);
 }
 
 function heading(text) {
