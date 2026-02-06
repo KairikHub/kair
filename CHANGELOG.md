@@ -9,3 +9,4 @@ Confidential & Proprietary. Not for distribution.
 - Docker-first runtime (`docker compose up -d --build`) with CLI profile support.
 - Local UI shell for Contracts, Controls gating, approvals, run, pause, and rewind.
 - Roadmap updates: Tauri distribution path, OpenClaw backend strategy, Custom Controls plan.
+- Design decision: actor attribution defaults. CLI no longer forces names on every command, avoids premature auth concepts, preserves audit rigor, and aligns with event-sourced best practices.

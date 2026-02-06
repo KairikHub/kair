@@ -7,6 +7,12 @@ Confidential & Proprietary. Not for distribution.
 - One active truth per Contract; history is append‑only.
 - Controls are user‑facing authority grants; skills are implementation details only.
 
+## Actor Attribution
+- An **actor** is the name recorded for authority‑affecting actions (approve, control grants, rewind, pause/resume).
+- Kairik uses **actor** instead of **user** to avoid implying authentication or identity systems too early.
+- Actor attribution is always recorded, but it can be **implicit** (resolved from CLI flags, environment, git user, or OS user).
+- This keeps the authority model consistent across local‑first usage, CI/automation, and future multi‑user systems.
+
 ## Contract Mental Model
 - **Contract = repo** (authority boundary).
 - **Approve a Kairik Contract = commit‑like approval**.

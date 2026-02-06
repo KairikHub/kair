@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createInterface } from "node:readline/promises";
+import { spawnSync } from "node:child_process";
 
 const STATES = [
   "DRAFT",
@@ -154,13 +155,13 @@ Common subcommands:
   propose "<intent>" [--requires <controls_csv>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
-  add-control "<contract_id>" "<control>" "<approver>"
+  add-control "<contract_id>" "<control>" [--actor <name>]
   request-approval "<contract_id>"
-  approve "<contract_id>" "<approver>"
+  approve "<contract_id>" [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  resume "<contract_id>" [<authority>]
-  pause "<contract_id>"
-  rewind "<contract_id>" [<authority>] [<reason>]
+  resume "<contract_id>" [--actor <name>]
+  pause "<contract_id>" [--actor <name>]
+  rewind "<contract_id>" [--actor <name>] [<reason>]
   status "<contract_id>"
   list
 
@@ -169,6 +170,9 @@ Checkpoints:
 
 Alias:
   kairik propose (shorthand for contract propose)
+
+Actor flags:
+  --actor <name> (alias: --by)
 
 Run "kairik contract --help" for full details.`);
 }
@@ -183,13 +187,13 @@ Subcommands:
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
-  add-control "<contract_id>" "<control>" "<approver>"
+  add-control "<contract_id>" "<control>" [--actor <name>]
   request-approval "<contract_id>"
-  approve "<contract_id>" "<approver>"
+  approve "<contract_id>" [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  resume "<contract_id>" [<authority>]
-  pause "<contract_id>"
-  rewind "<contract_id>" [<authority>] [<reason>]
+  resume "<contract_id>" [--actor <name>]
+  pause "<contract_id>" [--actor <name>]
+  rewind "<contract_id>" [--actor <name>] [<reason>]
   status "<contract_id>"
   list
 
@@ -198,6 +202,9 @@ Checkpoints:
 
 Alias:
   kairik propose (shorthand for contract propose)
+
+Actor flags:
+  --actor <name> (alias: --by)
 `);
 }
 
@@ -218,6 +225,64 @@ function failWithHelp(message, context = "top") {
   }
   console.error(`Error: ${message}`);
   process.exit(1);
+}
+
+function warn(message) {
+  console.warn(`Warning: ${message}`);
+}
+
+function readGitActor() {
+  try {
+    const result = spawnSync("git", ["config", "user.name"], { encoding: "utf8" });
+    if (result.status === 0) {
+      const name = String(result.stdout || "").trim();
+      if (name) {
+        return name;
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
+function readWhoAmI() {
+  try {
+    const result = spawnSync("whoami", [], { encoding: "utf8" });
+    if (result.status === 0) {
+      const name = String(result.stdout || "").trim();
+      if (name) {
+        return name;
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
+function resolveActor(explicit) {
+  const explicitActor = (explicit || "").trim();
+  if (explicitActor) {
+    return explicitActor;
+  }
+  const envActor = (process.env.KAIRIK_ACTOR || "").trim();
+  if (envActor) {
+    return envActor;
+  }
+  const gitActor = readGitActor();
+  if (gitActor) {
+    return gitActor;
+  }
+  const envUser = (process.env.USER || process.env.USERNAME || "").trim();
+  if (envUser) {
+    return envUser;
+  }
+  const whoami = readWhoAmI();
+  if (whoami) {
+    return whoami;
+  }
+  return "unknown";
 }
 
 function logAudit(contractId, label, message, timestamp = now()) {
@@ -276,24 +341,28 @@ function assertState(contract, allowed, action) {
   }
 }
 
-function recordHistory(contract, label, message) {
+function recordHistory(contract, label, message, actor) {
   const timestamp = now();
   contract.timestamps.updated_at = timestamp;
-  contract.history.push({
+  const entry = {
     at: timestamp,
     state: label,
     message,
-  });
+  };
+  if (actor) {
+    entry.actor = actor;
+  }
+  contract.history.push(entry);
   logAudit(contract.id, label, message, timestamp);
   saveStore();
 }
 
-function transition(contract, nextState, reason) {
+function transition(contract, nextState, reason, actor) {
   if (!STATES.includes(nextState)) {
     fail(`Invalid state "${nextState}".`);
   }
   contract.current_state = nextState;
-  recordHistory(contract, nextState, reason);
+  recordHistory(contract, nextState, reason, actor);
 }
 
 function parseControls(input) {
@@ -479,7 +548,8 @@ function showContractStatus(contract) {
     console.log("- none recorded");
   } else {
     for (const approval of contract.approvals) {
-      console.log(`- ${approval.at} | ${approval.approver}`);
+      const actor = approval.actor || approval.approver || "unknown";
+      console.log(`- ${approval.at} | ${actor}`);
     }
   }
   console.log(`\n${heading("Versions (append-only)")}`);
@@ -505,7 +575,8 @@ function showContractStatus(contract) {
   console.log(`\n${heading("History (append-only)")}`);
   for (const entry of contract.history) {
     const stateText = formatState(entry.state);
-    console.log(`- ${entry.at} | ${stateText} | ${entry.message}`);
+    const actor = entry.actor ? ` | actor: ${entry.actor}` : "";
+    console.log(`- ${entry.at} | ${stateText}${actor} | ${entry.message}`);
   }
   console.log(`\n${heading("Artifacts")}`);
   if (contract.artifacts.length === 0) {
@@ -546,10 +617,10 @@ async function runCheckpoints(contract, startIndex, options) {
     await wait(400);
     logAudit(contract.id, contract.current_state, checkpoint.message);
     if (options.pauseAt && options.pauseAt === checkpoint.id) {
-      const authority = options.pauseAuthority || "operator";
+      const actor = resolveActor(options.pauseAuthority);
       const reasonChunks = [
         `Paused Contract execution at ${checkpoint.id}.`,
-        `Authority: ${authority}.`,
+        `Actor: ${actor}.`,
       ];
       if (options.pauseReason) {
         reasonChunks.push(`Reason: "${options.pauseReason}".`);
@@ -560,7 +631,7 @@ async function runCheckpoints(contract, startIndex, options) {
         at: checkpoint.id,
         nextIndex: i + 1,
       };
-      transition(contract, "PAUSED", reasonChunks.join(" "));
+      transition(contract, "PAUSED", reasonChunks.join(" "), actor);
       return true;
     }
   }
@@ -607,13 +678,14 @@ async function resumeContract(contract, authority) {
   if (!enforceControls(contract, "execution", { fatal: true })) {
     return;
   }
-  const resumeAuthority = authority || "operator";
+  const actor = resolveActor(authority);
   const pauseContext = contract.pauseContext || { at: "unknown", nextIndex: 0 };
   contract.current_state = "RUNNING";
   recordHistory(
     contract,
     "RESUMED",
-    `Resumed Contract execution after pause at ${pauseContext.at}. Authority: ${resumeAuthority}.`
+    `Resumed Contract execution after pause at ${pauseContext.at}. Actor: ${actor}.`,
+    actor
   );
   const paused = await runCheckpoints(contract, pauseContext.nextIndex, {});
   if (paused) {
@@ -655,6 +727,20 @@ function extractRequires(args) {
     remaining.push(args[i]);
   }
   return { remaining, requiredRaw };
+}
+
+function extractActorFlags(args) {
+  const remaining = [];
+  let actorRaw = "";
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === "--actor" || args[i] === "--by") {
+      actorRaw = args[i + 1] || "";
+      i += 1;
+      continue;
+    }
+    remaining.push(args[i]);
+  }
+  return { remaining, actorRaw };
 }
 
 function extractProposeOptions(args) {
@@ -833,44 +919,75 @@ async function executeCommand(tokens, options = {}) {
       break;
     }
     case "approve": {
-      requireArgs(rest, 2, 'contract approve "<contract_id>" "<approver>"');
-      const [contractId, ...approverParts] = rest;
-      const approver = approverParts.join(" ").trim();
-      if (!approver) {
-        fail("Approver cannot be empty.");
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 1, 'contract approve "<contract_id>" [--actor <name>]');
+      const [contractId, ...legacyParts] = remaining;
+      let legacyActor = "";
+      if (legacyParts.length > 0) {
+        legacyActor = legacyParts.join(" ").trim();
+        warn(
+          'Positional approver is deprecated. Use "contract approve <id> --actor <name>" instead.'
+        );
       }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional approver provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
       const contract = getContract(contractId);
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
-      contract.approvals.push({ at: now(), approver });
+      contract.approvals.push({ at: now(), approver: actor, actor });
       const version = contract.versions.length + 1;
       contract.activeVersion = version;
       contract.versions.push({
         version,
         kind: "approval",
         at: now(),
-        note: `Approved by ${approver}.`,
+        note: `Approved by ${actor}.`,
         controlsApproved: [...contract.controlsApproved],
         plan: contract.plan,
         intent: contract.intent,
       });
-      transition(contract, "APPROVED", `Approve a Kairik Contract: approved by ${approver}.`);
+      transition(
+        contract,
+        "APPROVED",
+        `Approve a Kairik Contract. Actor: ${actor}.`,
+        actor
+      );
       break;
     }
     case "approve-control":
     case "add-control": {
-      requireArgs(rest, 3, 'contract add-control "<contract_id>" "<control>" "<approver>"');
-      const [contractId, control, ...approverParts] = rest;
-      const approver = approverParts.join(" ").trim();
-      if (!approver) {
-        fail("Approver cannot be empty.");
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 2, 'contract add-control "<contract_id>" "<control>" [--actor <name>]');
+      const [contractId, control, ...legacyParts] = remaining;
+      let legacyActor = "";
+      if (legacyParts.length > 0) {
+        legacyActor = legacyParts.join(" ").trim();
+        warn(
+          'Positional approver is deprecated. Use "contract add-control <id> <control> --actor <name>" instead.'
+        );
       }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional approver provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
       validateControls([control]);
       const contract = getContract(contractId);
       if (!contract.controlsApproved.includes(control)) {
         contract.controlsApproved.push(control);
-        recordHistory(contract, "CONTROLS", `Control "${control}" approved by ${approver}.`);
+        recordHistory(
+          contract,
+          "CONTROLS",
+          `Control "${control}" approved. Actor: ${actor}.`,
+          actor
+        );
       } else {
-        recordHistory(contract, "CONTROLS", `Control "${control}" reaffirmed by ${approver}.`);
+        recordHistory(
+          contract,
+          "CONTROLS",
+          `Control "${control}" reaffirmed. Actor: ${actor}.`,
+          actor
+        );
       }
       break;
     }
@@ -893,34 +1010,61 @@ async function executeCommand(tokens, options = {}) {
       break;
     }
     case "pause": {
-      requireArgs(rest, 1, 'contract pause "<contract_id>"');
-      const [contractId] = rest;
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 1, 'contract pause "<contract_id>" [--actor <name>]');
+      const [contractId, ...legacyParts] = remaining;
+      let legacyActor = "";
+      if (legacyParts.length > 0) {
+        legacyActor = legacyParts.join(" ").trim();
+        warn('Positional actor is deprecated. Use "contract pause <id> --actor <name>" instead.');
+      }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional actor provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
       const contract = getContract(contractId);
       assertState(contract, ["RUNNING"], "pause");
-      transition(contract, "PAUSED", "Paused Contract execution.");
+      transition(contract, "PAUSED", `Paused Contract execution. Actor: ${actor}.`, actor);
       break;
     }
     case "resume": {
-      requireArgs(rest, 1, 'contract resume "<contract_id>" [<authority>]');
-      const [contractId, ...authorityParts] = rest;
-      const authority = authorityParts.join(" ").trim();
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 1, 'contract resume "<contract_id>" [--actor <name>]');
+      const [contractId, ...legacyParts] = remaining;
+      let legacyActor = "";
+      if (legacyParts.length > 0) {
+        legacyActor = legacyParts.join(" ").trim();
+        warn('Positional actor is deprecated. Use "contract resume <id> --actor <name>" instead.');
+      }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional actor provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
       const contract = getContract(contractId);
-      await resumeContract(contract, authority);
+      await resumeContract(contract, actor);
       break;
     }
     case "rewind": {
-      requireArgs(rest, 1, 'contract rewind "<contract_id>" [<authority>] [<reason>]');
-      const [contractId, ...reasonParts] = rest;
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 1, 'contract rewind "<contract_id>" [--actor <name>] [<reason>]');
+      const [contractId, ...reasonParts] = remaining;
       const contract = getContract(contractId);
       assertState(contract, ["RUNNING", "PAUSED", "FAILED", "COMPLETED"], "rewind");
-      let authority = "operator";
+      let legacyActor = "";
       let reasonText = "";
-      if (reasonParts.length >= 2) {
-        authority = reasonParts[0].trim() || "operator";
+      if (!actorRaw && reasonParts.length >= 2) {
+        legacyActor = reasonParts[0].trim();
         reasonText = reasonParts.slice(1).join(" ").trim();
-      } else if (reasonParts.length === 1) {
-        reasonText = reasonParts[0].trim();
+        warn(
+          'Positional actor is deprecated. Use "contract rewind <id> --actor <name> <reason>" instead.'
+        );
+      } else if (reasonParts.length >= 1) {
+        reasonText = reasonParts.join(" ").trim();
       }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional actor provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
       const previousVersion = contract.activeVersion;
       const version = contract.versions.length + 1;
       contract.activeVersion = version;
@@ -928,21 +1072,21 @@ async function executeCommand(tokens, options = {}) {
         version,
         kind: "rewind",
         at: now(),
-        note: `Rewound by ${authority}. Supersedes v${previousVersion ?? "none"}.`,
+        note: `Rewound by ${actor}. Supersedes v${previousVersion ?? "none"}.`,
         controlsApproved: [...contract.controlsApproved],
         plan: contract.plan,
         intent: contract.intent,
       });
       const reasonChunks = [
         "Rewind a Kairik Contract because a rewind was requested.",
-        `Authority: ${authority}.`,
+        `Actor: ${actor}.`,
       ];
       if (reasonText) {
         reasonChunks.push(`Reason: "${reasonText}".`);
       } else {
         reasonChunks.push("Reason: not provided.");
       }
-      transition(contract, "REWOUND", reasonChunks.join(" "));
+      transition(contract, "REWOUND", reasonChunks.join(" "), actor);
       break;
     }
     case "status": {
