@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "kairik": "./bin/kairik"
+    "kairik": "./bin/kairik.cjs"
   },
   "scripts": {
     "kairik": "tsx src/kairik.ts",
