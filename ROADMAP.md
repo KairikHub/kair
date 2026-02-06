@@ -2,7 +2,15 @@ Confidential & Proprietary. Not for distribution.
 
 # Roadmap
 
-## Monday Demo Definition of Done
+## High level next steps (stretch goal)
+In Progress: OpenClaw first (executor interface + OpenClaw adapter stub)
+
+Not Started: LLM first (UI “Generate Plan” via API key)
+
+Not Started: Tauri first (desktop PoC wrapper)
+
+
+## Monday Definition of Done
 A 5–10 minute demo that shows Propose → Controls block → Controls approval → Approve → Run (artifact) → Rewind → Status, with auditability and append‑only history, in a single Docker‑first flow.
 
 Pause (v0) is a temporary halt during execution that records state/history without deleting anything.
