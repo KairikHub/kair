@@ -44,6 +44,18 @@ function send(res, status, body, type = "text/plain") {
   res.end(body);
 }
 
+function sendBytes(req, res, status, body, type) {
+  res.writeHead(status, {
+    "Content-Type": type,
+    "Content-Length": String(body.length),
+  });
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(body);
+}
+
 function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload, null, 2), "application/json");
 }
@@ -336,9 +348,15 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, css, "text/css");
   }
 
-  if (req.method === "GET" && url.pathname === "/favicon.ico") {
-    const favicon = fs.readFileSync(path.join(IMG_DIR, "favicon.ico"));
-    return send(res, 200, favicon, "image/x-icon");
+  if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/favicon.ico") {
+    const primary = path.join(IMG_DIR, "favicon.ico");
+    const fallback = path.join(IMG_DIR, "favicon.cio");
+    const iconPath = fs.existsSync(primary) ? primary : fallback;
+    if (!fs.existsSync(iconPath)) {
+      return send(res, 404, "Not found");
+    }
+    const favicon = fs.readFileSync(iconPath);
+    return sendBytes(req, res, 200, favicon, "image/x-icon");
   }
 
   if (url.pathname.startsWith("/api/contracts")) {
