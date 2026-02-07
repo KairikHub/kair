@@ -54,21 +54,23 @@ docker compose --profile cli run --rm kairik npm test
 ```
 
 ## Damien Walkthrough (CLI)
-Copy/paste demo:
+Run a realistic interactive test from inside the CLI container:
 
 ```bash
-docker compose --profile cli run --rm kairik \
-  contract propose "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write \
-  -- contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout" \
-  -- contract request-approval contract_1 \
-  -- contract add-control contract_1 local:write --actor Damien \
-  -- contract request-approval contract_1 \
-  -- contract approve contract_1 --actor Damien \
-  -- contract run contract_1 --pause-at checkpoint_1 --pause-authority Damien --pause-reason "Hold for checkout verification" \
-  -- contract status contract_1 \
-  -- contract resume contract_1 --actor Damien \
-  -- contract rewind contract_1 --actor Damien "Checkout regression risk identified; rewind to review migration plan." \
-  -- contract status contract_1
+docker compose --profile cli up -d kairik
+docker exec -it kairik bash
+
+kairik contract propose --id contract_1 "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write
+kairik contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout"
+kairik contract request-approval contract_1
+kairik contract add-control contract_1 local:write --actor Damien
+kairik contract request-approval contract_1
+kairik contract approve contract_1 --actor Damien
+kairik contract run contract_1 --pause-at checkpoint_1 --pause-authority Damien --pause-reason "Hold for checkout verification"
+kairik contract status contract_1
+kairik contract resume contract_1 --actor Damien
+kairik contract rewind contract_1 --actor Damien "Checkout regression risk identified; rewind to review migration plan."
+kairik contract status contract_1
 ```
 
 What it proves:
