@@ -60,6 +60,88 @@ function renderNotice() {
   elements.notice.textContent = state.notice.message;
 }
 
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderInlineMarkdown(value) {
+  let text = escapeHtml(value);
+  text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+  text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  text = text.replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+  return text;
+}
+
+function renderMarkdown(value) {
+  const lines = value.split(/\r?\n/);
+  const html = [];
+  let paragraph = [];
+  let list = null;
+
+  function flushParagraph() {
+    if (paragraph.length === 0) {
+      return;
+    }
+    html.push(`<p>${renderInlineMarkdown(paragraph.join(" "))}</p>`);
+    paragraph = [];
+  }
+
+  function flushList() {
+    if (!list) {
+      return;
+    }
+    html.push(
+      `<${list.type}>${list.items
+        .map((item) => `<li>${renderInlineMarkdown(item)}</li>`)
+        .join("")}</${list.type}>`
+    );
+    list = null;
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const orderedMatch = trimmed.match(/^(\d+)[.)]\s+(.*)$/);
+    if (orderedMatch) {
+      flushParagraph();
+      if (!list || list.type !== "ol") {
+        flushList();
+        list = { type: "ol", items: [] };
+      }
+      list.items.push(orderedMatch[2]);
+      continue;
+    }
+
+    const unorderedMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (unorderedMatch) {
+      flushParagraph();
+      if (!list || list.type !== "ul") {
+        flushList();
+        list = { type: "ul", items: [] };
+      }
+      list.items.push(unorderedMatch[1]);
+      continue;
+    }
+
+    flushList();
+    paragraph.push(trimmed);
+  }
+
+  flushParagraph();
+  flushList();
+  return html.join("");
+}
+
 async function loadContracts() {
   const data = await api("/api/contracts");
   state.contracts = data.contracts || [];
@@ -112,9 +194,11 @@ function renderDetail() {
     (control) => !contract.controlsApproved.includes(control)
   );
   const gating = missing.length ? `BLOCKED (${missing.join(", ")})` : "CLEAR";
+  const planHtml = contract.plan ? renderMarkdown(contract.plan) : "<span class=\"muted\">none</span>";
   elements.detail.innerHTML = `
     <div><strong>Intent:</strong> ${contract.intent}</div>
-    <div><strong>Plan:</strong> ${contract.plan || "none"}</div>
+    <div><strong>Plan:</strong></div>
+    <div class="plan-body">${planHtml}</div>
     <div><strong>State:</strong> ${contract.current_state}</div>
     <div><strong>Active version:</strong> ${contract.activeVersion ?? "none"}</div>
     <div><strong>Controls required:</strong> ${contract.controlsRequired.join(", ") || "none"}</div>
