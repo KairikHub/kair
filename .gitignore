@@ -3,3 +3,6 @@ artifacts/
 data/
 .openclaw/
 .openclaw-workspace/
+.env
+.pnpm-store/
+.env

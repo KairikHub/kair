@@ -4,6 +4,14 @@ services:
     entrypoint: ["/app/bin/ensure-openclaw-built.sh", "npm", "run", "ui", "--"]
     ports:
       - "3000:3000"
+    env_file:
+      - path: ./.env
+        required: false
+    environment:
+      OPENAI_API_KEY: ${KAIRIK_OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      KAIRIK_LLM_PROVIDER: ${KAIRIK_LLM_PROVIDER:-openai}
+      KAIRIK_LLM_MODEL: ${KAIRIK_LLM_MODEL:-gpt-5.1}
     volumes:
       - .:/app
       - /app/node_modules
@@ -12,6 +20,14 @@ services:
   kairik:
     build: .
     entrypoint: ["/app/bin/cli-entrypoint.sh"]
+    env_file:
+      - path: ./.env
+        required: false
+    environment:
+      OPENAI_API_KEY: ${KAIRIK_OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      KAIRIK_LLM_PROVIDER: ${KAIRIK_LLM_PROVIDER:-openai}
+      KAIRIK_LLM_MODEL: ${KAIRIK_LLM_MODEL:-gpt-5.1}
     volumes:
       - .:/app
       - /app/node_modules

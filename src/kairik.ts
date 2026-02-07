@@ -157,6 +157,7 @@ ${label("Usage:")}
 
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
+  co-plan "<contract_id>"
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   add-control "<contract_id>" "<control>" [--actor <name>]
@@ -189,6 +190,7 @@ ${label("Usage:")}
 
 ${label("Subcommands:")}
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  co-plan "<contract_id>"
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   add-control "<contract_id>" "<control>" [--actor <name>]
@@ -811,6 +813,95 @@ function normalizePauseAt(pauseAtRaw) {
   return pauseAt;
 }
 
+function resolveOpenAIConfig() {
+  const provider = (process.env.KAIRIK_LLM_PROVIDER || "openai").trim().toLowerCase();
+  if (provider !== "openai") {
+    fail(
+      `Unsupported LLM provider "${provider}". Set KAIRIK_LLM_PROVIDER=openai to use the built-in adapter.`
+    );
+  }
+  const model = (process.env.KAIRIK_LLM_MODEL || "gpt-5.1").trim();
+  const apiKey = (process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey) {
+    fail(
+      "Missing OPENAI_API_KEY. Set KAIRIK_OPENAI_API_KEY in .env and restart the containers."
+    );
+  }
+  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").trim();
+  return { model, apiKey, baseUrl };
+}
+
+function resolveResponsesUrl(baseUrl) {
+  const trimmed = baseUrl.replace(/\/+$/g, "");
+  if (trimmed.endsWith("/v1")) {
+    return `${trimmed}/responses`;
+  }
+  return `${trimmed}/v1/responses`;
+}
+
+function extractOutputText(payload) {
+  if (!payload) {
+    return "";
+  }
+  if (typeof payload.output_text === "string") {
+    return payload.output_text.trim();
+  }
+  if (!Array.isArray(payload.output)) {
+    return "";
+  }
+  const chunks = [];
+  for (const item of payload.output) {
+    if (!item || !Array.isArray(item.content)) {
+      continue;
+    }
+    for (const part of item.content) {
+      if (!part) {
+        continue;
+      }
+      if (part.type === "output_text" && typeof part.text === "string") {
+        chunks.push(part.text);
+      } else if (part.type === "text" && typeof part.text === "string") {
+        chunks.push(part.text);
+      }
+    }
+  }
+  return chunks.join("\n").trim();
+}
+
+async function coPlanContract(intent) {
+  const { model, apiKey, baseUrl } = resolveOpenAIConfig();
+  const prompt = `Create a concise, step-by-step implementation plan for the following contract intent. Keep it short and actionable.\n\nIntent: ${intent}`;
+  const response = await fetch(resolveResponsesUrl(baseUrl), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: prompt,
+    }),
+  });
+  if (!response.ok) {
+    let message = `OpenAI request failed with status ${response.status}.`;
+    try {
+      const errorPayload = await response.json();
+      if (errorPayload?.error?.message) {
+        message = `OpenAI request failed: ${errorPayload.error.message}`;
+      }
+    } catch (error) {
+      // ignore parse errors
+    }
+    fail(message);
+  }
+  const payload = await response.json();
+  const plan = extractOutputText(payload);
+  if (!plan) {
+    fail("OpenAI response did not include any text output.");
+  }
+  return plan;
+}
+
 async function executeCommand(tokens, options = {}) {
   const parsed = parseContractCommand(tokens);
   const command = parsed.command;
@@ -891,6 +982,19 @@ async function executeCommand(tokens, options = {}) {
       assertState(contract, ["DRAFT"], "plan");
       contract.plan = plan;
       transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
+      break;
+    }
+    case "co-plan": {
+      requireArgs(rest, 1, 'contract co-plan "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      assertState(contract, ["DRAFT"], "co-plan");
+      const plan = await coPlanContract(contract.intent);
+      contract.plan = plan;
+      transition(contract, "PLANNED", "Plan generated via LLM co-plan.");
+      console.log(`Co-plan complete for ${contract.id}.`);
+      console.log(`Plan:\n${plan}`);
+      console.log(`Next: kairik contract request-approval ${contract.id}`);
       break;
     }
     case "require-controls": {

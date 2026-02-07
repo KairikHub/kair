@@ -30,6 +30,16 @@ docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs -
 
 Note: the first run will build OpenClaw inside the container; subsequent runs are fast.
 
+## LLM Smoke Test (OpenAI)
+Set `KAIRIK_OPENAI_API_KEY` in `.env`, then run:
+
+```bash
+docker compose up -d --build
+docker compose --profile cli run --rm kairik \
+  kairik contract propose --id contract_llm "Draft a safe Laravel 9 → 10 upgrade plan" \
+  -- contract co-plan contract_llm
+```
+
 ## CLI Container Tips
 ```bash
 docker compose --profile cli run --rm kairik kairik --help

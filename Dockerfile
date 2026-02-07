@@ -2,8 +2,11 @@ FROM node:lts
 
 WORKDIR /app
 
+ENV CI=1
+ENV COREPACK_ENABLE_STRICT=0
+
 RUN corepack enable \
-  && corepack prepare pnpm@9.12.2 --activate
+  && corepack prepare pnpm@10.23.0 --activate
 
 COPY package.json package-lock.json* ./
 RUN npm install
