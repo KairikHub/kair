@@ -56,6 +56,23 @@ function sendBytes(req, res, status, body, type) {
   res.end(body);
 }
 
+function serveAsset(req, res, pathname, routePath, fileName, contentType) {
+  if (!(req.method === "GET" || req.method === "HEAD")) {
+    return false;
+  }
+  if (pathname !== routePath) {
+    return false;
+  }
+  const filePath = path.join(IMG_DIR, fileName);
+  if (!fs.existsSync(filePath)) {
+    send(res, 404, "Not found");
+    return true;
+  }
+  const content = fs.readFileSync(filePath);
+  sendBytes(req, res, 200, content, contentType);
+  return true;
+}
+
 function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload, null, 2), "application/json");
 }
@@ -357,6 +374,27 @@ const server = http.createServer(async (req, res) => {
     }
     const favicon = fs.readFileSync(iconPath);
     return sendBytes(req, res, 200, favicon, "image/x-icon");
+  }
+
+  if (serveAsset(req, res, url.pathname, "/favicon-16x16.png", "favicon-16x16.png", "image/png")) {
+    return;
+  }
+
+  if (serveAsset(req, res, url.pathname, "/favicon-32x32.png", "favicon-32x32.png", "image/png")) {
+    return;
+  }
+
+  if (serveAsset(req, res, url.pathname, "/apple-touch-icon.png", "apple-touch-icon.png", "image/png")) {
+    return;
+  }
+
+  if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/site.webmanifest") {
+    const filePath = path.join(IMG_DIR, "site.webmanifest");
+    if (!fs.existsSync(filePath)) {
+      return send(res, 404, "Not found");
+    }
+    const file = fs.readFileSync(filePath, "utf8");
+    return sendBytes(req, res, 200, Buffer.from(file, "utf8"), "application/manifest+json");
   }
 
   if (url.pathname.startsWith("/api/contracts")) {
