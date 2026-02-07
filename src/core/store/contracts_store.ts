@@ -52,3 +52,46 @@ export function getContract(id: string) {
   }
   return contract;
 }
+
+function parseNumericSuffix(id: string) {
+  const match = String(id).match(/(\d+)$/);
+  if (!match) {
+    return null;
+  }
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+export function getLastContractId() {
+  const contracts = [...contractStore.contracts.values()];
+  if (contracts.length === 0) {
+    return null;
+  }
+  const ranked = contracts.map((contract: any, index: number) => {
+    const updatedRaw = contract?.timestamps?.updated_at || "";
+    const updatedAt = Date.parse(updatedRaw);
+    return {
+      contract,
+      index,
+      updatedAt: Number.isFinite(updatedAt) ? updatedAt : null,
+      numericSuffix: parseNumericSuffix(contract?.id || ""),
+    };
+  });
+  ranked.sort((a, b) => {
+    const aUpdated = a.updatedAt ?? Number.NEGATIVE_INFINITY;
+    const bUpdated = b.updatedAt ?? Number.NEGATIVE_INFINITY;
+    if (aUpdated !== bUpdated) {
+      return bUpdated - aUpdated;
+    }
+    const aNumeric = a.numericSuffix ?? Number.NEGATIVE_INFINITY;
+    const bNumeric = b.numericSuffix ?? Number.NEGATIVE_INFINITY;
+    if (aNumeric !== bNumeric) {
+      return bNumeric - aNumeric;
+    }
+    if (a.index !== b.index) {
+      return b.index - a.index;
+    }
+    return String(b.contract.id).localeCompare(String(a.contract.id));
+  });
+  return ranked[0].contract.id;
+}

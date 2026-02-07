@@ -1,6 +1,7 @@
 import { resolveActor } from "../core/actor";
 import { fail, warn } from "../core/errors";
-import { contractStore, getContract } from "../core/store/contracts_store";
+import { loadEvidenceIndex } from "../core/contracts/evidence";
+import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
 import {
   describeControls,
   enforceControls,
@@ -21,6 +22,7 @@ import { printContractHelp, printTopHelp } from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
+import { renderEvidence, renderReview } from "./review";
 
 export async function executeCommand(tokens: string[], options: any = {}) {
   const parsed = parseContractCommand(tokens);
@@ -295,6 +297,70 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const [contractId] = rest;
       const contract = getContract(contractId);
       showContractStatus(contract);
+      break;
+    }
+    case "review": {
+      let contractId = "";
+      if (isContractGroup) {
+        requireArgs(rest, 1, 'contract review "<contract_id>"');
+        contractId = rest[0];
+      } else if (rest[0] === "--last") {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else if (rest.length >= 1) {
+        contractId = rest[0];
+      } else {
+        fail('Missing arguments. Usage: review --last');
+      }
+      const contract = getContract(contractId);
+      let evidenceItems: any[] = [];
+      try {
+        evidenceItems = loadEvidenceIndex(contract.id);
+      } catch (error: any) {
+        fail(`Failed to load evidence for Contract "${contract.id}": ${error.message}`);
+      }
+      console.log(renderReview(contract, evidenceItems));
+      break;
+    }
+    case "accept": {
+      const { remaining, actorRaw } = extractActorFlags(rest);
+      requireArgs(remaining, 1, 'contract accept "<contract_id>" [--actor <name>]');
+      const [contractId, ...legacyParts] = remaining;
+      let legacyActor = "";
+      if (legacyParts.length > 0) {
+        legacyActor = legacyParts.join(" ").trim();
+        warn(
+          'Positional actor is deprecated. Use "contract accept <id> --actor <name>" instead.'
+        );
+      }
+      if (actorRaw && legacyActor) {
+        warn('Both --actor and positional actor provided; using "--actor".');
+      }
+      const actor = resolveActor(actorRaw || legacyActor);
+      const contract = getContract(contractId);
+      recordHistory(
+        contract,
+        contract.current_state,
+        `Accepted responsibility for evidence-backed review. Actor: ${actor}.`,
+        actor
+      );
+      console.log(`Accepted responsibility for Contract ${contract.id}. Actor: ${actor}.`);
+      break;
+    }
+    case "evidence": {
+      requireArgs(rest, 1, 'contract evidence "<contract_id>"');
+      const [contractId] = rest;
+      const contract = getContract(contractId);
+      let evidenceItems: any[] = [];
+      try {
+        evidenceItems = loadEvidenceIndex(contract.id);
+      } catch (error: any) {
+        fail(`Failed to load evidence for Contract "${contract.id}": ${error.message}`);
+      }
+      console.log(renderEvidence(contract, evidenceItems));
       break;
     }
     case "list": {
