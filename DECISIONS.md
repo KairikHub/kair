@@ -7,6 +7,14 @@ These decisions are considered **binding** unless explicitly superseded by a lat
 
 ---
 
+## Decision 000 - Keep the Scope Achievable and Light
+
+**Kairik is a tool-agnostic governance layer over agentic work.**
+- We do not compete on raw orchestration loops (models and IDEs will commoditize that).
+- We enforce accountability primitives: append-only history, explicit approvals, evidence-backed execution, and rewind-as-contract-invalidation - independent of which agent performed the work.
+
+---
+
 ## Decision 001 — CLI Is the Source of Truth
 
 **Status:** Active  
