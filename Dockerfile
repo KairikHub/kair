@@ -12,7 +12,7 @@ COPY vendor/openclaw/package.json vendor/openclaw/pnpm-lock.yaml vendor/openclaw
 RUN cd /app/vendor/openclaw && pnpm install
 
 COPY vendor/openclaw ./vendor/openclaw
-RUN cd /app/vendor/openclaw && pnpm -r build
+RUN cd /app/vendor/openclaw && pnpm -r --filter openclaw build
 
 COPY . .
 RUN npm link
