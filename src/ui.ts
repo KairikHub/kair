@@ -4,6 +4,7 @@ import path from "node:path";
 import { URL } from "node:url";
 
 const UI_DIR = path.join(process.cwd(), "src", "ui");
+const IMG_DIR = path.join(process.cwd(), "src", "img");
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "contracts.json");
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
@@ -333,6 +334,11 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && url.pathname === "/styles.css") {
     const css = fs.readFileSync(path.join(UI_DIR, "styles.css"), "utf8");
     return send(res, 200, css, "text/css");
+  }
+
+  if (req.method === "GET" && url.pathname === "/favicon.ico") {
+    const favicon = fs.readFileSync(path.join(IMG_DIR, "favicon.ico"));
+    return send(res, 200, favicon, "image/x-icon");
   }
 
   if (url.pathname.startsWith("/api/contracts")) {
