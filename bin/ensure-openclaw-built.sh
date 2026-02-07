@@ -14,8 +14,8 @@ fi
 echo "[kairik] OpenClaw build artifacts missing; building inside container."
 
 if command -v corepack >/dev/null 2>&1; then
-  corepack enable >/dev/null 2>&1 || true
-  corepack prepare pnpm@9.12.2 --activate >/dev/null 2>&1 || true
+  COREPACK_ENABLE_STRICT=0 corepack enable >/dev/null 2>&1 || true
+  COREPACK_ENABLE_STRICT=0 corepack prepare pnpm@10.23.0 --activate >/dev/null 2>&1 || true
 fi
 
 pnpm -C "$OPENCLAW_ROOT" install
