@@ -1,0 +1,21 @@
+import * as path from "node:path";
+
+function readOverride(name: "KAIRIK_DATA_DIR" | "KAIRIK_ARTIFACTS_DIR") {
+  const value = (process.env[name] || "").trim();
+  if (!value) {
+    return null;
+  }
+  return path.isAbsolute(value) ? value : path.join(process.cwd(), value);
+}
+
+export function getDataDir() {
+  return readOverride("KAIRIK_DATA_DIR") || path.join(process.cwd(), "data");
+}
+
+export function getDataFile() {
+  return path.join(getDataDir(), "contracts.json");
+}
+
+export function getArtifactsDir() {
+  return readOverride("KAIRIK_ARTIFACTS_DIR") || path.join(process.cwd(), "artifacts");
+}

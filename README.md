@@ -48,6 +48,11 @@ docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs -
 docker compose --profile cli run --rm kairik bash
 ```
 
+## Tests
+```bash
+docker compose --profile cli run --rm kairik npm test
+```
+
 ## Damien Walkthrough (CLI)
 Copy/paste demo:
 

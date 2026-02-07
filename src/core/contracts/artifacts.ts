@@ -1,10 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { getArtifactsDir } from "../store/paths";
 import { now } from "../time";
 
 export function writeArtifact(contract: any, proposalSummary: any) {
-  const dir = path.join("artifacts", contract.id);
+  const dir = path.join(getArtifactsDir(), contract.id);
   fs.mkdirSync(dir, { recursive: true });
   const safeTimestamp = now().replace(/[:.]/g, "-");
   const filename = `${safeTimestamp}-run.json`;
@@ -22,4 +23,3 @@ export function writeArtifact(contract: any, proposalSummary: any) {
     content: filePath,
   });
 }
-

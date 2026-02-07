@@ -1,10 +1,7 @@
 import * as fs from "node:fs";
-import * as path from "node:path";
 
 import { fail } from "../errors";
-
-export const DATA_DIR = path.join(process.cwd(), "data");
-export const DATA_FILE = path.join(DATA_DIR, "contracts.json");
+import { getDataDir, getDataFile } from "./paths";
 
 export const contractStore = {
   contracts: new Map(),
@@ -12,8 +9,9 @@ export const contractStore = {
 };
 
 export function loadStore() {
+  const dataFile = getDataFile();
   try {
-    const raw = fs.readFileSync(DATA_FILE, "utf8");
+    const raw = fs.readFileSync(dataFile, "utf8");
     if (!raw.trim()) {
       return;
     }
@@ -37,12 +35,14 @@ export function loadStore() {
 }
 
 export function saveStore() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const dataDir = getDataDir();
+  const dataFile = getDataFile();
+  fs.mkdirSync(dataDir, { recursive: true });
   const payload = {
     nextId: contractStore.nextId,
     contracts: [...contractStore.contracts.values()],
   };
-  fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2));
+  fs.writeFileSync(dataFile, JSON.stringify(payload, null, 2));
 }
 
 export function getContract(id: string) {
@@ -52,4 +52,3 @@ export function getContract(id: string) {
   }
   return contract;
 }
-

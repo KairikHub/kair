@@ -1,6 +1,5 @@
 import { resolveActor } from "../core/actor";
 import { fail, warn } from "../core/errors";
-import { now } from "../core/time";
 import { contractStore, getContract } from "../core/store/contracts_store";
 import {
   describeControls,
@@ -14,6 +13,7 @@ import { assertState, recordHistory, transition } from "../core/contracts/histor
 import { runContract, resumeContract } from "../core/contracts/run";
 import { coPlanContract } from "../core/llm/openai_responses";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
+import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
@@ -163,18 +163,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const actor = resolveActor(actorRaw || legacyActor);
       const contract = getContract(contractId);
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
-      contract.approvals.push({ at: now(), approver: actor, actor });
-      const version = contract.versions.length + 1;
-      contract.activeVersion = version;
-      contract.versions.push({
-        version,
-        kind: "approval",
-        at: now(),
-        note: `Approved by ${actor}.`,
-        controlsApproved: [...contract.controlsApproved],
-        plan: contract.plan,
-        intent: contract.intent,
-      });
+      appendApprovalVersion(contract, actor);
       transition(contract, "APPROVED", `Approve a Kairik Contract. Actor: ${actor}.`, actor);
       break;
     }
@@ -288,18 +277,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         warn('Both --actor and positional actor provided; using "--actor".');
       }
       const actor = resolveActor(actorRaw || legacyActor);
-      const previousVersion = contract.activeVersion;
-      const version = contract.versions.length + 1;
-      contract.activeVersion = version;
-      contract.versions.push({
-        version,
-        kind: "rewind",
-        at: now(),
-        note: `Rewound by ${actor}. Supersedes v${previousVersion ?? "none"}.`,
-        controlsApproved: [...contract.controlsApproved],
-        plan: contract.plan,
-        intent: contract.intent,
-      });
+      appendRewindVersion(contract, actor);
       const reasonChunks = [
         "Rewind a Kairik Contract because a rewind was requested.",
         `Actor: ${actor}.`,
@@ -332,4 +310,3 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
   }
 }
-
