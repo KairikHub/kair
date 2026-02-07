@@ -5,6 +5,9 @@ It exists to preserve *why* things are the way they are, not just *what* the cod
 
 These decisions are considered **binding** unless explicitly superseded by a later entry.
 
+## Decision Prime - Our Prime Directive
+AI scales execution faster than human trust — KAIRIK exists to close that gap.
+
 ---
 
 ## Decision 000 - Keep the Scope Achievable and Light
