@@ -28,6 +28,14 @@ Verify OpenClaw runs inside the CLI container:
 docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs --help
 ```
 
+## CLI Container Tips
+```bash
+docker compose --profile cli run --rm kairik kairik --help
+docker compose --profile cli run --rm kairik kairik contract list
+docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs --help
+docker compose --profile cli run --rm kairik bash
+```
+
 ## Damien Walkthrough (CLI)
 Copy/paste demo:
 

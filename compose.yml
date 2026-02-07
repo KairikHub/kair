@@ -11,6 +11,7 @@ services:
       - ${OPENCLAW_WORKSPACE_DIR:-./.openclaw-workspace}:/home/node/.openclaw/workspace
   kairik:
     build: .
+    entrypoint: ["/app/bin/cli-entrypoint.sh"]
     volumes:
       - .:/app
       - /app/node_modules
