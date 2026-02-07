@@ -112,6 +112,17 @@ Kairik’s distinct position is that governance is the product, not a plugin:
   - Audit trails are usually session-level, not contract-version-level with explicit actor responsibility.
 - **Why Kairik’s approach remains defensible:** Kairik can serve as the authority layer around these agents, turning ad-hoc actions into governed contracts.
 
+### OpenClaw Security Roadmap Signals (Discussion #10317, PR #9271)
+- **Short description:** Emerging OpenClaw security patterns that are more integration opportunities and baseline expectations than direct governance competition today.
+- **Core capabilities signaled:**
+  - Discussion `#10317`: proposes `tirith` pre-exec command validation (`allow/warn/block`) before bash tool execution, including detection for pipe-to-shell patterns, homograph/IDN abuse, ANSI injection, and unsafe transport.
+  - PR `#9271` (open): proposes zero-trust secure gateway mode (`--secure`) with host-side secrets proxy, sanitized config placeholders, domain allowlist enforcement, and isolated secure-mode sessions.
+- **Weaknesses relative to Kairik:**
+  - These focus on runtime and execution safety controls, not responsibility contracts and authority provenance.
+  - They do not replace contract-level actor attribution, approval lineage, or rewind-as-supersession governance semantics.
+  - Security posture can improve substantially while still lacking first-class authority lifecycle guarantees.
+- **Why Kairik’s approach remains defensible:** Kairik can adopt or interoperate with these controls as execution-hardening layers while preserving governance as the source of truth.
+
 ## Knapsack Desktop (knap-ai)
 
 - **Short description:** Tauri desktop wrapper around OpenClaw focused on secure local operation and productivity workflows.
@@ -137,6 +148,8 @@ Kairik’s distinct position is that governance is the product, not a plugin:
 4. **Portable evidence bundles:** Export tamper-evident contract timelines for compliance and incident response.
 5. **Runtime-neutral adapters:** Expand adapters (OpenClaw, Agents SDK runtimes, LangGraph) while keeping identical governance semantics across backends.
 6. **Policy-aware rewind simulation:** Provide “pre-rewind impact previews” to show what authority and artifact lineage will change before supersession.
+7. **Pre-exec risk scoring control:** Add an optional command-risk check control (tirith-style) in the run path, with configurable fail-open/fail-closed semantics.
+8. **Zero-trust executor mode:** Introduce a secure execution mode with host-side secret injection proxies and sanitized runtime mounts for backend isolation.
 
 ## Summary / Strategic Positioning
 
@@ -148,6 +161,7 @@ Kairik should position as the governance authority plane for delegated cognition
 - **“Execution backends are swappable; governance semantics stay invariant.”**
 - **“LLMs and agents advise and execute, but humans remain accountable authorities.”**
 - **“Kairik turns AI operations from best-effort trust into enforceable responsibility.”**
+- **“We combine governance contracts with zero-trust execution hardening, instead of forcing a tradeoff between them.”**
 
 ## Source Snapshots Used
 
@@ -161,3 +175,5 @@ Kairik should position as the governance authority plane for delegated cognition
 - Prefect: https://github.com/PrefectHQ/prefect
 - Open Policy Agent: https://github.com/open-policy-agent/opa
 - Langfuse: https://github.com/langfuse/langfuse
+- OpenClaw discussion (tirith): https://github.com/openclaw/openclaw/discussions/10317
+- OpenClaw PR (zero-trust secure gateway): https://github.com/openclaw/openclaw/pull/9271
