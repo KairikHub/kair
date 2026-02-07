@@ -19,7 +19,11 @@ services:
       - ${OPENCLAW_WORKSPACE_DIR:-./.openclaw-workspace}:/home/node/.openclaw/workspace
   kairik:
     build: .
+    container_name: kairik
     entrypoint: ["/app/bin/cli-entrypoint.sh"]
+    command: ["sleep", "infinity"]
+    stdin_open: true
+    tty: true
     env_file:
       - path: ./.env
         required: false
@@ -33,4 +37,3 @@ services:
       - /app/node_modules
       - ${OPENCLAW_CONFIG_DIR:-./.openclaw}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR:-./.openclaw-workspace}:/home/node/.openclaw/workspace
-    profiles: ["cli"]
