@@ -1,7 +1,7 @@
 services:
   kairik-ui:
     build: .
-    entrypoint: ["npm", "run", "ui", "--"]
+    entrypoint: ["/app/bin/ensure-openclaw-built.sh", "npm", "run", "ui", "--"]
     ports:
       - "3000:3000"
     volumes:
