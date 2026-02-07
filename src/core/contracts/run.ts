@@ -2,6 +2,7 @@ import { resolveActor } from "../actor";
 import { enforceControls } from "./controls";
 import { writeArtifact } from "./artifacts";
 import { assertState, logAudit, recordHistory, transition } from "./history";
+import { seedMockEvidence } from "./seed_evidence";
 import { RUN_CHECKPOINTS } from "./constants";
 
 function wait(ms: number) {
@@ -51,6 +52,13 @@ function finalizeRun(contract: any) {
     intent: contract.intent,
     plan: contract.plan,
   });
+  if (contract && contract.id && contract.intent) {
+    seedMockEvidence({
+      id: contract.id,
+      intent: contract.intent,
+      plan: contract.plan ?? null,
+    });
+  }
   contract.pauseContext = null;
   transition(contract, "COMPLETED", "Execution completed successfully for the approved Contract.");
 }
@@ -91,4 +99,3 @@ export async function resumeContract(contract: any, authority?: string) {
   await wait(400);
   finalizeRun(contract);
 }
-
