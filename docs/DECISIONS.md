@@ -1,18 +1,18 @@
-# Kairik — Decisions & Architectural Invariants
+# Kair — Decisions & Architectural Invariants
 
-This document records **intentional decisions** made during Kairik’s development.
+This document records **intentional decisions** made during Kair’s development.
 It exists to preserve *why* things are the way they are, not just *what* the code does.
 
 These decisions are considered **binding** unless explicitly superseded by a later entry.
 
 ## Decision Prime - Our Prime Directive
-AI scales execution faster than human trust — KAIRIK exists to close that gap.
+AI scales execution faster than human trust — KAIR exists to close that gap.
 
 ---
 
 ## Decision 000 - Keep the Scope Achievable and Light
 
-**Kairik is a tool-agnostic governance layer over agentic work.**
+**Kair is a tool-agnostic governance layer over agentic work.**
 - We do not compete on raw orchestration loops (models and IDEs will commoditize that).
 - We enforce accountability primitives: append-only history, explicit approvals, evidence-backed execution, and rewind-as-contract-invalidation - independent of which agent performed the work.
 
@@ -23,7 +23,7 @@ AI scales execution faster than human trust — KAIRIK exists to close that gap.
 **Status:** Active  
 **Date:** 2026-02-XX  
 
-Kairik is **CLI-first**.
+Kair is **CLI-first**.
 
 - All core behavior, state transitions, and authority boundaries live in the CLI.
 - Any UI (web, Tauri, desktop, etc.) is a *thin shell* over the same commands.
@@ -71,7 +71,7 @@ Any action that changes responsibility or authority may be attributed to an **ac
 - Default actor behavior must be conservative.
 
 **Rationale:**
-- Responsibility is a first-class concept in Kairik
+- Responsibility is a first-class concept in Kair
 - Enables meaningful audits and governance
 - Avoids “the system did it” ambiguity
 
@@ -82,7 +82,7 @@ Any action that changes responsibility or authority may be attributed to an **ac
 **Status:** Active  
 **Date:** 2026-02-XX  
 
-Kairik assumes **Docker-first** usage.
+Kair assumes **Docker-first** usage.
 
 - Local machines are not expected to have Node, pnpm, or build tools installed.
 - All builds must be reproducible inside containers.
@@ -113,7 +113,7 @@ LLMs may **not**:
 **Rationale:**
 - Prevents automation from erasing responsibility
 - Keeps humans in the approval loop
-- Aligns with Kairik’s accountability model
+- Aligns with Kair’s accountability model
 
 ---
 
@@ -122,16 +122,16 @@ LLMs may **not**:
 **Status:** Active  
 **Date:** 2026-02-XX  
 
-Kairik supports **bring-your-own API keys** for LLM providers.
+Kair supports **bring-your-own API keys** for LLM providers.
 
 - OpenAI is supported via standard API keys.
-- No mandatory third-party account is required to use Kairik.
+- No mandatory third-party account is required to use Kair.
 - Provider abstraction must remain thin and swappable.
 
 **Rationale:**
 - Reduces adoption friction
 - Avoids premature platform commitments
-- Keeps Kairik usable offline or in constrained environments
+- Keeps Kair usable offline or in constrained environments
 
 ---
 

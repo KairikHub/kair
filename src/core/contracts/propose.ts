@@ -29,7 +29,7 @@ export function proposeContract(intent: string, controlsRequired: string[], idOv
   const controlsNote = controlsRequired.length
     ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
     : " Controls required by this proposal: none.";
-  const reason = `Propose a Kairik Contract: "${intent}".${controlsNote}`;
+  const reason = `Propose a Kair Contract: "${intent}".${controlsNote}`;
   recordHistory(contract, "DRAFT", reason);
   return contract;
 }

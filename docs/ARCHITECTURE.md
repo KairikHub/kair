@@ -9,15 +9,15 @@ Confidential & Proprietary. Not for distribution.
 
 ## Actor Attribution
 - An **actor** is the name recorded for authority‑affecting actions (approve, control grants, rewind, pause/resume).
-- Kairik uses **actor** instead of **user** to avoid implying authentication or identity systems too early.
+- Kair uses **actor** instead of **user** to avoid implying authentication or identity systems too early.
 - Actor attribution is always recorded, but it can be **implicit** (resolved from CLI flags, environment, git user, or OS user).
 - This keeps the authority model consistent across local‑first usage, CI/automation, and future multi‑user systems.
 
 ## Contract Mental Model
 - **Contract = repo** (authority boundary).
-- **Approve a Kairik Contract = commit‑like approval**.
+- **Approve a Kair Contract = commit‑like approval**.
 - **Run/Execute = deploy‑like run**.
-- **Rewind a Kairik Contract = revert‑like supersession (never reset / force‑push)**.
+- **Rewind a Kair Contract = revert‑like supersession (never reset / force‑push)**.
 
 ## Contract Lifecycle
 Propose → Plan → Controls → Request Approval → Approve → Run/Execute → Pause → Observe → Rewind → Artifact
@@ -74,4 +74,4 @@ Built‑in Controls (v0):
 
 ## Execution Backends (Planned)
 - OpenClaw can be used as an execution backend during `run`.
-- Kairik remains the authority layer; OpenClaw remains an implementation detail.
+- Kair remains the authority layer; OpenClaw remains an implementation detail.

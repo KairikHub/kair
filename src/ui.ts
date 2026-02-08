@@ -8,7 +8,7 @@ const IMG_DIR = path.join(process.cwd(), "src", "img");
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "contracts.json");
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
-const PORT = Number(process.env.KAIRIK_UI_PORT || 3000);
+const PORT = Number(process.env.KAIR_UI_PORT || 3000);
 
 const CONTROL_REGISTRY = [
   "cloudflare:read",
@@ -224,7 +224,7 @@ function handlePropose(store, body) {
   const controlsNote = controlsRequired.length
     ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
     : " Controls required by this proposal: none.";
-  recordHistory(contract, "DRAFT", `Propose a Kairik Contract: "${intent}".${controlsNote}`);
+  recordHistory(contract, "DRAFT", `Propose a Kair Contract: "${intent}".${controlsNote}`);
   store.contracts.push(contract);
   saveStore(store);
   return contract;
@@ -274,7 +274,7 @@ function handleApprove(contract, body) {
     plan: contract.plan,
     intent: contract.intent,
   });
-  transition(contract, "APPROVED", `Approve a Kairik Contract: approved by ${approver}.`);
+  transition(contract, "APPROVED", `Approve a Kair Contract: approved by ${approver}.`);
 }
 
 function handleAddControl(contract, body) {
@@ -340,7 +340,7 @@ function handleRewind(contract, body) {
     intent: contract.intent,
   });
   const chunks = [
-    "Rewind a Kairik Contract because a rewind was requested.",
+    "Rewind a Kair Contract because a rewind was requested.",
     `Authority: ${authority}.`,
     reason ? `Reason: "${reason}".` : "Reason: not provided.",
   ];
@@ -462,5 +462,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Kairik UI running at http://localhost:${PORT}`);
+  console.log(`Kair UI running at http://localhost:${PORT}`);
 });

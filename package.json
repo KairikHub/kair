@@ -1,12 +1,12 @@
 {
-  "name": "kairik",
+  "name": "kair",
   "private": true,
   "type": "module",
   "bin": {
     "kair": "./bin/kair.cjs"
   },
   "scripts": {
-    "kair": "tsx src/kairik.ts",
+    "kair": "tsx src/kair.ts",
     "ui": "tsx src/ui.ts",
     "test": "jest"
   },

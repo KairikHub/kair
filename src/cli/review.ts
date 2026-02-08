@@ -64,7 +64,7 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
   const active = contract?.activeVersion ? `v${contract.activeVersion}` : "n/a";
   const artifacts = Array.isArray(contract?.artifacts) ? contract.artifacts.length : 0;
   const lines = [
-    "KAIRIK REVIEW",
+    "KAIR REVIEW",
     `Contract: ${contract.id}   State: ${contract.current_state}   Active: ${active}`,
     "",
     "APPROVED INTENT",

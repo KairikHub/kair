@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 export function makeTempRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "kairik-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "kair-"));
   const dataDir = path.join(root, "data");
   const artifactsDir = path.join(root, "artifacts");
   fs.mkdirSync(dataDir, { recursive: true });

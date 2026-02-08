@@ -13,8 +13,8 @@ function resetStore() {
 describe("integration: persistence store", () => {
   test("writes contracts.json and loads it back with required fields", () => {
     const tmp = makeTempRoot();
-    const previousDataDir = process.env.KAIRIK_DATA_DIR;
-    process.env.KAIRIK_DATA_DIR = tmp.dataDir;
+    const previousDataDir = process.env.KAIR_DATA_DIR;
+    process.env.KAIR_DATA_DIR = tmp.dataDir;
 
     try {
       resetStore();
@@ -38,9 +38,9 @@ describe("integration: persistence store", () => {
       expect(loaded.controlsRequired).toEqual(["local:read"]);
     } finally {
       if (previousDataDir === undefined) {
-        delete process.env.KAIRIK_DATA_DIR;
+        delete process.env.KAIR_DATA_DIR;
       } else {
-        process.env.KAIRIK_DATA_DIR = previousDataDir;
+        process.env.KAIR_DATA_DIR = previousDataDir;
       }
       resetStore();
       tmp.cleanup();

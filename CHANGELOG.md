@@ -5,10 +5,10 @@ Confidential & Proprietary. Not for distribution.
 ## 2026-02-07
 - Runtime and Docker:
   - Vendored OpenClaw runtime and hardened Docker integration; builds are non-interactive and run inside containers.
-  - CLI container entrypoint supports `kairik` plus arbitrary commands (`node`, OpenClaw, `bash`) under `--profile cli`.
+  - CLI container entrypoint supports `kair` plus arbitrary commands (`node`, OpenClaw, `bash`) under `--profile cli`.
   - OpenClaw build-on-start safeguards added for bind-mounted workflows.
 - LLM and provider wiring:
-  - BYO OpenAI key flow wired through Compose (`KAIRIK_OPENAI_API_KEY`).
+  - BYO OpenAI key flow wired through Compose (`KAIR_OPENAI_API_KEY`).
   - `contract co-plan` added using OpenAI Responses API.
   - OpenClaw OpenAI config auto-initializes when keys are present.
 - CLI and governance model:
@@ -24,17 +24,17 @@ Confidential & Proprietary. Not for distribution.
 - Testing (Docker-first Jest harness):
   - Jest is the canonical test runner (`npm test`) for unit, integration, and e2e suites.
   - Single canonical test command documented:
-    - `docker compose --profile cli run --rm kairik npm test`
+    - `docker compose --profile cli run --rm kair npm test`
   - Hermetic test path overrides added:
-    - `KAIRIK_DATA_DIR`
-    - `KAIRIK_ARTIFACTS_DIR`
+    - `KAIR_DATA_DIR`
+    - `KAIR_ARTIFACTS_DIR`
   - Added test suites for:
     - versioning/append-only invariants
     - persistence round-trip
     - artifact writing
     - end-to-end CLI contract flow
   - Test log noise reduction:
-    - `KAIRIK_TEST_MODE` suppresses audit `console.log` during Jest runs
+    - `KAIR_TEST_MODE` suppresses audit `console.log` during Jest runs
     - existing `VITEST` behavior preserved for compatibility
 - Documentation and strategy:
   - Added `COMPETITION.md` covering direct/indirect/adjacent landscape and Knapsack analysis.

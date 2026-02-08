@@ -6,10 +6,10 @@ describe("e2e: review surface", () => {
     const tmp = makeTempRoot();
     const contractId = "review_demo";
     const env = {
-      KAIRIK_DATA_DIR: tmp.dataDir,
-      KAIRIK_ARTIFACTS_DIR: tmp.artifactsDir,
-      KAIRIK_ACTOR: "e2e-actor",
-      KAIRIK_TEST_MODE: "1",
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
     };
 
     try {
@@ -28,7 +28,7 @@ describe("e2e: review surface", () => {
 
       const reviewLast = runCli(["review", "--last"], env);
       expect(reviewLast.status).toBe(0);
-      expect(reviewLast.stdout).toContain("KAIRIK REVIEW");
+      expect(reviewLast.stdout).toContain("KAIR REVIEW");
       expect(reviewLast.stdout).toContain(contractId);
       expect(reviewLast.stdout).toContain("EVIDENCE");
       expect(reviewLast.stdout).toContain("diff.patch");

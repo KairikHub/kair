@@ -7,11 +7,11 @@ Use either style:
 
 ```bash
 # Single command in a disposable container
-docker compose --profile cli run --rm kairik kair <command>
+docker compose --profile cli run --rm kair kair <command>
 
 # Interactive shell in persistent container
-docker compose --profile cli up -d kairik
-docker exec -it kairik bash
+docker compose --profile cli up -d kair
+docker exec -it kair bash
 kair <command>
 ```
 

@@ -1,17 +1,17 @@
 import { fail } from "../errors";
 
 function resolveOpenAIConfig() {
-  const provider = (process.env.KAIRIK_LLM_PROVIDER || "openai").trim().toLowerCase();
+  const provider = (process.env.KAIR_LLM_PROVIDER || "openai").trim().toLowerCase();
   if (provider !== "openai") {
     fail(
-      `Unsupported LLM provider "${provider}". Set KAIRIK_LLM_PROVIDER=openai to use the built-in adapter.`
+      `Unsupported LLM provider "${provider}". Set KAIR_LLM_PROVIDER=openai to use the built-in adapter.`
     );
   }
-  const model = (process.env.KAIRIK_LLM_MODEL || "gpt-5.1").trim();
+  const model = (process.env.KAIR_LLM_MODEL || "gpt-5.1").trim();
   const apiKey = (process.env.OPENAI_API_KEY || "").trim();
   if (!apiKey) {
     fail(
-      "Missing OPENAI_API_KEY. Set KAIRIK_OPENAI_API_KEY in .env and restart the containers."
+      "Missing OPENAI_API_KEY. Set KAIR_OPENAI_API_KEY in .env and restart the containers."
     );
   }
   const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").trim();

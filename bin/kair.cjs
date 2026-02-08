@@ -11,7 +11,7 @@ const tsxBin = path.join(
 );
 
 const args = process.argv.slice(2);
-const result = spawnSync(tsxBin, [path.join(root, "src", "kairik.ts"), ...args], {
+const result = spawnSync(tsxBin, [path.join(root, "src", "kair.ts"), ...args], {
   stdio: "inherit",
   env: {
     ...process.env,

@@ -17,10 +17,10 @@ describe("e2e: cli contract flow", () => {
     const tmp = makeTempRoot();
     const contractId = "e2e_contract";
     const env = {
-      KAIRIK_DATA_DIR: tmp.dataDir,
-      KAIRIK_ARTIFACTS_DIR: tmp.artifactsDir,
-      KAIRIK_ACTOR: "e2e-actor",
-      KAIRIK_TEST_MODE: "1",
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
     };
 
     try {

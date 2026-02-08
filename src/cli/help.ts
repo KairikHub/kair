@@ -1,7 +1,7 @@
 import { label, title } from "./format";
 
 export function printTopHelp() {
-  console.log(`${title("Kairik CLI")}
+  console.log(`${title("Kair CLI")}
 
 ${label("Usage:")}
   kair contract <subcommand> [args]
@@ -39,7 +39,7 @@ Run "kair contract --help" for full details.`);
 }
 
 export function printContractHelp() {
-  console.log(`${title("Kairik Contract Commands")}
+  console.log(`${title("Kair Contract Commands")}
 
 ${label("Usage:")}
   kair contract <subcommand> [args]

@@ -35,7 +35,7 @@ export function resolveActor(explicit?: string) {
   if (explicitActor) {
     return explicitActor;
   }
-  const envActor = (process.env.KAIRIK_ACTOR || "").trim();
+  const envActor = (process.env.KAIR_ACTOR || "").trim();
   if (envActor) {
     return envActor;
   }

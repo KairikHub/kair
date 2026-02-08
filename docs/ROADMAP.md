@@ -19,7 +19,7 @@ Pause (v0) is a temporary halt during execution that records state/history witho
 ### Distribution Philosophy
 - CLI‑first distribution; the CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.
 - Local‑first adoption via Docker and desktop app; no cloud dependency for core functionality.
-- Trust‑first posture: Kairik runs next to the code it governs.
+- Trust‑first posture: Kair runs next to the code it governs.
 
 ### Desktop App Path (Tauri)
 - Target packaging: **Tauri**.
@@ -31,7 +31,7 @@ Pause (v0) is a temporary halt during execution that records state/history witho
 - CLI remains unchanged; Tauri wraps the UI and invokes the same core engine.
 - Migration expectation: minimal UI changes, ~½ day to polish once pursued.
 - Acceptance criteria:
-  - User can double‑click Kairik (no Docker required).
+  - User can double‑click Kair (no Docker required).
   - Same lifecycle works: Propose → Plan → Controls → Approve → Run → Pause → Rewind → Status.
   - Contracts, artifacts, and audit logs persist locally.
   - Fully offline‑capable.
@@ -41,13 +41,13 @@ Pause (v0) is a temporary halt during execution that records state/history witho
 
 ### OpenClaw Integration & Controls Mapping
 - Principle:
-  - Kairik is the authority/governance layer.
+  - Kair is the authority/governance layer.
   - OpenClaw is an execution backend.
   - Skills are never the user‑facing mental model.
 - Packaging:
   - OpenClaw is packaged as a local dependency/runtime.
   - Invoked only during `run`, under an approved Contract.
-  - Output captured as Kairik Artifacts and included in audit history.
+  - Output captured as Kair Artifacts and included in audit history.
   - Rewind remains available regardless of execution backend.
 - Controls ↔ Skills Mapping:
   - Controls are coarse, user‑facing grants (e.g., github:read, local:write).

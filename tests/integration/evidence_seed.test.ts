@@ -7,8 +7,8 @@ import { makeTempRoot } from "../helpers/tmp";
 describe("integration: evidence seeding", () => {
   test("creates evidence files + index and is idempotent", () => {
     const tmp = makeTempRoot();
-    const previousArtifactsDir = process.env.KAIRIK_ARTIFACTS_DIR;
-    process.env.KAIRIK_ARTIFACTS_DIR = tmp.artifactsDir;
+    const previousArtifactsDir = process.env.KAIR_ARTIFACTS_DIR;
+    process.env.KAIR_ARTIFACTS_DIR = tmp.artifactsDir;
 
     try {
       const contract = {
@@ -41,9 +41,9 @@ describe("integration: evidence seeding", () => {
       expect(second.length).toBe(5);
     } finally {
       if (previousArtifactsDir === undefined) {
-        delete process.env.KAIRIK_ARTIFACTS_DIR;
+        delete process.env.KAIR_ARTIFACTS_DIR;
       } else {
-        process.env.KAIRIK_ARTIFACTS_DIR = previousArtifactsDir;
+        process.env.KAIR_ARTIFACTS_DIR = previousArtifactsDir;
       }
       tmp.cleanup();
     }

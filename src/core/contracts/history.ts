@@ -4,7 +4,7 @@ import { now } from "../time";
 import { STATES } from "./constants";
 
 export function logAudit(contractId: string, label: string, message: string, timestamp = now()) {
-  if (process.env.KAIRIK_TEST_MODE) return;
+  if (process.env.KAIR_TEST_MODE) return;
   if (process.env.VITEST === "1") return;
   console.log(`${timestamp} | ${contractId} | ${label} | ${message}`);
 }

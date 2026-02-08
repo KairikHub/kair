@@ -24,7 +24,7 @@ function resolveInvocation() {
     };
   }
   const firstMatch = Object.entries(scripts).find(([, value]) =>
-    typeof value === "string" ? value.includes("src/kairik.ts") : false
+    typeof value === "string" ? value.includes("src/kair.ts") : false
   );
   if (firstMatch) {
     return {

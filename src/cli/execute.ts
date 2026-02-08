@@ -87,7 +87,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const controlsRequired = normalizeControls(parseControls(requiredRaw));
       validateControls(controlsRequired);
       const contract = proposeContract(intent, controlsRequired, id);
-      console.log(`Proposed a Kairik Contract: ${contract.id}`);
+      console.log(`Proposed a Kair Contract: ${contract.id}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
       console.log(`Next: kair contract plan ${contract.id} "..."`);
@@ -166,7 +166,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const contract = getContract(contractId);
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
       appendApprovalVersion(contract, actor);
-      transition(contract, "APPROVED", `Approve a Kairik Contract. Actor: ${actor}.`, actor);
+      transition(contract, "APPROVED", `Approve a Kair Contract. Actor: ${actor}.`, actor);
       break;
     }
     case "approve-control":
@@ -281,7 +281,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const actor = resolveActor(actorRaw || legacyActor);
       appendRewindVersion(contract, actor);
       const reasonChunks = [
-        "Rewind a Kairik Contract because a rewind was requested.",
+        "Rewind a Kair Contract because a rewind was requested.",
         `Actor: ${actor}.`,
       ];
       if (reasonText) {

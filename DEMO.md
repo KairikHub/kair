@@ -1,26 +1,26 @@
 Confidential & Proprietary. Not for distribution.
 
-# Kairik Demo
+# Kair Demo
 
-## Demo: KAIRIK REVIEW (Copy/Paste)
+## Demo: KAIR REVIEW (Copy/Paste)
 
 ```bash
-docker compose --profile cli run --rm kairik \
+docker compose --profile cli run --rm kair \
   kair contract propose --id demo_review "Upgrade checkout safely without breaking payments" \
   -- contract plan demo_review "Update deps, run tests, validate checkout end-to-end, capture evidence" \
   -- contract request-approval demo_review \
   -- contract approve demo_review --actor CTO \
   -- contract run demo_review
 
-docker compose --profile cli run --rm kairik \
+docker compose --profile cli run --rm kair \
   kair review --last
-docker compose --profile cli run --rm kairik \
+docker compose --profile cli run --rm kair \
   kair contract evidence demo_review
 
-docker compose --profile cli run --rm kairik \
+docker compose --profile cli run --rm kair \
   kair contract accept demo_review --actor CTO
 
-docker compose --profile cli run --rm kairik \
+docker compose --profile cli run --rm kair \
   kair contract review demo_review
 ```
 
