@@ -5,102 +5,33 @@ Confidential & Proprietary. Not for distribution.
 ## What It Is
 Kairik is a CLI-first control plane for delegated cognition and AI work, built around Contracts and Controls.
 
-## Quickstart (Docker Only)
-Start the local UI service with one command:
+## Quick Install (Docker Only)
 
 ```bash
 docker compose up -d --build
 ```
 
-Open the UI at `http://localhost:3000`.
+This starts the local UI at `http://localhost:3000` and prepares the CLI container runtime.
 
-Run the CLI demo inside the container:
+## Quick Smoke Test
+Run these commands to verify the install works end-to-end:
 
-```bash
-docker compose --profile cli run --rm kairik contract propose "..." -- contract plan contract_1 "..." -- contract request-approval contract_1 -- contract approve contract_1 --actor Damien -- contract run contract_1 -- contract status contract_1
-```
-
-All commands run inside containers; no host `npm install` is required.
-
-Verify OpenClaw runs inside the CLI container:
-
-```bash
-docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs --help
-```
-
-Note: the first run will build OpenClaw inside the container; subsequent runs are fast.
-
-## LLM Smoke Test (OpenAI)
-Set `KAIRIK_OPENAI_API_KEY` in `.env`, then run:
-
-```bash
-docker compose up -d --build
-docker compose --profile cli run --rm kairik \
-  kairik contract propose --id contract_llm "Draft a safe Laravel 9 → 10 upgrade plan" \
-  -- contract co-plan contract_llm
-```
-
-## CLI Container Tips
 ```bash
 docker compose --profile cli run --rm kairik kairik --help
-docker compose --profile cli run --rm kairik kairik contract list
-docker compose --profile cli run --rm kairik node vendor/openclaw/openclaw.mjs --help
-docker compose --profile cli run --rm kairik bash
+docker compose --profile cli run --rm kairik kairik contract create --id smoke_demo "Smoke test install"
+docker compose --profile cli run --rm kairik kairik contract plan smoke_demo "Run a minimal install verification"
+docker compose --profile cli run --rm kairik kairik contract request-approval smoke_demo
+docker compose --profile cli run --rm kairik kairik contract approve smoke_demo --actor tester
+docker compose --profile cli run --rm kairik kairik contract run smoke_demo
+docker compose --profile cli run --rm kairik kairik review --last
 ```
 
-## Tests
-```bash
-docker compose --profile cli run --rm kairik npm test
-```
-
-## Damien Walkthrough (CLI)
-Run a realistic interactive test from inside the CLI container:
-
-```bash
-docker compose --profile cli up -d kairik
-docker exec -it kairik bash
-
-kairik contract propose --id contract_1 "Upgrade Laravel 9 to 10 without breaking checkout" --requires local:write
-kairik contract plan contract_1 "Upgrade dependencies, run migrations in dry-run, run tests, validate checkout"
-kairik contract request-approval contract_1
-kairik contract add-control contract_1 local:write --actor Damien
-kairik contract request-approval contract_1
-kairik contract approve contract_1 --actor Damien
-kairik contract run contract_1 --pause-at checkpoint_1 --pause-authority Damien --pause-reason "Hold for checkout verification"
-kairik contract status contract_1
-kairik contract resume contract_1 --actor Damien
-kairik contract rewind contract_1 --actor Damien "Checkout regression risk identified; rewind to review migration plan."
-kairik contract status contract_1
-```
-
-What it proves:
-- Propose a Kairik Contract in plain English.
-- Controls are explicit, killable authority grants.
-- Missing Controls block approval/execution until explicitly approved.
-- Approve a Kairik Contract before execution.
-- Run produces a durable artifact on disk.
-- Pause is a deterministic checkpoint stop; `status` shows PAUSED and history stays append-only.
-- Resume continues execution to completion without losing history.
-- Rewind a Kairik Contract changes the active version without deleting history.
-
-## Core Concepts
-- **Contract**: unit of authority and responsibility (repo-like boundary).
-- **Approve a Kairik Contract**: commit-like approval that creates a new immutable version.
-- **Run/Execute**: deploy-like execution against the active version.
-- **Pause**: temporary halt during execution; recorded in history with no data loss.
-- **Rewind a Kairik Contract**: revert-like supersession (append-only history).
-- **Controls**: explicit, revocable authority grants (kill switches).
-- **Audit History**: append-only record of who approved what and why.
-- **Artifacts**: durable outputs written on run.
-
-## Architecture (Short)
-- CLI is the source of truth for Contracts, Controls enforcement, Approvals, Rewinds, Audit history, and Artifacts.
-- UI is a thin local shell served by the same Node process that exposes a local HTTP API.
-- There is no separate API service/container; the UI and API live together in `kairik-ui`.
-- Persistence is local (`data/contracts.json`).
-- Execution backends (e.g., OpenClaw) are invoked only during `run` under approved Controls.
+If `review --last` prints a `KAIRIK REVIEW` block for `smoke_demo`, the install is working.
 
 ## Documentation
+- Command reference: `docs/CLI_COMMANDS.md`
 - Architecture: `docs/ARCHITECTURE.md`
-- Roadmap: `ROADMAP.md`
+- Decisions: `docs/DECISIONS.md`
+- Roadmap: `docs/ROADMAP.md`
+- Competition analysis: `docs/COMPETITION.md`
 - Changelog: `CHANGELOG.md`
