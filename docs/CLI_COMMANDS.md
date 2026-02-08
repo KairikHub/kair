@@ -53,7 +53,8 @@ kairik <command>
 - `kairik contract review <contract_id>`
   - Show one-screen review for a specific contract.
 - `kairik contract accept <contract_id> [--actor <name>]`
-  - Record append-only acceptance-of-responsibility history.
+  - Record explicit acceptance-of-responsibility as an append-only history event (audit trail).
+  - Keeps lifecycle state unchanged; this is a governance acknowledgment step after reviewing evidence.
 - `kairik contract evidence <contract_id>`
   - List evidence checklist from `artifacts/<contract_id>/evidence/index.json`.
 

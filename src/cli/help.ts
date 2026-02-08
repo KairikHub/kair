@@ -19,6 +19,10 @@ ${label("Common subcommands:")}
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
+  review --last
+  contract review "<contract_id>"
+  contract accept "<contract_id>" [--actor <name>]
+  contract evidence "<contract_id>"
   status "<contract_id>"
   list
 
@@ -52,6 +56,9 @@ ${label("Subcommands:")}
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
+  review "<contract_id>"
+  accept "<contract_id>" [--actor <name>]
+  evidence "<contract_id>"
   status "<contract_id>"
   list
 
@@ -65,4 +72,3 @@ ${label("Actor flags:")}
   --actor <name> (alias: --by)
 `);
 }
-
