@@ -6,22 +6,22 @@ Confidential & Proprietary. Not for distribution.
 
 ```bash
 docker compose --profile cli run --rm kairik \
-  kairik contract propose --id demo_review "Upgrade checkout safely without breaking payments" \
+  kair contract propose --id demo_review "Upgrade checkout safely without breaking payments" \
   -- contract plan demo_review "Update deps, run tests, validate checkout end-to-end, capture evidence" \
   -- contract request-approval demo_review \
   -- contract approve demo_review --actor CTO \
   -- contract run demo_review
 
 docker compose --profile cli run --rm kairik \
-  kairik review --last
+  kair review --last
 docker compose --profile cli run --rm kairik \
-  kairik contract evidence demo_review
+  kair contract evidence demo_review
 
 docker compose --profile cli run --rm kairik \
-  kairik contract accept demo_review --actor CTO
+  kair contract accept demo_review --actor CTO
 
 docker compose --profile cli run --rm kairik \
-  kairik contract review demo_review
+  kair contract review demo_review
 ```
 
 Expected highlights:

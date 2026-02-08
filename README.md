@@ -5,6 +5,8 @@ Confidential & Proprietary. Not for distribution.
 ## What It Is
 Kairik is a CLI-first control plane for delegated cognition and AI work, built around Contracts and Controls.
 
+`kair` is the open protocol CLI. Kairik is the company that builds on it.
+
 ## Quick Install (Docker Only)
 
 ```bash
@@ -17,13 +19,13 @@ This starts the local UI at `http://localhost:3000` and prepares the CLI contain
 Run these commands to verify the install works end-to-end:
 
 ```bash
-docker compose --profile cli run --rm kairik kairik --help
-docker compose --profile cli run --rm kairik kairik contract create --id smoke_demo "Smoke test install"
-docker compose --profile cli run --rm kairik kairik contract plan smoke_demo "Run a minimal install verification"
-docker compose --profile cli run --rm kairik kairik contract request-approval smoke_demo
-docker compose --profile cli run --rm kairik kairik contract approve smoke_demo --actor tester
-docker compose --profile cli run --rm kairik kairik contract run smoke_demo
-docker compose --profile cli run --rm kairik kairik review --last
+docker compose --profile cli run --rm kairik kair --help
+docker compose --profile cli run --rm kairik kair contract create --id smoke_demo "Smoke test install"
+docker compose --profile cli run --rm kairik kair contract plan smoke_demo "Run a minimal install verification"
+docker compose --profile cli run --rm kairik kair contract request-approval smoke_demo
+docker compose --profile cli run --rm kairik kair contract approve smoke_demo --actor tester
+docker compose --profile cli run --rm kairik kair contract run smoke_demo
+docker compose --profile cli run --rm kairik kair review --last
 ```
 
 If `review --last` prints a `KAIRIK REVIEW` block for `smoke_demo`, the install is working.

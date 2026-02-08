@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "bin": {
-    "kairik": "./bin/kairik.cjs"
+    "kair": "./bin/kair.cjs"
   },
   "scripts": {
-    "kairik": "tsx src/kairik.ts",
+    "kair": "tsx src/kairik.ts",
     "ui": "tsx src/ui.ts",
     "test": "jest"
   },

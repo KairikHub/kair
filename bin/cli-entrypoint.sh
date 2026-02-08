@@ -4,8 +4,8 @@ set -e
 /app/bin/ensure-openclaw-built.sh
 
 # Bind-mounting /app can hide npm-link artifacts from the image; ensure CLI stays on PATH.
-if ! command -v kairik >/dev/null 2>&1 && [ -x /app/bin/kairik.cjs ]; then
-  ln -sf /app/bin/kairik.cjs /usr/local/bin/kairik || true
+if ! command -v kair >/dev/null 2>&1 && [ -x /app/bin/kair.cjs ]; then
+  ln -sf /app/bin/kair.cjs /usr/local/bin/kair || true
 fi
 
 if [ "$#" -eq 0 ]; then
@@ -15,9 +15,9 @@ if [ "$#" -eq 0 ]; then
   exec sh
 fi
 
-if [ "$1" = "kairik" ]; then
+if [ "$1" = "kair" ]; then
   shift
-  exec npm run kairik -- "$@"
+  exec npm run kair -- "$@"
 fi
 
 exec "$@"

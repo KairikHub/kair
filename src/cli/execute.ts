@@ -90,7 +90,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       console.log(`Proposed a Kairik Contract: ${contract.id}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
-      console.log(`Next: kairik contract plan ${contract.id} "..."`);
+      console.log(`Next: kair contract plan ${contract.id} "..."`);
       break;
     }
     case "plan": {
@@ -116,7 +116,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       transition(contract, "PLANNED", "Plan generated via LLM co-plan.");
       console.log(`Co-plan complete for ${contract.id}.`);
       console.log(`Plan:\n${plan}`);
-      console.log(`Next: kairik contract request-approval ${contract.id}`);
+      console.log(`Next: kair contract request-approval ${contract.id}`);
       break;
     }
     case "require-controls": {

@@ -84,9 +84,9 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
     ...renderEvidenceChecklist(contract.id, evidenceItems),
     "",
     "DECISIONS",
-    `✅ Accept responsibility:  kairik contract accept ${contract.id} --actor <name>`,
-    `⏪ Rewind approval:        kairik contract rewind ${contract.id} --actor <name> "<reason>"`,
-    `🔍 Inspect evidence:       kairik contract evidence ${contract.id}`,
+    `✅ Accept responsibility:  kair contract accept ${contract.id} --actor <name>`,
+    `⏪ Rewind approval:        kair contract rewind ${contract.id} --actor <name> "<reason>"`,
+    `🔍 Inspect evidence:       kair contract evidence ${contract.id}`,
   ];
   return lines.join("\n");
 }

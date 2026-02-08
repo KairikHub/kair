@@ -4,8 +4,8 @@ export function printTopHelp() {
   console.log(`${title("Kairik CLI")}
 
 ${label("Usage:")}
-  kairik contract <subcommand> [args]
-  kairik propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  kair contract <subcommand> [args]
+  kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
 
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
@@ -30,19 +30,19 @@ ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 ${label("Alias:")}
-  kairik propose (shorthand for contract propose)
+  kair propose (shorthand for contract propose)
 
 ${label("Actor flags:")}
   --actor <name> (alias: --by)
 
-Run "kairik contract --help" for full details.`);
+Run "kair contract --help" for full details.`);
 }
 
 export function printContractHelp() {
   console.log(`${title("Kairik Contract Commands")}
 
 ${label("Usage:")}
-  kairik contract <subcommand> [args]
+  kair contract <subcommand> [args]
 
 ${label("Subcommands:")}
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
@@ -66,7 +66,7 @@ ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 ${label("Alias:")}
-  kairik propose (shorthand for contract propose)
+  kair propose (shorthand for contract propose)
 
 ${label("Actor flags:")}
   --actor <name> (alias: --by)

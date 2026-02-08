@@ -4,7 +4,7 @@ import { executeCommand } from "./execute";
 
 export async function main() {
   let rawArgs = process.argv.slice(2);
-  if (rawArgs[0] === "kairik") {
+  if (rawArgs[0] === "kair") {
     rawArgs = rawArgs.slice(1);
   }
   if (rawArgs.length === 0) {
@@ -41,4 +41,3 @@ export async function main() {
     await executeCommand(group, { allowPrompt, isChained });
   }
 }
-

@@ -20,4 +20,4 @@ RUN pnpm -C /app/vendor/openclaw build
 COPY . .
 RUN npm link
 
-ENTRYPOINT ["npm", "run", "kairik", "--"]
+ENTRYPOINT ["npm", "run", "kair", "--"]

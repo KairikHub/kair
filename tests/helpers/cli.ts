@@ -17,14 +17,14 @@ function readPackageScripts() {
 
 function resolveInvocation() {
   const scripts = readPackageScripts();
-  if (typeof scripts.kairik === "string") {
+  if (typeof scripts.kair === "string") {
     return {
       command: process.platform === "win32" ? "npm.cmd" : "npm",
-      prefixArgs: ["run", "kairik", "--"],
+      prefixArgs: ["run", "kair", "--"],
     };
   }
   const firstMatch = Object.entries(scripts).find(([, value]) =>
-    typeof value === "string" ? value.includes("kairik") : false
+    typeof value === "string" ? value.includes("src/kairik.ts") : false
   );
   if (firstMatch) {
     return {
@@ -34,7 +34,7 @@ function resolveInvocation() {
   }
   return {
     command: process.platform === "win32" ? "node.exe" : "node",
-    prefixArgs: [path.join(process.cwd(), "bin", "kairik.cjs")],
+    prefixArgs: [path.join(process.cwd(), "bin", "kair.cjs")],
   };
 }
 
