@@ -5,7 +5,7 @@ Confidential & Proprietary. Not for distribution.
 ## What It Is
 Kair is a CLI-first control plane for delegated cognition and AI work, built around Contracts and Controls.
 
-`kair` is the open protocol CLI. Kair is the company that builds on it.
+`kair` is the open protocol CLI. Kairik is the company that builds on it.
 
 ## Quick Install (Docker Only)
 
