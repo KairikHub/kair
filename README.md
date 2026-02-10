@@ -1,6 +1,4 @@
-# Kair
-
-# What Is Kair
+# What Is Kair? 
 AI outputs faster than humans can take responsibility for it.  Kair is here to close that gap. 
 
 # How? 
