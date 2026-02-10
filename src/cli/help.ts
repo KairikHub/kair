@@ -6,6 +6,9 @@ export function printTopHelp() {
 ${label("Usage:")}
   kair contract <subcommand> [args]
   kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  kair review [<contract_id>] [--last]
+  kair accept "<contract_id>" [--actor <name>]
+  kair emit "<contract_id>" [--last]
 
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
@@ -19,10 +22,9 @@ ${label("Common subcommands:")}
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
-  review --last
-  contract review "<contract_id>"
-  contract accept "<contract_id>" [--actor <name>]
-  contract evidence "<contract_id>"
+  review [<contract_id>] [--last]
+  accept "<contract_id>" [--actor <name>]
+  emit "<contract_id>" [--last]
   status "<contract_id>"
   list
 
@@ -56,9 +58,6 @@ ${label("Subcommands:")}
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
-  review "<contract_id>"
-  accept "<contract_id>" [--actor <name>]
-  evidence "<contract_id>"
   status "<contract_id>"
   list
 

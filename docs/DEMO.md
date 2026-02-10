@@ -11,15 +11,15 @@ docker compose --profile cli run --rm kair \
   -- contract run demo_review
 
 docker compose --profile cli run --rm kair \
-  kair review --last
+  kair review
 docker compose --profile cli run --rm kair \
-  kair contract evidence demo_review
+  kair emit demo_review
 
 docker compose --profile cli run --rm kair \
-  kair contract accept demo_review --actor CTO
+  kair accept demo_review --actor CTO
 
 docker compose --profile cli run --rm kair \
-  kair contract review demo_review
+  kair review demo_review
 ```
 
 Expected highlights:

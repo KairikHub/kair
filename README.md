@@ -27,11 +27,14 @@ kair contract plan smoke_demo "Run a minimal install verification"
 kair contract request-approval smoke_demo
 kair contract approve smoke_demo --actor tester
 kair contract run smoke_demo
-kair review --last
+kair review
+kair emit smoke_demo
+kair accept smoke_demo --actor tester
 ```
 
 ## Documentation
 - Command reference: `docs/CLI_COMMANDS.md`
+- CLI stability expectations are documented in `docs/CLI_STABILITY.md`.
 - Architecture: `docs/ARCHITECTURE.md`
 - Decisions: `docs/DECISIONS.md`
 - Roadmap: `docs/ROADMAP.md`

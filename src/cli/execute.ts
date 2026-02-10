@@ -39,6 +39,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     return;
   }
 
+  if (isContractGroup && (command === "review" || command === "accept" || command === "evidence" || command === "emit")) {
+    failWithHelp(`Unknown contract subcommand "${command}".`, "contract");
+  }
+
   switch (command) {
     case "propose":
     case "create": {
@@ -301,10 +305,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "review": {
       let contractId = "";
-      if (isContractGroup) {
-        requireArgs(rest, 1, 'contract review "<contract_id>"');
-        contractId = rest[0];
-      } else if (rest[0] === "--last") {
+      if (rest.length === 0 || rest[0] === "--last") {
         const lastId = getLastContractId();
         if (!lastId) {
           fail("No Contracts found.");
@@ -312,8 +313,6 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = lastId;
       } else if (rest.length >= 1) {
         contractId = rest[0];
-      } else {
-        fail('Missing arguments. Usage: review --last');
       }
       const contract = getContract(contractId);
       let evidenceItems: any[] = [];
@@ -327,14 +326,12 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "accept": {
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 1, 'contract accept "<contract_id>" [--actor <name>]');
+      requireArgs(remaining, 1, 'accept "<contract_id>" [--actor <name>]');
       const [contractId, ...legacyParts] = remaining;
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
-        warn(
-          'Positional actor is deprecated. Use "contract accept <id> --actor <name>" instead.'
-        );
+        warn('Positional actor is deprecated. Use "accept <id> --actor <name>" instead.');
       }
       if (actorRaw && legacyActor) {
         warn('Both --actor and positional actor provided; using "--actor".');
@@ -350,9 +347,18 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       console.log(`Accepted responsibility for Contract ${contract.id}. Actor: ${actor}.`);
       break;
     }
-    case "evidence": {
-      requireArgs(rest, 1, 'contract evidence "<contract_id>"');
-      const [contractId] = rest;
+    case "emit": {
+      let contractId = "";
+      if (rest[0] === "--last") {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        requireArgs(rest, 1, 'emit "<contract_id>"');
+        contractId = rest[0];
+      }
       const contract = getContract(contractId);
       let evidenceItems: any[] = [];
       try {

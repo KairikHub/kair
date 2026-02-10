@@ -46,15 +46,15 @@ kair <command>
   - Append a rewind/supersession event.
 
 ### Review and Evidence
-- `kair review --last`
-  - Show one-screen review for the most recently updated contract.
-- `kair contract review <contract_id>`
-  - Show one-screen review for a specific contract.
-- `kair contract accept <contract_id> [--actor <name>]`
+- `kair review [<contract_id>] [--last]`
+  - Show one-screen review for a specific contract, or the most recently updated contract.
+  - With no args, defaults to the same behavior as `--last`.
+- `kair accept <contract_id> [--actor <name>]`
   - Record explicit acceptance-of-responsibility as an append-only history event (audit trail).
   - Keeps lifecycle state unchanged; this is a governance acknowledgment step after reviewing evidence.
-- `kair contract evidence <contract_id>`
+- `kair emit <contract_id> [--last]`
   - List evidence checklist from `artifacts/<contract_id>/evidence/index.json`.
+  - `--last` targets the most recently updated contract.
 
 ### Inspection
 - `kair contract status <contract_id>`
@@ -63,7 +63,7 @@ kair <command>
   - List known contract IDs.
 
 ## Review Output (What It Includes)
-`kair review --last` and `kair contract review <id>` include:
+`kair review` and `kair review <id>` include:
 - Contract ID, state, active version
 - Approved intent (or current intent)
 - Constraints (required/approved controls, budget)
@@ -79,7 +79,7 @@ kair contract plan contract_demo "Upgrade deps, run tests, verify checkout"
 kair contract request-approval contract_demo
 kair contract approve contract_demo --actor Damien
 kair contract run contract_demo
-kair review --last
-kair contract accept contract_demo --actor Damien
-kair contract evidence contract_demo
+kair review
+kair accept contract_demo --actor Damien
+kair emit contract_demo
 ```

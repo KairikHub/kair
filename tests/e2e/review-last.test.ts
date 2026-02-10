@@ -2,7 +2,7 @@ import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
 
 describe("e2e: review surface", () => {
-  test("review --last and contract review/accept commands render one-screen summary", () => {
+  test("review defaults to last and top-level review/accept/emit render one-screen summary", () => {
     const tmp = makeTempRoot();
     const contractId = "review_demo";
     const env = {
@@ -33,20 +33,44 @@ describe("e2e: review surface", () => {
       expect(reviewLast.stdout).toContain("EVIDENCE");
       expect(reviewLast.stdout).toContain("diff.patch");
 
-      const accept = runCli(["contract", "accept", contractId, "--actor", "e2e-actor"], env);
+      const reviewDefault = runCli(["review"], env);
+      expect(reviewDefault.status).toBe(0);
+      expect(reviewDefault.stdout).toContain("KAIR REVIEW");
+      expect(reviewDefault.stdout).toContain(contractId);
+
+      const accept = runCli(["accept", contractId, "--actor", "e2e-actor"], env);
       expect(accept.status).toBe(0);
 
-      const evidence = runCli(["contract", "evidence", contractId], env);
-      expect(evidence.status).toBe(0);
-      expect(evidence.stdout).toContain("EVIDENCE CHECKLIST");
-      expect(evidence.stdout).toContain("diff.patch");
+      const emit = runCli(["emit", contractId], env);
+      expect(emit.status).toBe(0);
+      expect(emit.stdout).toContain("EVIDENCE CHECKLIST");
+      expect(emit.stdout).toContain("diff.patch");
 
-      const reviewContract = runCli(["contract", "review", contractId], env);
+      const emitLast = runCli(["emit", "--last"], env);
+      expect(emitLast.status).toBe(0);
+      expect(emitLast.stdout).toContain("EVIDENCE CHECKLIST");
+      expect(emitLast.stdout).toContain(contractId);
+
+      const reviewContract = runCli(["review", contractId], env);
       expect(reviewContract.status).toBe(0);
       expect(reviewContract.stdout).toContain("DECISIONS");
       expect(reviewContract.stdout).toContain("Accept responsibility");
+      expect(reviewContract.stdout).toContain(`kair accept ${contractId} --actor <name>`);
+      expect(reviewContract.stdout).toContain(`kair emit ${contractId}`);
       expect(reviewContract.stdout).toContain("Contract:");
       expect(reviewContract.stdout).toContain("State:");
+
+      const oldContractReview = runCli(["contract", "review", contractId], env);
+      expect(oldContractReview.status).not.toBe(0);
+
+      const oldContractAccept = runCli(["contract", "accept", contractId], env);
+      expect(oldContractAccept.status).not.toBe(0);
+
+      const oldContractEvidence = runCli(["contract", "evidence", contractId], env);
+      expect(oldContractEvidence.status).not.toBe(0);
+
+      const oldTopLevelEvidence = runCli(["evidence", contractId], env);
+      expect(oldTopLevelEvidence.status).not.toBe(0);
     } finally {
       tmp.cleanup();
     }
