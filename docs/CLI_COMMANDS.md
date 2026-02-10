@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # Kair Protocol CLI Commands
 
 ## Run Mode

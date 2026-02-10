@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # Roadmap
 
 ## High level next steps (stretch goal)

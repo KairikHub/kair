@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # Architecture
 
 ## Core Principles

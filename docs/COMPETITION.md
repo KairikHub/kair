@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # COMPETITION
 
 ## Overview of Competitive Landscape

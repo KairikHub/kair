@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # Kair
 
 ## What It Is

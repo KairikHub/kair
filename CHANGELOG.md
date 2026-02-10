@@ -1,5 +1,3 @@
-Confidential & Proprietary. Not for distribution.
-
 # Changelog
 
 ## 2026-02-07
