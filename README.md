@@ -1,8 +1,10 @@
 # What Is Kair? 
-AI outputs faster than humans can take responsibility for it.  Kair is here to close that gap. 
+AI outputs faster than humans can take responsibility for it.  Kair is here to close that gap.  
+
+In our pipe roadmap, we'll be the "git" for ai work. 
 
 # How? 
-Kair is a CLI-first control plane for delegated cognition and AI work, built around auditable contracts and controls and evidence to let humans safely take responsibility for AI generated work. 
+Kair is a CLI-first control plane for delegated cognition and AI work, built around auditable contracts and controls and evidence to let humans safely take responsibility for AI generated work.  
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
