@@ -18,7 +18,7 @@
 - **Rewind a Kair Contract = revert‑like supersession (never reset / force‑push)**.
 
 ## Contract Lifecycle
-Propose → Plan → Controls → Request Approval → Approve → Run/Execute → Pause → Observe → Rewind → Artifact
+Propose → Plan → Grant Controls → Request Approval → Approve → Run/Execute → Pause/Resume → Review/Accept → Rewind → Artifact
 
 Controls enforcement rule:
 - If required Controls are not approved, approval/execution is blocked until resolved.
@@ -29,7 +29,9 @@ Pause definition (v0):
 ## Contract Data Model (v0)
 - id
 - intent
-- plan
+- plan (legacy text plan)
+- plan_v1 (structured `kair.plan.v1` object)
+- planJson (compatibility field for structured plan reads/writes)
 - current_state
 - history (append‑only)
 - approvals
@@ -45,12 +47,18 @@ Pause definition (v0):
 - Controls are explicit, revocable authority grants (kill switches).
 - Missing Controls block approval/execution.
 - Controls are recorded in audit history, status output, and artifacts.
+- Required controls (`kair contract require-controls`) are validated against a registry.
+- Granted controls (`kair grant`) must match `<namespace>:<permission>` format and are append-only history events.
 
-Built‑in Controls (v0):
+Required Controls Registry (v0):
 - cloudflare:read / cloudflare:write
 - github:read / github:write
 - schwab:read
 - local:read / local:write
+
+Grant List Output (current static set):
+- local:read / local:write / local:exec
+- network:read / network:write
 
 ## Persistence
 - Local JSON store: `data/contracts.json`.

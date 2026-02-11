@@ -4,8 +4,8 @@
 
 ```bash
 docker compose --profile cli run --rm kair \
-  kair contract propose --id demo_review "Upgrade checkout safely without breaking payments" \
-  -- contract plan demo_review "Update deps, run tests, validate checkout end-to-end, capture evidence" \
+  kair propose --id demo_review "Upgrade checkout safely without breaking payments" \
+  -- plan demo_review --interactive=false '{"version":"kair.plan.v1","title":"Checkout upgrade plan","steps":[{"id":"update-dependencies","summary":"Update dependencies and lockfile"},{"id":"validate-checkout","summary":"Run tests and validate checkout end-to-end"}]}' \
   -- contract request-approval demo_review \
   -- contract approve demo_review --actor CTO \
   -- contract run demo_review

@@ -23,7 +23,7 @@ Kair’s distinct position is that governance is the product, not a plugin:
   - Governance is implementation-defined by app teams rather than a first-class contract model.
   - Tool permissions are not presented as explicit user-facing authority contracts with kill-switch semantics.
   - Time-travel/debug features target developer workflow; they are not equivalent to append-only responsibility supersession.
-- **Why Kair’s approach remains defensible:** Kair bakes authority, approvals, and rewind semantics into its core lifecycle (`Propose -> Plan -> Controls -> Approve -> Run -> Rewind`) instead of leaving governance to custom app logic.
+- **Why Kair’s approach remains defensible:** Kair bakes authority, grants, approvals, and rewind semantics into its core lifecycle (`Propose -> Plan -> Grant Controls -> Request Approval -> Approve -> Run -> Rewind`) instead of leaving governance to custom app logic.
 
 ### OpenAI Agents SDK
 - **Short description:** Provider-agnostic multi-agent workflow SDK with handoffs, guardrails, sessions, and tracing.

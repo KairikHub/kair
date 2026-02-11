@@ -3,11 +3,13 @@
 ## Stable (Commitment)
 These commands reflect the core mental model of kair: define intent, plan, request and grant approval, review outcomes, and inspect current state. They will evolve slowly, and semantics should be preserved where possible. Small UX and output tweaks may still happen.
 
-- `kair contract propose`
-- `kair contract plan`
+- `kair propose`
+- `kair plan`
+- `kair grant`
 - `kair contract request-approval`
 - `kair contract approve`
 - `kair review`
+- `kair accept`
 - `kair contract rewind`
 - `kair contract status`
 - `kair contract list`
@@ -18,6 +20,7 @@ These surfaces are implementation details or exploratory capabilities. There are
 - `kair contract run`
 - `kair contract resume`
 - `kair contract pause`
+- `kair contract plan` (legacy text-plan path)
 - `kair emit`
   - Experimental artifact/emission helper; semantics and output may change.
 - Any OpenClaw-related behavior

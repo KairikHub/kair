@@ -16,26 +16,29 @@ kair <command>
 ## Command Groups
 
 ### Propose and Plan
+- `kair propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
+  - Top-level shorthand for contract propose.
 - `kair contract create --id <contract_id> "<intent>"`
   - Create a new contract with an explicit ID.
 - `kair contract propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
   - Propose a contract with optional required controls.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - With no contract id, defaults to the most recently updated contract.
   - `--interactive=false --instructions "<text>"` performs one provider refine and persists.
   - `--interactive=false` without instructions accepts JSON from `--file`, positional argument, or stdin.
 - `kair contract plan <contract_id> "<plan>"`
-  - Attach an execution plan.
+  - Attach a legacy text plan and transition to `PLANNED`.
 
 ### Controls and Approval
 - `kair contract require-controls <contract_id> "<controls_csv>"`
   - Set required controls on an existing contract.
 - `kair grant list`
-  - List static built-in grants.
+  - List static starter grants.
 - `kair grant <grant> [--actor <name>]`
-  - Approve a grant on the most recently updated contract.
+  - Approve a namespaced grant on the most recently updated contract.
 - `kair grant <contract_id> <grant> [--actor <name>]`
-  - Approve a grant on a specific contract.
+  - Approve a namespaced grant on a specific contract.
 - `kair contract request-approval <contract_id>`
   - Move a planned contract into approval request state.
 - `kair contract approve <contract_id> [--actor <name>]`
@@ -81,7 +84,7 @@ kair <command>
 
 ```bash
 kair propose --id contract_demo "Contract Demo"
-kair plan contract_demo --provider openai
+kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details"},{"id":"validate-change","summary":"Run tests and verify outcomes"}]}'
 kair contract request-approval contract_demo
 kair contract approve contract_demo --actor Damien
 kair contract run contract_demo

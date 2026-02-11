@@ -9,7 +9,7 @@ Not Started: Tauri first (desktop PoC wrapper)
 
 
 ## Monday Definition of Done
-A 5–10 minute demo that shows Propose → Controls block → Controls approval → Approve → Run (artifact) → Rewind → Status, with auditability and append‑only history, in a single Docker‑first flow.
+A 5–10 minute demo that shows Propose → Plan → Controls block → Grant Controls → Request Approval → Approve → Run (artifact) → Rewind → Status, with auditability and append‑only history, in a single Docker‑first flow.
 
 Pause (v0) is a temporary halt during execution that records state/history without deleting anything.
 
@@ -30,7 +30,7 @@ Pause (v0) is a temporary halt during execution that records state/history witho
 - Migration expectation: minimal UI changes, ~½ day to polish once pursued.
 - Acceptance criteria:
   - User can double‑click Kair (no Docker required).
-  - Same lifecycle works: Propose → Plan → Controls → Approve → Run → Pause → Rewind → Status.
+  - Same lifecycle works: Propose → Plan → Controls → Request Approval → Approve → Run → Pause → Rewind → Status.
   - Contracts, artifacts, and audit logs persist locally.
   - Fully offline‑capable.
 - Note:
