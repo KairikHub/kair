@@ -20,6 +20,7 @@ import { setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "../core/llm/plan_request_record";
 import type { Plan } from "../core/plans/schema";
+import { renderPlanPretty } from "../core/plans/render";
 import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
@@ -340,11 +341,7 @@ function renderPlanPreview(plan: Plan, options: { jsonOutput?: boolean } = {}) {
     console.log(JSON.stringify(plan, null, 2));
     return;
   }
-  const lines = ["PLAN PREVIEW", `Title: ${plan.title}`, "Steps:"];
-  for (const step of plan.steps || []) {
-    lines.push(`- ${step.id}: ${step.summary}`);
-  }
-  console.log(lines.join("\n"));
+  console.log(["PLAN PREVIEW", renderPlanPretty(plan)].join("\n"));
 }
 
 function readPlanFromFile(filePathRaw: string) {
