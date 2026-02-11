@@ -165,41 +165,4 @@ describe("e2e: interactive plan", () => {
     }
   });
 
-  test("co-plan warns and delegates to top-level plan flow", async () => {
-    const tmp = makeTempRoot();
-    const contractId = "interactive_coplan_alias";
-    const env = {
-      KAIR_DATA_DIR: tmp.dataDir,
-      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
-      KAIR_ACTOR: "e2e-actor",
-      KAIR_TEST_MODE: "1",
-    };
-
-    try {
-      const create = runCli(
-        ["contract", "create", "--id", contractId, "Co-plan alias contract"],
-        env
-      );
-      expect(create.status).toBe(0);
-
-      const plan = await runCliInteractive(
-        ["co-plan", contractId, "--provider", "mock"],
-        env,
-        [
-          {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
-            send: "a\n",
-          },
-        ]
-      );
-      expect(plan.status).toBe(0);
-      expect(plan.stderr).toContain('Command "co-plan" is deprecated. Use "kair plan <contract_id>" instead.');
-
-      const after = readContractFromStore(tmp.dataDir, contractId);
-      expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
-    } finally {
-      tmp.cleanup();
-    }
-  });
 });

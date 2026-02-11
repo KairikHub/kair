@@ -701,12 +701,6 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       await handleTopLevelPlan(rest);
       break;
     }
-    case "co-plan": {
-      requireArgs(rest, 1, 'co-plan "<contract_id>"');
-      warn('Command "co-plan" is deprecated. Use "kair plan <contract_id>" instead.');
-      await handleTopLevelPlan(rest);
-      break;
-    }
     case "require-controls": {
       requireArgs(rest, 2, 'contract require-controls "<contract_id>" "<controls_csv>"');
       const [contractId, ...controlsParts] = rest;

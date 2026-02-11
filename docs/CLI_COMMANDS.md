@@ -26,8 +26,6 @@ kair <command>
   - `--interactive=false` without instructions accepts JSON from `--file`, positional argument, or stdin.
 - `kair contract plan <contract_id> "<plan>"`
   - Attach an execution plan.
-- `kair contract co-plan <contract_id>`
-  - Deprecated alias of `kair plan <contract_id>`.
 
 ### Controls and Approval
 - `kair contract require-controls <contract_id> "<controls_csv>"`

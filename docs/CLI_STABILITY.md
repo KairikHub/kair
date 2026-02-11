@@ -15,7 +15,6 @@ These commands reflect the core mental model of kair: define intent, plan, reque
 ## Experimental (May Change or Break)
 These surfaces are implementation details or exploratory capabilities. There are no stability guarantees, and behavior, flags, output, or availability may change or break without notice.
 
-- `kair contract co-plan`
 - `kair contract run`
 - `kair contract resume`
 - `kair contract pause`

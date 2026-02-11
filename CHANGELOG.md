@@ -7,7 +7,7 @@
   - OpenClaw build-on-start safeguards added for bind-mounted workflows.
 - LLM and provider wiring:
   - BYO OpenAI key flow wired through Compose (`KAIR_OPENAI_API_KEY`).
-  - `contract co-plan` added using OpenAI Responses API.
+  - Initial provider-backed planning flow added using OpenAI Responses API.
   - OpenClaw OpenAI config auto-initializes when keys are present.
 - CLI and governance model:
   - CLI refactor split command logic into modules without changing behavior.

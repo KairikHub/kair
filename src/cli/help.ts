@@ -14,7 +14,6 @@ ${label("Usage:")}
 
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
-  co-plan "<contract_id>" (deprecated alias of plan)
   plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
@@ -53,7 +52,6 @@ ${label("Usage:")}
 
 ${label("Subcommands:")}
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
-  co-plan "<contract_id>" (deprecated alias of top-level plan)
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   request-approval "<contract_id>"
