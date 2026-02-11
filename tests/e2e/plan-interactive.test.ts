@@ -92,7 +92,7 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]etry [e]dit [c]ancel:",
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
             send: "a\n",
           },
         ]
@@ -101,17 +101,18 @@ describe("e2e: interactive plan", () => {
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
-      expect(after.contract.planJson).toBeDefined();
-      expect(after.contract.planJson.version).toBe("kair.plan.v1");
-      expect(after.contract.planJson.steps.length).toBeGreaterThan(0);
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.steps.length).toBeGreaterThan(0);
+      expect(after.contract.current_state).toBe("PLANNED");
     } finally {
       tmp.cleanup();
     }
   });
 
-  test("retries once after invalid mock output then accepts", async () => {
+  test("retries after invalid output, refines, then accepts", async () => {
     const tmp = makeTempRoot();
-    const contractId = "interactive_plan_retry";
+    const contractId = "interactive_plan_refine";
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
@@ -132,22 +133,71 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Provider output invalid. [r]etry or [c]ancel:",
+            whenStdoutIncludes: "Plan options [r]etry [c]ancel:",
             send: "r\n",
           },
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]etry [e]dit [c]ancel:",
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            send: "r\n",
+          },
+          {
+            whenStdoutIncludes: "Explain changes:",
+            send: "Add safety gate\n",
+          },
+          {
+            whenStdoutIncludes: "add-safety-gate",
             send: "a\n",
           },
         ]
       );
       expect(plan.status).toBe(0);
-      expect(plan.stdout).toContain("Provider produced invalid plan JSON");
+      expect(plan.stdout).toContain("Invalid plan JSON from provider");
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
-      expect(after.contract.planJson).toBeDefined();
-      expect(after.contract.planJson.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.steps.some((step: any) => step.id === "add-safety-gate")).toBe(
+        true
+      );
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("co-plan warns and delegates to top-level plan flow", async () => {
+    const tmp = makeTempRoot();
+    const contractId = "interactive_coplan_alias";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Co-plan alias contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const plan = await runCliInteractive(
+        ["co-plan", contractId, "--provider", "mock"],
+        env,
+        [
+          {
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            send: "a\n",
+          },
+        ]
+      );
+      expect(plan.status).toBe(0);
+      expect(plan.stderr).toContain('Command "co-plan" is deprecated. Use "kair plan <contract_id>" instead.');
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
     } finally {
       tmp.cleanup();
     }

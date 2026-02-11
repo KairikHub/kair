@@ -1,64 +1,32 @@
+import type { Plan } from "../plans/schema";
+
 type OpenAIPlanTextRequest = {
   contractId: string;
   intent: string;
+  currentPlanJson?: Plan | null;
   currentPlanText?: string | null;
+  instructions?: string | null;
   model: string;
   apiKey: string;
   baseUrl: string;
 };
 
 export const OPENAI_PLAN_SYSTEM_PROMPT =
-  "You output ONLY a single JSON object. No markdown. No code fences. No commentary.";
+  "You are a planning assistant. You MUST return ONLY valid JSON. No markdown.";
 
-const PLAN_JSON_SHAPE = `{
+const PLAN_JSON_SCHEMA = `{
   "version": "kair.plan.v1",
-  "title": "optional string",
+  "title": "non-empty string",
   "steps": [
     {
-      "id": "required string",
-      "title": "required string",
-      "description": "required string",
-      "depends_on": ["optional step id strings"],
-      "tags": ["optional string tags"]
+      "id": "non-empty string",
+      "summary": "non-empty string",
+      "details": "optional string",
+      "tags": ["optional string"],
+      "risks": ["optional string"]
     }
-  ],
-  "notes": ["optional strings"],
-  "risks": ["optional strings"],
-  "constraints": ["optional strings"]
+  ]
 }`;
-
-const PLAN_JSON_EXAMPLE = `{
-  "version": "kair.plan.v1",
-  "title": "Example plan",
-  "steps": [],
-  "notes": [],
-  "risks": [],
-  "constraints": []
-}`;
-
-export function buildPlanPrompt(request: Pick<OpenAIPlanTextRequest, "contractId" | "intent" | "currentPlanText">) {
-  const existingPlanText = request.currentPlanText && request.currentPlanText.trim()
-    ? request.currentPlanText.trim()
-    : "(none)";
-
-  return [
-    "Generate a strict plan JSON object for kair.",
-    `Contract ID: ${request.contractId}`,
-    `Contract intent:\n${request.intent}`,
-    `Existing plan text (if any):\n${existingPlanText}`,
-    "Required version: kair.plan.v1",
-    "Required schema fields:",
-    PLAN_JSON_SHAPE,
-    "Rules:",
-    '- Return ONLY one JSON object. No markdown. No prose. No code fences. No surrounding text.',
-    '- Keep steps ordered and actionable.',
-    '- Use unique step ids and valid depends_on references.',
-    '- If title/notes/risks/constraints are unknown, omit them or use empty arrays where appropriate.',
-    "If you cannot comply, output a JSON object with version \"kair.plan.v1\" and exactly one step that explains the failure.",
-    "Example JSON skeleton (syntax example only):",
-    PLAN_JSON_EXAMPLE,
-  ].join("\n\n");
-}
 
 function resolveResponsesUrl(baseUrl: string) {
   const trimmed = baseUrl.replace(/\/+$/g, "");
@@ -97,11 +65,60 @@ function extractOutputText(payload: any) {
   return chunks.join("\n").trim();
 }
 
+function safeJson(value: unknown) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (error) {
+    return String(value);
+  }
+}
+
+export function buildPlanPrompt(
+  request: Pick<
+    OpenAIPlanTextRequest,
+    "contractId" | "intent" | "currentPlanJson" | "currentPlanText" | "instructions"
+  >
+) {
+  const currentPlan =
+    request.currentPlanJson !== undefined
+      ? safeJson(request.currentPlanJson)
+      : request.currentPlanText && request.currentPlanText.trim()
+        ? request.currentPlanText.trim()
+        : "null";
+
+  const requestedChanges =
+    request.instructions && request.instructions.trim()
+      ? request.instructions.trim()
+      : "Create an initial plan from intent.";
+
+  return [
+    "Intent:",
+    request.intent,
+    "",
+    "Current plan JSON:",
+    currentPlan,
+    "",
+    "Requested changes:",
+    requestedChanges,
+    "",
+    "Output requirements:",
+    `- Return a JSON object conforming exactly to this schema:\n${PLAN_JSON_SCHEMA}`,
+    '- "version" must equal "kair.plan.v1".',
+    "- Preserve existing step ids when possible; only create new ids for new steps.",
+    "- No markdown, no code fences, no commentary.",
+    "",
+    "If you cannot comply, output a valid fallback JSON object with version kair.plan.v1 and a single step explaining failure.",
+    `Contract ID: ${request.contractId}`,
+  ].join("\n");
+}
+
 export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
   const prompt = buildPlanPrompt({
     contractId: request.contractId,
     intent: request.intent,
+    currentPlanJson: request.currentPlanJson ?? null,
     currentPlanText: request.currentPlanText ?? null,
+    instructions: request.instructions ?? null,
   });
   const response = await fetch(resolveResponsesUrl(request.baseUrl), {
     method: "POST",
@@ -115,21 +132,11 @@ export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
       input: [
         {
           role: "system",
-          content: [
-            {
-              type: "input_text",
-              text: OPENAI_PLAN_SYSTEM_PROMPT,
-            },
-          ],
+          content: [{ type: "input_text", text: OPENAI_PLAN_SYSTEM_PROMPT }],
         },
         {
           role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: prompt,
-            },
-          ],
+          content: [{ type: "input_text", text: prompt }],
         },
       ],
     }),

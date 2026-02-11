@@ -11,8 +11,8 @@ function resetStore() {
   contractStore.nextId = 1;
 }
 
-describe("integration: planJson persistence", () => {
-  test("persists and reloads planJson on contract", () => {
+describe("integration: structured plan persistence", () => {
+  test("persists and reloads plan_v1 on contract", () => {
     const tmp = makeTempRoot();
     const previousDataDir = process.env.KAIR_DATA_DIR;
     process.env.KAIR_DATA_DIR = tmp.dataDir;
@@ -25,21 +25,17 @@ describe("integration: planJson persistence", () => {
         title: "Structured plan",
         steps: [
           {
-            id: "step_1",
-            title: "Prepare",
-            description: "Gather context.",
+            id: "step-prepare",
+            summary: "Gather context.",
           },
           {
-            id: "step_2",
-            title: "Execute",
-            description: "Apply approved changes.",
-            depends_on: ["step_1"],
+            id: "step-execute",
+            summary: "Apply approved changes.",
           },
         ],
-        notes: ["Keep deterministic"],
       };
 
-      contract.planJson = planJson;
+      contract.plan_v1 = planJson;
       saveStore();
 
       resetStore();
@@ -47,9 +43,10 @@ describe("integration: planJson persistence", () => {
 
       const loaded = contractStore.contracts.get(contract.id);
       expect(loaded).toBeDefined();
+      expect(loaded?.plan_v1).toEqual(planJson);
+      expect(loaded?.plan_v1?.version).toBe(PLAN_VERSION);
+      expect(loaded?.plan_v1?.steps).toHaveLength(2);
       expect(loaded?.planJson).toEqual(planJson);
-      expect(loaded?.planJson?.version).toBe(PLAN_VERSION);
-      expect(loaded?.planJson?.steps).toHaveLength(2);
     } finally {
       if (previousDataDir === undefined) {
         delete process.env.KAIR_DATA_DIR;
@@ -61,7 +58,7 @@ describe("integration: planJson persistence", () => {
     }
   });
 
-  test("loads legacy contracts.json with string plan and no planJson", () => {
+  test("loads legacy contracts.json with string plan and no structured plan", () => {
     const tmp = makeTempRoot();
     const previousDataDir = process.env.KAIR_DATA_DIR;
     process.env.KAIR_DATA_DIR = tmp.dataDir;
@@ -100,6 +97,7 @@ describe("integration: planJson persistence", () => {
       expect(loaded).toBeDefined();
       expect(loaded?.plan).toBe("legacy string plan");
       expect(loaded?.planJson).toBeUndefined();
+      expect(loaded?.plan_v1).toBeUndefined();
     } finally {
       if (previousDataDir === undefined) {
         delete process.env.KAIR_DATA_DIR;

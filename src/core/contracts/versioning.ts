@@ -1,4 +1,5 @@
 import { now } from "../time";
+import type { Plan } from "../plans/schema";
 
 type ContractLike = {
   approvals: Array<Record<string, unknown>>;
@@ -6,8 +7,14 @@ type ContractLike = {
   activeVersion: number | null;
   controlsApproved: string[];
   plan: string | null;
+  plan_v1?: Plan;
+  planJson?: Plan;
   intent: string;
 };
+
+function resolveStructuredPlan(contract: ContractLike) {
+  return contract.plan_v1 || contract.planJson || null;
+}
 
 export function appendApprovalVersion(contract: ContractLike, actor: string) {
   contract.approvals.push({ at: now(), approver: actor, actor });
@@ -20,6 +27,7 @@ export function appendApprovalVersion(contract: ContractLike, actor: string) {
     note: `Approved by ${actor}.`,
     controlsApproved: [...contract.controlsApproved],
     plan: contract.plan,
+    plan_v1: resolveStructuredPlan(contract),
     intent: contract.intent,
   });
   return version;
@@ -36,6 +44,7 @@ export function appendRewindVersion(contract: ContractLike, actor: string) {
     note: `Rewound by ${actor}. Supersedes v${previousVersion ?? "none"}.`,
     controlsApproved: [...contract.controlsApproved],
     plan: contract.plan,
+    plan_v1: resolveStructuredPlan(contract),
     intent: contract.intent,
   });
   return { previousVersion, version };

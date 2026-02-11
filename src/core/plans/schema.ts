@@ -2,17 +2,16 @@ export const PLAN_VERSION = "kair.plan.v1";
 
 export type PlanStep = {
   id: string;
-  title: string;
-  description: string;
-  depends_on?: string[];
+  summary: string;
+  details?: string;
   tags?: string[];
+  risks?: string[];
 };
 
-export type Plan = {
+export type KairPlan = {
   version: typeof PLAN_VERSION;
-  title?: string;
+  title: string;
   steps: PlanStep[];
-  notes?: string[];
-  risks?: string[];
-  constraints?: string[];
 };
+
+export type Plan = KairPlan;

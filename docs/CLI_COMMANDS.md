@@ -20,10 +20,14 @@ kair <command>
   - Create a new contract with an explicit ID.
 - `kair contract propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
   - Propose a contract with optional required controls.
+- `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]`
+  - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - `--interactive=false --instructions "<text>"` performs one provider refine and persists.
+  - `--interactive=false` without instructions accepts JSON from `--file`, positional argument, or stdin.
 - `kair contract plan <contract_id> "<plan>"`
   - Attach an execution plan.
 - `kair contract co-plan <contract_id>`
-  - Generate a plan using the configured LLM provider.
+  - Deprecated alias of `kair plan <contract_id>`.
 
 ### Controls and Approval
 - `kair contract require-controls <contract_id> "<controls_csv>"`
@@ -79,7 +83,7 @@ kair <command>
 
 ```bash
 kair propose --id contract_demo "Contract Demo"
-kair contract plan contract_demo "Upgrade deps, run tests, verify checkout"
+kair plan contract_demo --provider openai
 kair contract request-approval contract_demo
 kair contract approve contract_demo --actor Damien
 kair contract run contract_demo

@@ -2,6 +2,22 @@ import { now } from "../core/time";
 import { describeControls, missingControls } from "../core/contracts/controls";
 import { COLORS, formatState, heading, label, style } from "./format";
 
+function describePlan(contract: any) {
+  const structuredPlan = contract?.plan_v1 || contract?.planJson;
+  if (
+    structuredPlan &&
+    structuredPlan.version === "kair.plan.v1" &&
+    Array.isArray(structuredPlan.steps)
+  ) {
+    const title = typeof structuredPlan.title === "string" ? structuredPlan.title : "(untitled)";
+    return `kair.plan.v1 | ${title} | ${structuredPlan.steps.length} step(s)`;
+  }
+  if (contract?.plan) {
+    return String(contract.plan);
+  }
+  return "none";
+}
+
 export function showContractStatus(contract: any) {
   const timestamp = now();
   console.log(`${timestamp} | ${contract.id} | STATUS | Audit report generated.`);
@@ -10,7 +26,7 @@ export function showContractStatus(contract: any) {
   console.log(`${label("Created")}: ${contract.timestamps.created_at}`);
   console.log(`${label("Last updated")}: ${contract.timestamps.updated_at}`);
   console.log(`${label("Intent")}: ${contract.intent}`);
-  console.log(`${label("Plan")}: ${contract.plan ? contract.plan : "none"}`);
+  console.log(`${label("Plan")}: ${describePlan(contract)}`);
   console.log(`${label("Current state")}: ${formatState(contract.current_state)}`);
   console.log(`${label("Active version")}: ${contract.activeVersion ?? "none"}`);
   if (contract.current_state === "PAUSED" && contract.pauseContext?.at) {
@@ -71,4 +87,3 @@ export function showContractStatus(contract: any) {
     }
   }
 }
-

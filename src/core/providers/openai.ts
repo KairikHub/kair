@@ -38,7 +38,9 @@ export const openaiProvider: Provider = {
     return requestOpenAIPlanText({
       contractId: request.contractId,
       intent: request.intent,
+      currentPlanJson: request.currentPlanJson ?? null,
       currentPlanText: request.currentPlanText ?? null,
+      instructions: request.instructions ?? null,
       model: resolveModel(request),
       apiKey,
       baseUrl: resolveBaseUrl(),

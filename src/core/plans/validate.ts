@@ -1,6 +1,7 @@
 import { Plan, PlanStep, PLAN_VERSION } from "./schema";
 
-const TOP_LEVEL_KEYS = new Set(["version", "title", "steps", "notes", "risks", "constraints"]);
+const TOP_LEVEL_KEYS = new Set(["version", "title", "steps"]);
+const STEP_KEYS = new Set(["id", "summary", "details", "tags", "risks"]);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -20,7 +21,7 @@ function parseOptionalString(value: unknown, path: string): string | undefined {
   if (typeof value !== "string") {
     throw new Error(`${path} must be a string`);
   }
-  return value;
+  return value.trim();
 }
 
 function parseOptionalStringArray(value: unknown, path: string): string[] | undefined {
@@ -30,12 +31,7 @@ function parseOptionalStringArray(value: unknown, path: string): string[] | unde
   if (!Array.isArray(value)) {
     throw new Error(`${path} must be an array of strings`);
   }
-  return value.map((item, index) => {
-    if (typeof item !== "string") {
-      throw new Error(`${path}[${index}] must be a string`);
-    }
-    return item;
-  });
+  return value.map((item, index) => requireNonEmptyString(item, `${path}[${index}]`));
 }
 
 function parseStep(stepRaw: unknown, index: number): PlanStep {
@@ -43,52 +39,39 @@ function parseStep(stepRaw: unknown, index: number): PlanStep {
     throw new Error(`Plan.steps[${index}] must be a JSON object`);
   }
 
-  const id = requireNonEmptyString(stepRaw.id, `Plan.steps[${index}].id`);
-  const title = requireNonEmptyString(stepRaw.title, `Plan.steps[${index}].title`);
-  const description = requireNonEmptyString(stepRaw.description, `Plan.steps[${index}].description`);
-
-  const dependsOnRaw = stepRaw.depends_on;
-  let depends_on: string[] | undefined;
-  if (dependsOnRaw !== undefined) {
-    if (!Array.isArray(dependsOnRaw)) {
-      throw new Error(`Plan.steps[${index}].depends_on must be an array of step ids`);
+  for (const key of Object.keys(stepRaw)) {
+    if (!STEP_KEYS.has(key)) {
+      throw new Error(`Plan.steps[${index}] contains unknown key: ${key}`);
     }
-    depends_on = dependsOnRaw.map((entry, depIndex) =>
-      requireNonEmptyString(entry, `Plan.steps[${index}].depends_on[${depIndex}]`)
-    );
   }
 
-  const tagsRaw = stepRaw.tags;
-  let tags: string[] | undefined;
-  if (tagsRaw !== undefined) {
-    if (!Array.isArray(tagsRaw)) {
-      throw new Error(`Plan.steps[${index}].tags must be an array of strings`);
-    }
-    tags = tagsRaw.map((entry, tagIndex) => {
-      if (typeof entry !== "string") {
-        throw new Error(`Plan.steps[${index}].tags[${tagIndex}] must be a string`);
-      }
-      return entry;
-    });
-  }
+  const step: PlanStep = {
+    id: requireNonEmptyString(stepRaw.id, `Plan.steps[${index}].id`),
+    summary: requireNonEmptyString(stepRaw.summary, `Plan.steps[${index}].summary`),
+  };
 
-  const parsed: PlanStep = { id, title, description };
-  if (depends_on !== undefined) {
-    parsed.depends_on = depends_on;
+  const details = parseOptionalString(stepRaw.details, `Plan.steps[${index}].details`);
+  const tags = parseOptionalStringArray(stepRaw.tags, `Plan.steps[${index}].tags`);
+  const risks = parseOptionalStringArray(stepRaw.risks, `Plan.steps[${index}].risks`);
+
+  if (details !== undefined) {
+    step.details = details;
   }
   if (tags !== undefined) {
-    parsed.tags = tags;
+    step.tags = tags;
   }
-  return parsed;
+  if (risks !== undefined) {
+    step.risks = risks;
+  }
+
+  return step;
 }
 
 function parseSteps(value: unknown): PlanStep[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error("Plan.steps must be a non-empty array");
   }
-
   const steps = value.map((stepRaw, index) => parseStep(stepRaw, index));
-
   const ids = new Set<string>();
   for (const step of steps) {
     if (ids.has(step.id)) {
@@ -96,25 +79,21 @@ function parseSteps(value: unknown): PlanStep[] {
     }
     ids.add(step.id);
   }
-
-  for (const step of steps) {
-    if (!step.depends_on) {
-      continue;
-    }
-    for (const depId of step.depends_on) {
-      if (!ids.has(depId)) {
-        throw new Error(`Plan.steps depends_on references unknown step id: ${depId}`);
-      }
-    }
-  }
-
   return steps;
 }
 
 export function parseAndValidatePlanJson(raw: string): Plan {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) {
+    throw new Error("Plan must be a JSON object");
+  }
+  if (trimmed.startsWith("```")) {
+    throw new Error("Plan must be raw JSON without markdown fences");
+  }
+
   let parsedRaw: unknown;
   try {
-    parsedRaw = JSON.parse(raw);
+    parsedRaw = JSON.parse(trimmed);
   } catch (error: any) {
     const reason = error && error.message ? error.message : String(error);
     throw new Error(`Invalid JSON: ${reason}`);
@@ -134,28 +113,12 @@ export function parseAndValidatePlanJson(raw: string): Plan {
     throw new Error(`Plan.version must equal ${PLAN_VERSION}`);
   }
 
+  const title = requireNonEmptyString(parsedRaw.title, "Plan.title");
   const steps = parseSteps(parsedRaw.steps);
-  const title = parseOptionalString(parsedRaw.title, "Plan.title");
-  const notes = parseOptionalStringArray(parsedRaw.notes, "Plan.notes");
-  const risks = parseOptionalStringArray(parsedRaw.risks, "Plan.risks");
-  const constraints = parseOptionalStringArray(parsedRaw.constraints, "Plan.constraints");
 
-  const plan: Plan = {
+  return {
     version: PLAN_VERSION,
+    title,
     steps,
   };
-  if (title !== undefined) {
-    plan.title = title;
-  }
-  if (notes !== undefined) {
-    plan.notes = notes;
-  }
-  if (risks !== undefined) {
-    plan.risks = risks;
-  }
-  if (constraints !== undefined) {
-    plan.constraints = constraints;
-  }
-
-  return plan;
 }

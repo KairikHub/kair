@@ -1,9 +1,13 @@
+import type { Plan } from "../plans/schema";
+
 export type ProviderName = string;
 
 export type PlanRequest = {
   contractId: string;
   intent: string;
+  currentPlanJson?: Plan | null;
   currentPlanText?: string | null;
+  instructions?: string | null;
   model?: string | null;
 };
 

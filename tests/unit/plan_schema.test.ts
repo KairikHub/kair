@@ -7,21 +7,17 @@ function buildValidPlanJson() {
     title: "Checkout safety plan",
     steps: [
       {
-        id: "step_prepare",
-        title: "Prepare",
-        description: "Gather repo context and baseline evidence.",
+        id: "step-prepare",
+        summary: "Gather repo context and baseline evidence.",
         tags: ["prep"],
       },
       {
-        id: "step_execute",
-        title: "Execute",
-        description: "Apply approved changes and run tests.",
-        depends_on: ["step_prepare"],
+        id: "step-execute",
+        summary: "Apply approved changes and run tests.",
+        details: "Run tests and capture artifacts for review.",
+        risks: ["Unexpected dependency regression"],
       },
     ],
-    notes: ["Run in Docker container"],
-    risks: ["Unexpected schema drift"],
-    constraints: ["No direct production writes"],
   });
 }
 
@@ -33,21 +29,17 @@ describe("plan schema validator", () => {
       title: "Checkout safety plan",
       steps: [
         {
-          id: "step_prepare",
-          title: "Prepare",
-          description: "Gather repo context and baseline evidence.",
+          id: "step-prepare",
+          summary: "Gather repo context and baseline evidence.",
           tags: ["prep"],
         },
         {
-          id: "step_execute",
-          title: "Execute",
-          description: "Apply approved changes and run tests.",
-          depends_on: ["step_prepare"],
+          id: "step-execute",
+          summary: "Apply approved changes and run tests.",
+          details: "Run tests and capture artifacts for review.",
+          risks: ["Unexpected dependency regression"],
         },
       ],
-      notes: ["Run in Docker container"],
-      risks: ["Unexpected schema drift"],
-      constraints: ["No direct production writes"],
     });
   });
 
@@ -55,17 +47,33 @@ describe("plan schema validator", () => {
     expect(() => parseAndValidatePlanJson("{invalid")).toThrow(/Invalid JSON/);
   });
 
+  test("markdown fenced payload throws", () => {
+    expect(() =>
+      parseAndValidatePlanJson("```json\n{\"version\":\"kair.plan.v1\"}\n```")
+    ).toThrow("Plan must be raw JSON without markdown fences");
+  });
+
   test("wrong version throws", () => {
     const raw = JSON.stringify({
       version: "kair.plan.v0",
-      steps: [{ id: "s1", title: "One", description: "Desc" }],
+      title: "Bad version",
+      steps: [{ id: "s1", summary: "Desc" }],
     });
     expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.version must equal kair.plan.v1");
+  });
+
+  test("missing title throws", () => {
+    const raw = JSON.stringify({
+      version: PLAN_VERSION,
+      steps: [{ id: "s1", summary: "Desc" }],
+    });
+    expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.title must be a non-empty string");
   });
 
   test("empty steps throws", () => {
     const raw = JSON.stringify({
       version: PLAN_VERSION,
+      title: "No steps",
       steps: [],
     });
     expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.steps must be a non-empty array");
@@ -74,30 +82,20 @@ describe("plan schema validator", () => {
   test("duplicate step ids throws", () => {
     const raw = JSON.stringify({
       version: PLAN_VERSION,
+      title: "Dup ids",
       steps: [
-        { id: "dup", title: "One", description: "First" },
-        { id: "dup", title: "Two", description: "Second" },
+        { id: "dup", summary: "First" },
+        { id: "dup", summary: "Second" },
       ],
     });
     expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.steps contains duplicate step id: dup");
   });
 
-  test("depends_on unknown id throws", () => {
-    const raw = JSON.stringify({
-      version: PLAN_VERSION,
-      steps: [
-        { id: "s1", title: "One", description: "First", depends_on: ["missing_step"] },
-      ],
-    });
-    expect(() => parseAndValidatePlanJson(raw)).toThrow(
-      "Plan.steps depends_on references unknown step id: missing_step"
-    );
-  });
-
   test("unknown top-level key throws", () => {
     const raw = JSON.stringify({
       version: PLAN_VERSION,
-      steps: [{ id: "s1", title: "One", description: "First" }],
+      title: "Unknown key",
+      steps: [{ id: "s1", summary: "First" }],
       xyz: true,
     });
     expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan contains unknown top-level key: xyz");

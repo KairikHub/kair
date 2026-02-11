@@ -5,19 +5,22 @@ describe("openai plan prompt", () => {
     const prompt = buildPlanPrompt({
       contractId: "contract_123",
       intent: "Ship deterministic JSON planning output",
+      currentPlanJson: null,
       currentPlanText: "Legacy text plan",
+      instructions: "Refine the plan to improve safety checks.",
     });
 
-    expect(OPENAI_PLAN_SYSTEM_PROMPT).toContain("ONLY a single JSON object");
+    expect(OPENAI_PLAN_SYSTEM_PROMPT).toContain("ONLY valid JSON");
     expect(OPENAI_PLAN_SYSTEM_PROMPT).toContain("No markdown");
 
     expect(prompt).toContain("kair.plan.v1");
     expect(prompt).toContain('"version"');
     expect(prompt).toContain('"steps"');
     expect(prompt).toContain('"title"');
-    expect(prompt).toContain('"notes"');
+    expect(prompt).toContain('"summary"');
+    expect(prompt).toContain('"details"');
     expect(prompt).toContain('"risks"');
-    expect(prompt).toContain('"constraints"');
+    expect(prompt).toContain("Requested changes:");
     expect(prompt).toContain("If you cannot comply");
   });
 });

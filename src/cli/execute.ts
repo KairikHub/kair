@@ -1,6 +1,4 @@
-import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { createInterface } from "node:readline/promises";
 
@@ -19,8 +17,10 @@ import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
 import { setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
+import type { Plan } from "../core/plans/schema";
 import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
+import type { Provider } from "../core/providers/types";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
 
@@ -35,14 +35,17 @@ import { renderEvidence, renderReview } from "./review";
 type ParsedTopLevelPlanOptions = {
   contractIdRaw: string;
   planInputRaw: string;
+  filePathRaw: string;
   providerRaw: string;
   modelRaw: string;
+  instructionsRaw: string;
   interactive: boolean;
+  jsonOutput: boolean;
   last: boolean;
   actorRaw: string;
 };
 
-type PlanChoice = "accept" | "retry" | "edit" | "cancel";
+type PlanChoice = "accept" | "refine" | "cancel";
 
 const MAX_PLAN_PROVIDER_ATTEMPTS = 5;
 const GRANT_FORMAT_REGEX = /^[a-z0-9]+:[a-z0-9_-]+$/;
@@ -55,6 +58,46 @@ const AVAILABLE_GRANTS = [
   "network:read",
   "network:write",
 ];
+
+function resolveContractPlanV1(contract: any): Plan | null {
+  if (contract?.plan_v1 && contract.plan_v1.version === "kair.plan.v1") {
+    return contract.plan_v1 as Plan;
+  }
+  if (contract?.planJson && contract.planJson.version === "kair.plan.v1") {
+    return contract.planJson as Plan;
+  }
+  return null;
+}
+
+function buildPlanHistoryMessage(kind: "interactive" | "non-interactive", provider?: string, model?: string) {
+  const chunks = [
+    kind === "interactive" ? "Plan updated via interactive refine." : "Plan updated via non-interactive refine.",
+  ];
+  if (provider) {
+    chunks.push(`Provider: ${provider}.`);
+  }
+  if (model) {
+    chunks.push(`Model: ${model}.`);
+  }
+  return chunks.join(" ");
+}
+
+function persistStructuredPlan(params: {
+  contractId: string;
+  plan: Plan;
+  actor?: string;
+  message: string;
+}) {
+  const contract = setPlanJson(params.contractId, params.plan, params.actor, params.message);
+  if (contract.current_state === "DRAFT") {
+    transition(
+      contract,
+      "PLANNED",
+      "Plan captured via top-level plan command.",
+      params.actor
+    );
+  }
+}
 
 function parseBooleanFlag(value: string, flagName: string) {
   const normalized = value.trim().toLowerCase();
@@ -84,7 +127,10 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
   const positional: string[] = [];
   let providerRaw = "";
   let modelRaw = "";
+  let instructionsRaw = "";
+  let filePathRaw = "";
   let interactive = true;
+  let jsonOutput = false;
   let last = false;
   let actorRaw = "";
 
@@ -92,6 +138,10 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
     const token = args[i];
     if (token === "--last") {
       last = true;
+      continue;
+    }
+    if (token === "--json") {
+      jsonOutput = true;
       continue;
     }
     if (token === "--provider") {
@@ -121,6 +171,36 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
       modelRaw = token.slice("--model=".length).trim();
       if (!modelRaw) {
         fail("Missing value for --model.");
+      }
+      continue;
+    }
+    if (token === "--instructions") {
+      instructionsRaw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!instructionsRaw) {
+        fail("Missing value for --instructions.");
+      }
+      continue;
+    }
+    if (token.startsWith("--instructions=")) {
+      instructionsRaw = token.slice("--instructions=".length).trim();
+      if (!instructionsRaw) {
+        fail("Missing value for --instructions.");
+      }
+      continue;
+    }
+    if (token === "--file") {
+      filePathRaw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!filePathRaw) {
+        fail("Missing value for --file.");
+      }
+      continue;
+    }
+    if (token.startsWith("--file=")) {
+      filePathRaw = token.slice("--file=".length).trim();
+      if (!filePathRaw) {
+        fail("Missing value for --file.");
       }
       continue;
     }
@@ -182,9 +262,12 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
   return {
     contractIdRaw,
     planInputRaw,
+    filePathRaw,
     providerRaw,
     modelRaw,
+    instructionsRaw,
     interactive,
+    jsonOutput,
     last,
     actorRaw,
   };
@@ -211,28 +294,25 @@ async function readStdinUtf8(options: { allowTTY?: boolean } = {}) {
 
 async function promptPlanChoice(rl: any) {
   while (true) {
-    const answer = (await rl.question("Plan options [a]ccept [r]etry [e]dit [c]ancel: "))
+    const answer = (await rl.question("Plan options [a]ccept [r]efine [c]ancel: "))
       .trim()
       .toLowerCase();
     if (answer === "a" || answer === "accept") {
       return "accept" as PlanChoice;
     }
-    if (answer === "r" || answer === "retry") {
-      return "retry" as PlanChoice;
-    }
-    if (answer === "e" || answer === "edit") {
-      return "edit" as PlanChoice;
+    if (answer === "r" || answer === "refine") {
+      return "refine" as PlanChoice;
     }
     if (answer === "c" || answer === "cancel") {
       return "cancel" as PlanChoice;
     }
-    console.log("Invalid choice. Enter a, r, e, or c.");
+    console.log("Choose a, r, or c.");
   }
 }
 
 async function promptRetryOrCancel(rl: any) {
   while (true) {
-    const answer = (await rl.question("Provider output invalid. [r]etry or [c]ancel: "))
+    const answer = (await rl.question("Plan options [r]etry [c]ancel: "))
       .trim()
       .toLowerCase();
     if (answer === "r" || answer === "retry") {
@@ -241,68 +321,287 @@ async function promptRetryOrCancel(rl: any) {
     if (answer === "c" || answer === "cancel") {
       return "cancel" as const;
     }
-    console.log("Invalid choice. Enter r or c.");
+    console.log("Choose r or c.");
   }
 }
 
-async function promptEditRetryOrCancel(rl: any) {
-  while (true) {
-    const answer = (await rl.question("Edited plan invalid. [e]dit [r]etry [c]ancel: "))
-      .trim()
-      .toLowerCase();
-    if (answer === "e" || answer === "edit") {
-      return "edit" as const;
-    }
-    if (answer === "r" || answer === "retry") {
-      return "retry" as const;
-    }
-    if (answer === "c" || answer === "cancel") {
-      return "cancel" as const;
-    }
-    console.log("Invalid choice. Enter e, r, or c.");
+function renderPlanPreview(plan: Plan, options: { jsonOutput?: boolean } = {}) {
+  if (options.jsonOutput) {
+    console.log("PLAN PREVIEW");
+    console.log(JSON.stringify(plan, null, 2));
+    return;
   }
-}
-
-function renderPlanPreview(plan: any) {
-  const lines = ["PLAN PREVIEW", `Title: ${plan.title || "(untitled)"}`, "Steps:"];
+  const lines = ["PLAN PREVIEW", `Title: ${plan.title}`, "Steps:"];
   for (const step of plan.steps || []) {
-    lines.push(`- ${step.id}: ${step.title}`);
+    lines.push(`- ${step.id}: ${step.summary}`);
   }
   console.log(lines.join("\n"));
 }
 
-function openEditorForPlan(initialRaw: string) {
-  const editor = (process.env.EDITOR || "").trim();
-  if (!editor) {
-    return null;
-  }
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "kair-plan-"));
-  const filePath = path.join(tempDir, "plan.json");
+function readPlanFromFile(filePathRaw: string) {
+  const resolved = path.resolve(filePathRaw);
   try {
-    fs.writeFileSync(filePath, initialRaw, "utf8");
-    const result = spawnSync(editor, [filePath], {
-      stdio: "inherit",
-      shell: true,
-    });
-    if (result.error) {
-      fail(`Failed to launch editor "${editor}": ${result.error.message}`);
-    }
-    if ((result.status ?? 0) !== 0) {
-      fail(`Editor command "${editor}" exited with status ${result.status}.`);
-    }
-    return fs.readFileSync(filePath, "utf8");
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    return fs.readFileSync(resolved, "utf8");
+  } catch (error: any) {
+    fail(`Failed to read --file ${filePathRaw}: ${error.message}`);
   }
 }
 
-async function readEditedPlanInput(currentRaw: string, rl: any) {
-  const editedViaEditor = openEditorForPlan(currentRaw);
-  if (editedViaEditor !== null) {
-    return editedViaEditor.trim();
+function parsePlanOrFail(raw: string, prefix = "Invalid plan JSON") {
+  try {
+    return parseAndValidatePlanJson(raw);
+  } catch (error: any) {
+    const message = error && error.message ? error.message : String(error);
+    fail(`${prefix}: ${message}`);
   }
-  const pasted = await rl.question("No $EDITOR set. Paste JSON plan (single line) and press Enter: ");
-  return pasted.trim();
+}
+
+function resolvePlanProvider(parsed: ParsedTopLevelPlanOptions, required: boolean) {
+  const providerName = normalizeProviderName(parsed.providerRaw || null);
+  if (!required && !parsed.providerRaw) {
+    return { providerName, provider: null as Provider | null };
+  }
+  try {
+    const provider = getProvider(providerName);
+    if (!provider.isInstalled()) {
+      fail(`Provider '${providerName}' is not installed.`);
+    }
+    return { providerName, provider };
+  } catch (error: any) {
+    fail(error && error.message ? error.message : String(error));
+  }
+}
+
+function resolvePlanContractId(parsed: ParsedTopLevelPlanOptions) {
+  if (parsed.contractIdRaw && parsed.last) {
+    fail("Specify either a contract id or --last, not both.");
+  }
+  if (parsed.contractIdRaw) {
+    return parsed.contractIdRaw;
+  }
+  const lastId = getLastContractId();
+  if (!lastId) {
+    fail("No Contracts found.");
+  }
+  return lastId;
+}
+
+async function requestPlanFromProvider(params: {
+  provider: Provider;
+  contractId: string;
+  intent: string;
+  currentPlan: Plan | null;
+  currentPlanText: string | null;
+  instructions: string;
+  model: string | null;
+  attemptsUsed: number;
+}) {
+  if (params.attemptsUsed >= MAX_PLAN_PROVIDER_ATTEMPTS) {
+    fail(`Exceeded maximum provider planning attempts (${MAX_PLAN_PROVIDER_ATTEMPTS}).`);
+  }
+  let raw = "";
+  try {
+    raw = await params.provider.planJson({
+      contractId: params.contractId,
+      intent: params.intent,
+      currentPlanJson: params.currentPlan,
+      currentPlanText: params.currentPlanText,
+      instructions: params.instructions,
+      model: params.model,
+    });
+  } catch (error: any) {
+    fail(error && error.message ? error.message : String(error));
+  }
+
+  try {
+    const parsed = parseAndValidatePlanJson(raw);
+    return { plan: parsed, attemptsUsed: params.attemptsUsed + 1 };
+  } catch (error: any) {
+    const message = error && error.message ? error.message : String(error);
+    throw new Error(`Invalid plan JSON from provider: ${message}`);
+  }
+}
+
+async function handleTopLevelPlan(rest: string[]) {
+  const parsed = parseTopLevelPlanOptions(rest);
+  const contractId = resolvePlanContractId(parsed);
+  const targetContract = getContract(contractId);
+  const existingPlan = resolveContractPlanV1(targetContract);
+  const actor = parsed.actorRaw || (process.env.KAIR_ACTOR || "").trim()
+    ? resolveActor(parsed.actorRaw)
+    : undefined;
+
+  const { providerName, provider: preResolvedProvider } = resolvePlanProvider(
+    parsed,
+    Boolean(parsed.providerRaw)
+  );
+  let provider = preResolvedProvider;
+  let providerApiKeyChecked = false;
+  const model = parsed.modelRaw || null;
+
+  function ensureProviderAndApiKey() {
+    if (!provider) {
+      const resolved = resolvePlanProvider(parsed, true);
+      provider = resolved.provider;
+    }
+    if (!provider) {
+      fail("Provider is required for planning.");
+    }
+    if (!providerApiKeyChecked) {
+      try {
+        provider.requireApiKey();
+      } catch (error: any) {
+        fail(error && error.message ? error.message : String(error));
+      }
+      providerApiKeyChecked = true;
+    }
+    return provider;
+  }
+
+  if (!parsed.interactive) {
+    if (parsed.instructionsRaw.trim()) {
+      const activeProvider = ensureProviderAndApiKey();
+      let result;
+      try {
+        result = await requestPlanFromProvider({
+          provider: activeProvider,
+          contractId,
+          intent: targetContract.intent,
+          currentPlan: existingPlan,
+          currentPlanText: targetContract.plan ?? null,
+          instructions: parsed.instructionsRaw.trim(),
+          model,
+          attemptsUsed: 0,
+        });
+      } catch (error: any) {
+        fail(error && error.message ? error.message : String(error));
+      }
+      persistStructuredPlan({
+        contractId,
+        plan: result.plan,
+        actor,
+        message: buildPlanHistoryMessage("non-interactive", providerName, model || undefined),
+      });
+      console.log(`Structured plan set for Contract ${contractId}.`);
+      return;
+    }
+
+    if (parsed.filePathRaw && parsed.planInputRaw.trim()) {
+      fail("Specify either --file or JSON argument input, not both.");
+    }
+
+    let rawInput = "";
+    if (parsed.filePathRaw) {
+      rawInput = String(readPlanFromFile(parsed.filePathRaw) || "").trim();
+    } else if (parsed.planInputRaw.trim()) {
+      rawInput = parsed.planInputRaw.trim();
+    } else {
+      rawInput = (await readStdinUtf8()).trim();
+    }
+
+    if (!rawInput) {
+      fail("Missing plan input. Provide --file <path> or pipe JSON via stdin.");
+    }
+    const planJson = parsePlanOrFail(rawInput);
+    persistStructuredPlan({
+      contractId,
+      plan: planJson,
+      actor,
+      message: "Plan updated via non-interactive refine.",
+    });
+    console.log(`Structured plan set for Contract ${contractId}.`);
+    return;
+  }
+
+  let attempts = 0;
+  let candidatePlan = existingPlan;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+  try {
+    if (!candidatePlan || parsed.instructionsRaw.trim()) {
+      const activeProvider = ensureProviderAndApiKey();
+      const initialInstructions = parsed.instructionsRaw.trim() || "Create an initial plan from intent.";
+      while (true) {
+        try {
+          const result = await requestPlanFromProvider({
+            provider: activeProvider,
+            contractId,
+            intent: targetContract.intent,
+            currentPlan: candidatePlan,
+            currentPlanText: targetContract.plan ?? null,
+            instructions: initialInstructions,
+            model,
+            attemptsUsed: attempts,
+          });
+          candidatePlan = result.plan;
+          attempts = result.attemptsUsed;
+          break;
+        } catch (error: any) {
+          console.log(error && error.message ? error.message : String(error));
+          const next = await promptRetryOrCancel(rl);
+          if (next === "retry") {
+            continue;
+          }
+          console.log("Planning cancelled.");
+          return;
+        }
+      }
+    }
+
+    while (candidatePlan) {
+      renderPlanPreview(candidatePlan, { jsonOutput: parsed.jsonOutput });
+      const action = await promptPlanChoice(rl);
+      if (action === "accept") {
+        persistStructuredPlan({
+          contractId,
+          plan: candidatePlan,
+          actor,
+          message: buildPlanHistoryMessage("interactive", providerName, model || undefined),
+        });
+        console.log(`Structured plan set for Contract ${contractId}.`);
+        return;
+      }
+      if (action === "cancel") {
+        console.log("Planning cancelled.");
+        return;
+      }
+
+      const refineInstructions = (await rl.question("Explain changes: ")).trim();
+      if (!refineInstructions) {
+        console.log("Choose a, r, or c.");
+        continue;
+      }
+
+      while (true) {
+        const activeProvider = ensureProviderAndApiKey();
+        try {
+          const result = await requestPlanFromProvider({
+            provider: activeProvider,
+            contractId,
+            intent: targetContract.intent,
+            currentPlan: candidatePlan,
+            currentPlanText: targetContract.plan ?? null,
+            instructions: refineInstructions,
+            model,
+            attemptsUsed: attempts,
+          });
+          candidatePlan = result.plan;
+          attempts = result.attemptsUsed;
+          break;
+        } catch (error: any) {
+          console.log(error && error.message ? error.message : String(error));
+          const next = await promptRetryOrCancel(rl);
+          if (next === "retry") {
+            continue;
+          }
+          console.log("Planning cancelled.");
+          return;
+        }
+      }
+    }
+  } finally {
+    rl.close();
+  }
 }
 
 export async function executeCommand(tokens: string[], options: any = {}) {
@@ -382,7 +681,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       console.log(`Proposed a Kair Contract: ${contract.id}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
-      console.log(`Next: kair contract plan ${contract.id} "..."`);
+      console.log(`Next: kair plan ${contract.id}`);
       break;
     }
     case "plan": {
@@ -399,177 +698,13 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
         break;
       }
-      const parsed = parseTopLevelPlanOptions(rest);
-      const providerName = normalizeProviderName(parsed.providerRaw || null);
-      let provider: any = null;
-      try {
-        provider = getProvider(providerName);
-        if (!provider.isInstalled()) {
-          fail(`Provider '${providerName}' is not installed.`);
-        }
-      } catch (error: any) {
-        fail(error && error.message ? error.message : String(error));
-      }
-      if (parsed.contractIdRaw && parsed.last) {
-        fail("Specify either a contract id or --last, not both.");
-      }
-      let contractId = parsed.contractIdRaw;
-      if (!contractId) {
-        const lastId = getLastContractId();
-        if (!lastId) {
-          fail("No Contracts found.");
-        }
-        contractId = lastId;
-      }
-      const targetContract = getContract(contractId);
-      const hasActorInput = Boolean(parsed.actorRaw || (process.env.KAIR_ACTOR || "").trim());
-      const actor = hasActorInput ? resolveActor(parsed.actorRaw) : undefined;
-
-      if (!parsed.interactive) {
-        let rawInput = parsed.planInputRaw.trim();
-        if (!rawInput) {
-          rawInput = (await readStdinUtf8()).trim();
-        }
-        if (!rawInput) {
-          fail("Missing plan input.");
-        }
-        let planJson;
-        try {
-          planJson = parseAndValidatePlanJson(rawInput);
-        } catch (error: any) {
-          const message = error && error.message ? error.message : String(error);
-          fail(`Invalid plan JSON: ${message}`);
-        }
-        setPlanJson(contractId, planJson, actor);
-        console.log(`Structured plan set for Contract ${contractId}.`);
-        break;
-      }
-
-      try {
-        provider.requireApiKey();
-      } catch (error: any) {
-        fail(error && error.message ? error.message : String(error));
-      }
-
-      let attempts = 0;
-      let candidateRaw = "";
-      let candidatePlan: any = null;
-      const rl = createInterface({ input: process.stdin, output: process.stdout });
-
-      try {
-        while (true) {
-          if (!candidatePlan) {
-            if (attempts >= MAX_PLAN_PROVIDER_ATTEMPTS) {
-              fail(
-                `Exceeded maximum provider planning attempts (${MAX_PLAN_PROVIDER_ATTEMPTS}).`
-              );
-            }
-            attempts += 1;
-            try {
-              candidateRaw = await provider.planJson({
-                contractId,
-                intent: targetContract.intent,
-                currentPlanText: targetContract.plan ?? null,
-                model: parsed.modelRaw || null,
-              });
-            } catch (error: any) {
-              fail(error && error.message ? error.message : String(error));
-            }
-
-            try {
-              candidatePlan = parseAndValidatePlanJson(candidateRaw);
-            } catch (error: any) {
-              const message = error && error.message ? error.message : String(error);
-              console.log(`Provider produced invalid plan JSON: ${message}`);
-              const next = await promptRetryOrCancel(rl);
-              if (next === "retry") {
-                continue;
-              }
-              console.log("Planning cancelled.");
-              break;
-            }
-          }
-
-          renderPlanPreview(candidatePlan);
-          const action = await promptPlanChoice(rl);
-          if (action === "accept") {
-            setPlanJson(contractId, candidatePlan, actor);
-            console.log(`Structured plan set for Contract ${contractId}.`);
-            break;
-          }
-          if (action === "retry") {
-            candidateRaw = "";
-            candidatePlan = null;
-            continue;
-          }
-          if (action === "cancel") {
-            console.log("Planning cancelled.");
-            break;
-          }
-
-          while (true) {
-            const editedRaw = await readEditedPlanInput(
-              candidateRaw || JSON.stringify(candidatePlan, null, 2),
-              rl
-            );
-            if (!editedRaw) {
-              console.log("Missing plan input.");
-              const next = await promptEditRetryOrCancel(rl);
-              if (next === "edit") {
-                continue;
-              }
-              if (next === "retry") {
-                candidateRaw = "";
-                candidatePlan = null;
-                break;
-              }
-              console.log("Planning cancelled.");
-              return;
-            }
-            try {
-              candidatePlan = parseAndValidatePlanJson(editedRaw);
-              candidateRaw = editedRaw;
-              break;
-            } catch (error: any) {
-              const message = error && error.message ? error.message : String(error);
-              console.log(`Invalid plan JSON: ${message}`);
-              const next = await promptEditRetryOrCancel(rl);
-              if (next === "edit") {
-                continue;
-              }
-              if (next === "retry") {
-                candidateRaw = "";
-                candidatePlan = null;
-                break;
-              }
-              console.log("Planning cancelled.");
-              return;
-            }
-          }
-        }
-      } finally {
-        rl.close();
-      }
+      await handleTopLevelPlan(rest);
       break;
     }
     case "co-plan": {
-      requireArgs(rest, 1, 'contract co-plan "<contract_id>"');
-      const [contractId] = rest;
-      const contract = getContract(contractId);
-      assertState(contract, ["DRAFT"], "co-plan");
-      const providerName = normalizeProviderName(process.env.KAIR_LLM_PROVIDER);
-      const provider = getProvider(providerName);
-      const plan = await provider.planJson({
-        contractId: contract.id,
-        intent: contract.intent,
-        currentPlanText: contract.plan ?? null,
-        model: process.env.KAIR_LLM_MODEL || null,
-      });
-      contract.plan = plan;
-      transition(contract, "PLANNED", "Plan generated via LLM co-plan.");
-      console.log(`Co-plan complete for ${contract.id}.`);
-      console.log(`Plan:\n${plan}`);
-      console.log(`Next: kair contract request-approval ${contract.id}`);
+      requireArgs(rest, 1, 'co-plan "<contract_id>"');
+      warn('Command "co-plan" is deprecated. Use "kair plan <contract_id>" instead.');
+      await handleTopLevelPlan(rest);
       break;
     }
     case "require-controls": {

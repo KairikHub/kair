@@ -8,6 +8,7 @@ export type ContractRecord = {
   id: string;
   intent: string;
   plan: string | null;
+  plan_v1?: Plan;
   planJson?: Plan;
   current_state: string;
   history: any[];
@@ -45,7 +46,14 @@ export function loadStore() {
     contractStore.contracts.clear();
     for (const contract of parsed.contracts) {
       if (contract && contract.id) {
-        contractStore.contracts.set(contract.id, contract as ContractRecord);
+        const normalized = contract as ContractRecord;
+        if (!normalized.plan_v1 && normalized.planJson) {
+          normalized.plan_v1 = normalized.planJson;
+        }
+        if (!normalized.planJson && normalized.plan_v1) {
+          normalized.planJson = normalized.plan_v1;
+        }
+        contractStore.contracts.set(contract.id, normalized);
       }
     }
     contractStore.nextId = Number(parsed.nextId) || contractStore.contracts.size + 1;

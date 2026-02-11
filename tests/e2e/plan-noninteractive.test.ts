@@ -13,7 +13,7 @@ function readContractFromStore(dataDir: string, contractId: string) {
 }
 
 describe("e2e: plan non-interactive", () => {
-  test("kair plan --interactive=false stores planJson on selected contract", () => {
+  test("kair plan --interactive=false stores plan_v1 on selected contract", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_demo";
     const env = {
@@ -35,15 +35,12 @@ describe("e2e: plan non-interactive", () => {
         title: "Non-interactive plan",
         steps: [
           {
-            id: "step_prepare",
-            title: "Prepare",
-            description: "Gather context.",
+            id: "step-prepare",
+            summary: "Gather context.",
           },
           {
-            id: "step_apply",
-            title: "Apply",
-            description: "Implement approved changes.",
-            depends_on: ["step_prepare"],
+            id: "step-apply",
+            summary: "Implement approved changes.",
           },
         ],
       });
@@ -66,10 +63,10 @@ describe("e2e: plan non-interactive", () => {
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(fs.existsSync(after.storePath)).toBe(true);
       expect(after.contract).toBeDefined();
-      expect(after.contract.planJson).toBeDefined();
-      expect(after.contract.planJson.version).toBe("kair.plan.v1");
-      expect(Array.isArray(after.contract.planJson.steps)).toBe(true);
-      expect(after.contract.planJson.steps.length).toBe(2);
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(Array.isArray(after.contract.plan_v1.steps)).toBe(true);
+      expect(after.contract.plan_v1.steps.length).toBe(2);
 
       const review = runCli(["review", contractId], env);
       expect(review.status).toBe(0);
@@ -77,11 +74,11 @@ describe("e2e: plan non-interactive", () => {
 
       const defaultLastPlanRaw = JSON.stringify({
         version: "kair.plan.v1",
+        title: "Default last",
         steps: [
           {
-            id: "step_only",
-            title: "Only",
-            description: "Default --last path.",
+            id: "step-only",
+            summary: "Default --last path.",
           },
         ],
       });
@@ -92,7 +89,8 @@ describe("e2e: plan non-interactive", () => {
       expect(defaultLastResult.status).toBe(0);
 
       const afterDefaultLast = readContractFromStore(tmp.dataDir, contractId);
-      expect(afterDefaultLast.contract.planJson.steps).toHaveLength(1);
+      expect(afterDefaultLast.contract.plan_v1.steps).toHaveLength(1);
+      expect(afterDefaultLast.contract.current_state).toBe("PLANNED");
     } finally {
       tmp.cleanup();
     }
@@ -118,6 +116,46 @@ describe("e2e: plan non-interactive", () => {
       const planResult = runCli(["plan", contractId, "--interactive=false", "{bad json"], env);
       expect(planResult.status).not.toBe(0);
       expect(planResult.stderr).toContain("Invalid plan JSON");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("kair plan --interactive=false with --instructions performs single refine and persists", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_instructions";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Plan instructions contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const planResult = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--provider",
+          "mock",
+          "--instructions",
+          "Add rollback verification step",
+        ],
+        env
+      );
+      expect(planResult.status).toBe(0);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.steps.length).toBeGreaterThan(0);
     } finally {
       tmp.cleanup();
     }
