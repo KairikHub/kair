@@ -1,15 +1,13 @@
 # Kair Protocol CLI Commands
 
 ## Run Mode
-Use either style:
+Run commands from inside the container:
 
 ```bash
-# Single command in a disposable container
-docker compose --profile cli run --rm kair kair <command>
-
-# Interactive shell in persistent container
-docker compose --profile cli up -d kair
+docker compose up -d --build
 docker exec -it kair bash
+
+# Then run short CLI commands
 kair <command>
 ```
 

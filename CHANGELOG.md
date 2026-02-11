@@ -21,8 +21,8 @@
   - Browser icon endpoints now support `GET`/`HEAD` and cache-busting links.
 - Testing (Docker-first Jest harness):
   - Jest is the canonical test runner (`npm test`) for unit, integration, and e2e suites.
-  - Single canonical test command documented:
-    - `docker compose --profile cli run --rm kair npm test`
+  - Single canonical test command documented (from inside the `kair` container):
+    - `npm test`
   - Hermetic test path overrides added:
     - `KAIR_DATA_DIR`
     - `KAIR_ARTIFACTS_DIR`
