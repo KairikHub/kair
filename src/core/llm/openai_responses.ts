@@ -1,4 +1,5 @@
 import type { Plan } from "../plans/schema";
+import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "./plan_request_record";
 
 type OpenAIPlanTextRequest = {
   contractId: string;
@@ -120,6 +121,24 @@ export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
     currentPlanText: request.currentPlanText ?? null,
     instructions: request.instructions ?? null,
   });
+  const messages = [
+    { role: "system", content: OPENAI_PLAN_SYSTEM_PROMPT },
+    { role: "user", content: prompt },
+  ] as const;
+  const llmRequestRecord: PlanLlmRequestRecord = {
+    provider: "openai",
+    model: request.model,
+    temperature: 0.1,
+    timestamp: new Date().toISOString(),
+    contractId: request.contractId,
+    mode: request.instructions && request.instructions.trim() ? "refine" : "generate",
+    messages: messages.map((message) => ({ role: message.role, content: message.content })),
+  };
+  const sanitizedRecord = sanitizePlanLlmRequestRecord(llmRequestRecord, {
+    secrets: [request.apiKey],
+    maxMessageLength: 4000,
+  });
+  void sanitizedRecord;
   const response = await fetch(resolveResponsesUrl(request.baseUrl), {
     method: "POST",
     headers: {
@@ -131,12 +150,12 @@ export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
       temperature: 0.1,
       input: [
         {
-          role: "system",
-          content: [{ type: "input_text", text: OPENAI_PLAN_SYSTEM_PROMPT }],
+          role: messages[0].role,
+          content: [{ type: "input_text", text: messages[0].content }],
         },
         {
-          role: "user",
-          content: [{ type: "input_text", text: prompt }],
+          role: messages[1].role,
+          content: [{ type: "input_text", text: messages[1].content }],
         },
       ],
     }),
