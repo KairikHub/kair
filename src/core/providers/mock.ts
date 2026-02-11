@@ -1,5 +1,6 @@
 import type { Plan } from "../plans/schema";
 import { PLAN_VERSION } from "../plans/schema";
+import { buildPlanGeneratePrompt } from "../llm/plan_prompt";
 import { PlanRequest, Provider } from "./types";
 
 let mockCallCount = 0;
@@ -64,6 +65,11 @@ export const mockProvider: Provider = {
     return "";
   },
   async planJson(request: PlanRequest) {
+    // Keep mock prompt construction aligned with provider prompt contract.
+    void buildPlanGeneratePrompt({
+      intent: request.intent,
+      currentPlanJson: request.currentPlanJson ?? null,
+    });
     if (shouldReturnInvalidFirst()) {
       mockCallCount += 1;
       return "{bad json";

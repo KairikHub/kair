@@ -1,5 +1,6 @@
 import type { Plan } from "../plans/schema";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "./plan_request_record";
+import { buildPlanGeneratePrompt, PLAN_GENERATE_SYSTEM_PROMPT } from "./plan_prompt";
 
 type OpenAIPlanTextRequest = {
   contractId: string;
@@ -12,22 +13,7 @@ type OpenAIPlanTextRequest = {
   baseUrl: string;
 };
 
-export const OPENAI_PLAN_SYSTEM_PROMPT =
-  "You are a planning assistant. You MUST return ONLY valid JSON. No markdown.";
-
-const PLAN_JSON_SCHEMA = `{
-  "version": "kair.plan.v1",
-  "title": "non-empty string",
-  "steps": [
-    {
-      "id": "non-empty string",
-      "summary": "non-empty string",
-      "details": "optional string",
-      "tags": ["optional string"],
-      "risks": ["optional string"]
-    }
-  ]
-}`;
+export const OPENAI_PLAN_SYSTEM_PROMPT = PLAN_GENERATE_SYSTEM_PROMPT;
 
 function resolveResponsesUrl(baseUrl: string) {
   const trimmed = baseUrl.replace(/\/+$/g, "");
@@ -66,26 +52,16 @@ function extractOutputText(payload: any) {
   return chunks.join("\n").trim();
 }
 
-function safeJson(value: unknown) {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch (error) {
-    return String(value);
-  }
-}
-
 export function buildPlanPrompt(
   request: Pick<
     OpenAIPlanTextRequest,
     "contractId" | "intent" | "currentPlanJson" | "currentPlanText" | "instructions"
   >
 ) {
-  const currentPlan =
-    request.currentPlanJson !== undefined
-      ? safeJson(request.currentPlanJson)
-      : request.currentPlanText && request.currentPlanText.trim()
-        ? request.currentPlanText.trim()
-        : "null";
+  const prompt = buildPlanGeneratePrompt({
+    intent: request.intent,
+    currentPlanJson: request.currentPlanJson ?? null,
+  });
 
   const requestedChanges =
     request.instructions && request.instructions.trim()
@@ -93,24 +69,20 @@ export function buildPlanPrompt(
       : "Create an initial plan from intent.";
 
   return [
-    "Intent:",
-    request.intent,
-    "",
-    "Current plan JSON:",
-    currentPlan,
+    prompt.user,
     "",
     "Requested changes:",
     requestedChanges,
     "",
-    "Output requirements:",
-    `- Return a JSON object conforming exactly to this schema:\n${PLAN_JSON_SCHEMA}`,
-    '- "version" must equal "kair.plan.v1".',
     "- Preserve existing step ids when possible; only create new ids for new steps.",
-    "- No markdown, no code fences, no commentary.",
+    request.currentPlanText && request.currentPlanText.trim()
+      ? `Current plan text:\n${request.currentPlanText.trim()}`
+      : "",
     "",
-    "If you cannot comply, output a valid fallback JSON object with version kair.plan.v1 and a single step explaining failure.",
     `Contract ID: ${request.contractId}`,
-  ].join("\n");
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
 }
 
 export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
