@@ -25,6 +25,7 @@ kair <command>
   - With no contract id, defaults to the most recently updated contract.
   - `--interactive=false --instructions "<text>"` performs one provider refine and persists.
   - `--interactive=false` without instructions accepts JSON from `--file`, positional argument, or stdin.
+  - `--json` implies `--interactive=false`, requires JSON from positional argument or stdin, and prints only validated JSON.
 - `kair contract plan <contract_id> "<plan>"`
   - Attach a legacy text plan and transition to `PLANNED`.
 

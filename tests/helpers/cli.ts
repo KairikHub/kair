@@ -20,7 +20,7 @@ function resolveInvocation() {
   if (typeof scripts.kair === "string") {
     return {
       command: process.platform === "win32" ? "npm.cmd" : "npm",
-      prefixArgs: ["run", "kair", "--"],
+      prefixArgs: ["run", "--silent", "kair", "--"],
     };
   }
   const firstMatch = Object.entries(scripts).find(([, value]) =>
@@ -29,7 +29,7 @@ function resolveInvocation() {
   if (firstMatch) {
     return {
       command: process.platform === "win32" ? "npm.cmd" : "npm",
-      prefixArgs: ["run", firstMatch[0], "--"],
+      prefixArgs: ["run", "--silent", firstMatch[0], "--"],
     };
   }
   return {

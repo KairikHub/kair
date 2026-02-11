@@ -43,6 +43,7 @@ type ParsedTopLevelPlanOptions = {
   modelRaw: string;
   instructionsRaw: string;
   interactive: boolean;
+  interactiveSpecified: boolean;
   jsonOutput: boolean;
   debug: boolean;
   last: boolean;
@@ -134,6 +135,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
   let instructionsRaw = "";
   let filePathRaw = "";
   let interactive = true;
+  let interactiveSpecified = false;
   let jsonOutput = false;
   let debug = false;
   let last = false;
@@ -219,6 +221,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
       if (!raw) {
         fail("Missing value for --interactive.");
       }
+      interactiveSpecified = true;
       interactive = parseBooleanFlag(raw, "--interactive");
       continue;
     }
@@ -227,6 +230,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
       if (!raw) {
         fail("Missing value for --interactive.");
       }
+      interactiveSpecified = true;
       interactive = parseBooleanFlag(raw, "--interactive");
       continue;
     }
@@ -268,6 +272,13 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
     planInputRaw = positional.slice(1).join(" ");
   }
 
+  if (jsonOutput) {
+    if (interactiveSpecified && interactive) {
+      fail("--json cannot be used with --interactive=true. Use JSON arg/stdin without interactive prompts.");
+    }
+    interactive = false;
+  }
+
   return {
     contractIdRaw,
     planInputRaw,
@@ -276,6 +287,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
     modelRaw,
     instructionsRaw,
     interactive,
+    interactiveSpecified,
     jsonOutput,
     debug,
     last,
@@ -523,6 +535,28 @@ async function handleTopLevelPlan(rest: string[]) {
   }
 
   if (!parsed.interactive) {
+    if (parsed.jsonOutput) {
+      if (parsed.instructionsRaw.trim()) {
+        fail("--json requires JSON input via argument or stdin; --instructions is not supported.");
+      }
+      if (parsed.filePathRaw) {
+        fail("--json requires JSON input via argument or stdin; --file is not supported.");
+      }
+      const rawInput = parsed.planInputRaw.trim() || (await readStdinUtf8()).trim();
+      if (!rawInput) {
+        fail("Missing plan input. Provide JSON argument or pipe JSON via stdin.");
+      }
+      const planJson = parsePlanOrFail(rawInput);
+      persistStructuredPlan({
+        contractId,
+        plan: planJson,
+        actor,
+        message: "Plan updated via non-interactive refine.",
+      });
+      process.stdout.write(`${JSON.stringify(planJson, null, 2)}\n`);
+      return;
+    }
+
     if (parsed.instructionsRaw.trim()) {
       const activeProvider = ensureProviderAndApiKey();
       let result;

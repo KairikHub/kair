@@ -161,6 +161,88 @@ describe("e2e: plan non-interactive", () => {
     }
   });
 
+  test("kair plan --json prints only validated JSON output", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_json_output";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Plan json output contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const planJsonRaw = JSON.stringify({
+        version: "kair.plan.v1",
+        title: "JSON output mode",
+        steps: [
+          {
+            id: "step-a",
+            summary: "Validate json-only output.",
+          },
+        ],
+      });
+
+      const result = runCli(["plan", contractId, "--json", planJsonRaw], env);
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain("PLAN PREVIEW");
+      expect(result.stdout).not.toContain("Structured plan set for Contract");
+
+      const parsedOut = JSON.parse(result.stdout);
+      expect(parsedOut.version).toBe("kair.plan.v1");
+      expect(parsedOut.steps).toHaveLength(1);
+      expect(parsedOut.steps[0].id).toBe("step-a");
+      expect(String(result.stdout).trim().startsWith("{")).toBe(true);
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("kair plan --json with --interactive=true fails clearly", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_json_interactive_conflict";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Plan json interactive conflict contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const planJsonRaw = JSON.stringify({
+        version: "kair.plan.v1",
+        title: "Conflict plan",
+        steps: [
+          {
+            id: "step-a",
+            summary: "Conflict check",
+          },
+        ],
+      });
+
+      const result = runCli(
+        ["plan", contractId, "--json", "--interactive=true", planJsonRaw],
+        env
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("--json cannot be used with --interactive=true");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("kair plan --debug prints provider details and prompt artifact path", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_debug";
@@ -195,23 +277,30 @@ describe("e2e: plan non-interactive", () => {
       expect(debugResult.stdout).toContain("Provider: mock");
       expect(debugResult.stdout).toContain("prompts/");
 
+      const jsonRaw = JSON.stringify({
+        version: "kair.plan.v1",
+        title: "Debug suppressed in json mode",
+        steps: [
+          {
+            id: "step-json",
+            summary: "No debug banners in json mode.",
+          },
+        ],
+      });
       const suppressedDebugResult = runCli(
         [
           "plan",
           contractId,
-          "--interactive=false",
-          "--provider",
-          "mock",
-          "--instructions",
-          "Add regression checks",
           "--debug",
           "--json",
+          jsonRaw,
         ],
         env
       );
       expect(suppressedDebugResult.status).toBe(0);
       expect(suppressedDebugResult.stdout).not.toContain("PLAN DEBUG");
       expect(suppressedDebugResult.stdout).not.toContain("Prompt artifact:");
+      expect(() => JSON.parse(suppressedDebugResult.stdout)).not.toThrow();
     } finally {
       tmp.cleanup();
     }

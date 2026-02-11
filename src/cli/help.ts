@@ -34,7 +34,8 @@ ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
   Top-level "plan" defaults to --interactive=true and --last when no contract id is provided.
   Use --interactive=false with --instructions for one-shot refine, or --file/stdin for direct JSON plan input.
-  Use --debug to print provider/model/temp, prompt artifact path, and sanitized request JSON (--json suppresses debug output).
+  --json implies --interactive=false and requires JSON via positional arg or stdin (no prompts, no --file/--instructions).
+  Use --debug to print provider/model/temp, prompt artifact path, and sanitized request JSON (--json mode suppresses debug output).
 
 ${label("Alias:")}
   kair propose (shorthand for contract propose)
