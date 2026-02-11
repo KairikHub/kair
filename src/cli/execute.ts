@@ -43,6 +43,7 @@ type ParsedTopLevelPlanOptions = {
   instructionsRaw: string;
   interactive: boolean;
   jsonOutput: boolean;
+  debug: boolean;
   last: boolean;
   actorRaw: string;
 };
@@ -133,6 +134,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
   let filePathRaw = "";
   let interactive = true;
   let jsonOutput = false;
+  let debug = false;
   let last = false;
   let actorRaw = "";
 
@@ -144,6 +146,10 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
     }
     if (token === "--json") {
       jsonOutput = true;
+      continue;
+    }
+    if (token === "--debug") {
+      debug = true;
       continue;
     }
     if (token === "--provider") {
@@ -270,6 +276,7 @@ function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
     instructionsRaw,
     interactive,
     jsonOutput,
+    debug,
     last,
     actorRaw,
   };
@@ -356,6 +363,23 @@ function parsePlanOrFail(raw: string, prefix = "Invalid plan JSON") {
     const message = error && error.message ? error.message : String(error);
     fail(`${prefix}: ${message}`);
   }
+}
+
+function printPlanDebugOutput(params: {
+  parsed: ParsedTopLevelPlanOptions;
+  sanitizedRequestRecord: PlanLlmRequestRecord;
+  promptArtifactPath: string;
+}) {
+  if (!params.parsed.debug || params.parsed.jsonOutput) {
+    return;
+  }
+  console.log("PLAN DEBUG");
+  console.log(`Provider: ${params.sanitizedRequestRecord.provider}`);
+  console.log(`Model: ${params.sanitizedRequestRecord.model}`);
+  console.log(`Temperature: ${params.sanitizedRequestRecord.temperature}`);
+  console.log(`Prompt artifact: ${params.promptArtifactPath}`);
+  console.log("Sanitized request JSON:");
+  console.log(JSON.stringify(params.sanitizedRequestRecord, null, 2));
 }
 
 function resolvePlanProvider(parsed: ParsedTopLevelPlanOptions, required: boolean) {
@@ -449,7 +473,12 @@ async function requestPlanFromProvider(params: {
 
   try {
     const parsed = parseAndValidatePlanJson(raw);
-    return { plan: parsed, attemptsUsed: params.attemptsUsed + 1, promptArtifactPath };
+    return {
+      plan: parsed,
+      attemptsUsed: params.attemptsUsed + 1,
+      promptArtifactPath,
+      sanitizedRequestRecord: sanitizedPromptRecord,
+    };
   } catch (error: any) {
     const message = error && error.message ? error.message : String(error);
     throw new Error(`Invalid plan JSON from provider: ${message}`);
@@ -517,6 +546,11 @@ async function handleTopLevelPlan(rest: string[]) {
         actor,
         message: buildPlanHistoryMessage("non-interactive", providerName, model || undefined),
       });
+      printPlanDebugOutput({
+        parsed,
+        sanitizedRequestRecord: result.sanitizedRequestRecord,
+        promptArtifactPath: result.promptArtifactPath,
+      });
       console.log(`Structured plan set for Contract ${contractId}.`);
       return;
     }
@@ -571,6 +605,11 @@ async function handleTopLevelPlan(rest: string[]) {
           });
           candidatePlan = result.plan;
           attempts = result.attemptsUsed;
+          printPlanDebugOutput({
+            parsed,
+            sanitizedRequestRecord: result.sanitizedRequestRecord,
+            promptArtifactPath: result.promptArtifactPath,
+          });
           break;
         } catch (error: any) {
           console.log(error && error.message ? error.message : String(error));
@@ -624,6 +663,11 @@ async function handleTopLevelPlan(rest: string[]) {
           });
           candidatePlan = result.plan;
           attempts = result.attemptsUsed;
+          printPlanDebugOutput({
+            parsed,
+            sanitizedRequestRecord: result.sanitizedRequestRecord,
+            promptArtifactPath: result.promptArtifactPath,
+          });
           break;
         } catch (error: any) {
           console.log(error && error.message ? error.message : String(error));

@@ -6,7 +6,7 @@ export function printTopHelp() {
 ${label("Usage:")}
   kair contract <subcommand> [args]
   kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
-  kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]
+  kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [--debug] [<plan_json>]
   kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   kair review [<contract_id>] [--last]
   kair accept "<contract_id>" [--actor <name>]
@@ -14,7 +14,7 @@ ${label("Usage:")}
 
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
-  plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]
+  plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [--debug] [<plan_json>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
@@ -34,6 +34,7 @@ ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
   Top-level "plan" defaults to --interactive=true and --last when no contract id is provided.
   Use --interactive=false with --instructions for one-shot refine, or --file/stdin for direct JSON plan input.
+  Use --debug to print provider/model/temp, prompt artifact path, and sanitized request JSON (--json suppresses debug output).
 
 ${label("Alias:")}
   kair propose (shorthand for contract propose)

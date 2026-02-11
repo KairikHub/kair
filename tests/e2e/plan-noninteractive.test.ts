@@ -160,4 +160,60 @@ describe("e2e: plan non-interactive", () => {
       tmp.cleanup();
     }
   });
+
+  test("kair plan --debug prints provider details and prompt artifact path", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_debug";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Plan debug contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const debugResult = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--provider",
+          "mock",
+          "--instructions",
+          "Add explicit validation step",
+          "--debug",
+        ],
+        env
+      );
+      expect(debugResult.status).toBe(0);
+      expect(debugResult.stdout).toContain("Provider: mock");
+      expect(debugResult.stdout).toContain("prompts/");
+
+      const suppressedDebugResult = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--provider",
+          "mock",
+          "--instructions",
+          "Add regression checks",
+          "--debug",
+          "--json",
+        ],
+        env
+      );
+      expect(suppressedDebugResult.status).toBe(0);
+      expect(suppressedDebugResult.stdout).not.toContain("PLAN DEBUG");
+      expect(suppressedDebugResult.stdout).not.toContain("Prompt artifact:");
+    } finally {
+      tmp.cleanup();
+    }
+  });
 });
