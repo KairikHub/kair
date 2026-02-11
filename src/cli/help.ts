@@ -7,6 +7,7 @@ ${label("Usage:")}
   kair contract <subcommand> [args]
   kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
   kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [<plan_json>]
+  kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   kair review [<contract_id>] [--last]
   kair accept "<contract_id>" [--actor <name>]
   kair emit "<contract_id>" [--last]
@@ -17,7 +18,7 @@ ${label("Common subcommands:")}
   plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [<plan_json>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
-  add-control "<contract_id>" "<control>" [--actor <name>]
+  grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   request-approval "<contract_id>"
   approve "<contract_id>" [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
@@ -55,7 +56,6 @@ ${label("Subcommands:")}
   co-plan "<contract_id>"
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
-  add-control "<contract_id>" "<control>" [--actor <name>]
   request-approval "<contract_id>"
   approve "<contract_id>" [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
@@ -73,5 +73,20 @@ ${label("Alias:")}
 
 ${label("Actor flags:")}
   --actor <name> (alias: --by)
+`);
+}
+
+export function printGrantHelp() {
+  console.log(`${title("Kair Grant Commands")}
+
+${label("Usage:")}
+  kair grant
+  kair grant list
+  kair grant <grant> [--actor <name>]
+  kair grant <contract_id> <grant> [--actor <name>]
+
+${label("Notes:")}
+  Grant format must be <namespace>:<permission> (example: local:write).
+  With one grant argument, applies to the most recently updated Contract.
 `);
 }

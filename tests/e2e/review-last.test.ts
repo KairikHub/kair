@@ -56,6 +56,7 @@ describe("e2e: review surface", () => {
       expect(reviewContract.stdout).toContain("DECISIONS");
       expect(reviewContract.stdout).toContain("Accept responsibility");
       expect(reviewContract.stdout).toContain(`kair accept ${contractId} --actor <name>`);
+      expect(reviewContract.stdout).toContain(`kair grant ${contractId} <namespace>:<permission>`);
       expect(reviewContract.stdout).toContain(`kair emit ${contractId}`);
       expect(reviewContract.stdout).toContain("Contract:");
       expect(reviewContract.stdout).toContain("State:");

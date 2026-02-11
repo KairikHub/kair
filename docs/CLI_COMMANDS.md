@@ -28,8 +28,12 @@ kair <command>
 ### Controls and Approval
 - `kair contract require-controls <contract_id> "<controls_csv>"`
   - Set required controls on an existing contract.
-- `kair contract add-control <contract_id> <control> [--actor <name>]`
-  - Approve one required control.
+- `kair grant list`
+  - List static built-in grants.
+- `kair grant <grant> [--actor <name>]`
+  - Approve a grant on the most recently updated contract.
+- `kair grant <contract_id> <grant> [--actor <name>]`
+  - Approve a grant on a specific contract.
 - `kair contract request-approval <contract_id>`
   - Move a planned contract into approval request state.
 - `kair contract approve <contract_id> [--actor <name>]`
@@ -69,7 +73,7 @@ kair <command>
 - Constraints (required/approved controls, budget)
 - Execution summary (artifact count, last run artifact timestamp)
 - Evidence checklist
-- Decision action prompts for accept/rewind/evidence
+- Decision action prompts for accept/grant/rewind/evidence
 
 ## Minimal Demo Flow
 

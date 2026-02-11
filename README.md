@@ -24,6 +24,7 @@ Run these commands to verify the install works end-to-end:
 ```bash
 docker exec -it kair bash
 kair --help
+kair grant list
 kair contract create --id smoke_demo "Smoke test install"
 kair contract plan smoke_demo "Run a minimal install verification"
 kair contract request-approval smoke_demo

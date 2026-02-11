@@ -45,7 +45,7 @@ export function enforceControls(contract: any, context: string, options: any = {
   if (missing.length > 0) {
     const message = `Blocked: proposal requires controls not approved: ${missing.join(
       ", "
-    )}. Resolution paths: revise the proposal; add/approve the required controls; rewind the Contract to update authority; or fork into a new Contract.`;
+    )}. Resolution paths: revise the proposal; grant required controls via "kair grant"; rewind the Contract to update authority; or fork into a new Contract.`;
     recordHistory(contract, "CONTROLS", message);
     if (options.fatal) {
       fail(`Contract "${contract.id}" blocked due to missing controls: ${missing.join(", ")}.`);
@@ -61,4 +61,3 @@ export function enforceControls(contract: any, context: string, options: any = {
   );
   return true;
 }
-

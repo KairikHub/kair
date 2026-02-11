@@ -85,6 +85,7 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
     "",
     "DECISIONS",
     `✅ Accept responsibility:  kair accept ${contract.id} --actor <name>`,
+    `🛂 Approve grant:          kair grant ${contract.id} <namespace>:<permission>`,
     `⏪ Rewind approval:        kair contract rewind ${contract.id} --actor <name> "<reason>"`,
     `🔍 Inspect evidence:       kair emit ${contract.id}`,
   ];

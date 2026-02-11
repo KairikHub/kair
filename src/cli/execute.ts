@@ -26,7 +26,7 @@ import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/ve
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
-import { printContractHelp, printTopHelp } from "./help";
+import { printContractHelp, printGrantHelp, printTopHelp } from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
@@ -45,6 +45,16 @@ type ParsedTopLevelPlanOptions = {
 type PlanChoice = "accept" | "retry" | "edit" | "cancel";
 
 const MAX_PLAN_PROVIDER_ATTEMPTS = 5;
+const GRANT_FORMAT_REGEX = /^[a-z0-9]+:[a-z0-9_-]+$/;
+const INVALID_GRANT_FORMAT_MESSAGE =
+  "Invalid grant format. Expected <namespace>:<permission> (example: local:write).";
+const AVAILABLE_GRANTS = [
+  "local:read",
+  "local:write",
+  "local:exec",
+  "network:read",
+  "network:write",
+];
 
 function parseBooleanFlag(value: string, flagName: string) {
   const normalized = value.trim().toLowerCase();
@@ -55,6 +65,19 @@ function parseBooleanFlag(value: string, flagName: string) {
     return false;
   }
   fail(`Invalid value for ${flagName}: ${value}. Use true or false.`);
+}
+
+function validateGrantFormat(grantRaw: string) {
+  const grant = (grantRaw || "").trim();
+  if (!GRANT_FORMAT_REGEX.test(grant)) {
+    fail(INVALID_GRANT_FORMAT_MESSAGE);
+  }
+  return grant;
+}
+
+function printGrantList() {
+  const lines = ["AVAILABLE GRANTS", ...AVAILABLE_GRANTS.map((grant) => `- ${grant}`)];
+  console.log(lines.join("\n"));
 }
 
 function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
@@ -297,7 +320,14 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     return;
   }
 
-  if (isContractGroup && (command === "review" || command === "accept" || command === "evidence" || command === "emit")) {
+  if (
+    isContractGroup &&
+    (command === "review" ||
+      command === "accept" ||
+      command === "evidence" ||
+      command === "emit" ||
+      command === "grant")
+  ) {
     failWithHelp(`Unknown contract subcommand "${command}".`, "contract");
   }
 
@@ -592,40 +622,41 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       transition(contract, "APPROVED", `Approve a Kair Contract. Actor: ${actor}.`, actor);
       break;
     }
-    case "approve-control":
-    case "add-control": {
+    case "grant": {
+      if (rest.length === 0 || rest.includes("-h") || rest.includes("--help")) {
+        printGrantHelp();
+        break;
+      }
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 2, 'contract add-control "<contract_id>" "<control>" [--actor <name>]');
-      const [contractId, control, ...legacyParts] = remaining;
-      let legacyActor = "";
-      if (legacyParts.length > 0) {
-        legacyActor = legacyParts.join(" ").trim();
-        warn(
-          'Positional approver is deprecated. Use "contract add-control <id> <control> --actor <name>" instead.'
-        );
+      if (remaining.length === 1 && remaining[0] === "list") {
+        printGrantList();
+        break;
       }
-      if (actorRaw && legacyActor) {
-        warn('Both --actor and positional approver provided; using "--actor".');
-      }
-      const actor = resolveActor(actorRaw || legacyActor);
-      validateControls([control]);
-      const contract = getContract(contractId);
-      if (!contract.controlsApproved.includes(control)) {
-        contract.controlsApproved.push(control);
-        recordHistory(
-          contract,
-          "CONTROLS",
-          `Control "${control}" approved. Actor: ${actor}.`,
-          actor
-        );
+      let contractId = "";
+      let grantRaw = "";
+      if (remaining.length === 1) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+        grantRaw = remaining[0];
+      } else if (remaining.length === 2) {
+        contractId = remaining[0];
+        grantRaw = remaining[1];
       } else {
-        recordHistory(
-          contract,
-          "CONTROLS",
-          `Control "${control}" reaffirmed. Actor: ${actor}.`,
-          actor
+        fail(
+          'Missing arguments. Usage: grant <grant> [--actor <name>] | grant "<contract_id>" <grant> [--actor <name>]'
         );
       }
+      const grant = validateGrantFormat(grantRaw);
+      const actor = resolveActor(actorRaw);
+      const contract = getContract(contractId);
+      if (!contract.controlsApproved.includes(grant)) {
+        contract.controlsApproved.push(grant);
+      }
+      recordHistory(contract, "CONTROLS", `Grant approved: ${grant}. Actor: ${actor}.`, actor);
+      console.log(`Grant approved for Contract ${contract.id}: ${grant}`);
       break;
     }
     case "run":
