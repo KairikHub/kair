@@ -12,7 +12,7 @@ import {
 import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
 import { runContract, resumeContract } from "../core/contracts/run";
-import { coPlanContract } from "../core/llm/openai_responses";
+import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
 
@@ -115,7 +115,14 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const [contractId] = rest;
       const contract = getContract(contractId);
       assertState(contract, ["DRAFT"], "co-plan");
-      const plan = await coPlanContract(contract.intent);
+      const providerName = normalizeProviderName(process.env.KAIR_LLM_PROVIDER);
+      const provider = getProvider(providerName);
+      const plan = await provider.planJson({
+        contractId: contract.id,
+        intent: contract.intent,
+        currentPlanText: contract.plan ?? null,
+        model: process.env.KAIR_LLM_MODEL || null,
+      });
       contract.plan = plan;
       transition(contract, "PLANNED", "Plan generated via LLM co-plan.");
       console.log(`Co-plan complete for ${contract.id}.`);

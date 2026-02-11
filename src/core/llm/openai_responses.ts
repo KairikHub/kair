@@ -1,22 +1,9 @@
-import { fail } from "../errors";
-
-function resolveOpenAIConfig() {
-  const provider = (process.env.KAIR_LLM_PROVIDER || "openai").trim().toLowerCase();
-  if (provider !== "openai") {
-    fail(
-      `Unsupported LLM provider "${provider}". Set KAIR_LLM_PROVIDER=openai to use the built-in adapter.`
-    );
-  }
-  const model = (process.env.KAIR_LLM_MODEL || "gpt-5.1").trim();
-  const apiKey = (process.env.OPENAI_API_KEY || "").trim();
-  if (!apiKey) {
-    fail(
-      "Missing OPENAI_API_KEY. Set KAIR_OPENAI_API_KEY in .env and restart the containers."
-    );
-  }
-  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").trim();
-  return { model, apiKey, baseUrl };
-}
+type OpenAIPlanTextRequest = {
+  intent: string;
+  model: string;
+  apiKey: string;
+  baseUrl: string;
+};
 
 function resolveResponsesUrl(baseUrl: string) {
   const trimmed = baseUrl.replace(/\/+$/g, "");
@@ -55,17 +42,16 @@ function extractOutputText(payload: any) {
   return chunks.join("\n").trim();
 }
 
-export async function coPlanContract(intent: string) {
-  const { model, apiKey, baseUrl } = resolveOpenAIConfig();
-  const prompt = `Create a concise, step-by-step implementation plan for the following contract intent. Keep it short and actionable.\n\nIntent: ${intent}`;
-  const response = await fetch(resolveResponsesUrl(baseUrl), {
+export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
+  const prompt = `Create a concise, step-by-step implementation plan for the following contract intent. Keep it short and actionable.\n\nIntent: ${request.intent}`;
+  const response = await fetch(resolveResponsesUrl(request.baseUrl), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${request.apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model,
+      model: request.model,
       input: prompt,
     }),
   });
@@ -79,13 +65,12 @@ export async function coPlanContract(intent: string) {
     } catch (error) {
       // ignore parse errors
     }
-    fail(message);
+    throw new Error(message);
   }
   const payload = await response.json();
   const plan = extractOutputText(payload);
   if (!plan) {
-    fail("OpenAI response did not include any text output.");
+    throw new Error("OpenAI response did not include any text output.");
   }
   return plan;
 }
-
