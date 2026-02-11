@@ -1,12 +1,12 @@
 import { now } from "../time";
-import { contractStore } from "../store/contracts_store";
+import { contractStore, ContractRecord } from "../store/contracts_store";
 import { recordHistory } from "./history";
 
 export function proposeContract(intent: string, controlsRequired: string[], idOverride?: string) {
   const id = idOverride || `contract_${contractStore.nextId}`;
   contractStore.nextId += 1;
   const timestamp = now();
-  const contract: any = {
+  const contract: ContractRecord = {
     id,
     intent,
     plan: null,
@@ -33,4 +33,3 @@ export function proposeContract(intent: string, controlsRequired: string[], idOv
   recordHistory(contract, "DRAFT", reason);
   return contract;
 }
-

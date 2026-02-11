@@ -1,10 +1,33 @@
 import * as fs from "node:fs";
 
 import { fail } from "../errors";
+import type { Plan } from "../plans/schema";
 import { getDataDir, getDataFile } from "./paths";
 
+export type ContractRecord = {
+  id: string;
+  intent: string;
+  plan: string | null;
+  planJson?: Plan;
+  current_state: string;
+  history: any[];
+  approvals: any[];
+  executor_ref: any;
+  artifacts: any[];
+  controlsRequired: string[];
+  controlsApproved: string[];
+  activeVersion: number | null;
+  versions: any[];
+  pauseContext?: any;
+  timestamps: {
+    created_at: string;
+    updated_at: string;
+  };
+  [key: string]: any;
+};
+
 export const contractStore = {
-  contracts: new Map(),
+  contracts: new Map<string, ContractRecord>(),
   nextId: 1,
 };
 
@@ -22,7 +45,7 @@ export function loadStore() {
     contractStore.contracts.clear();
     for (const contract of parsed.contracts) {
       if (contract && contract.id) {
-        contractStore.contracts.set(contract.id, contract);
+        contractStore.contracts.set(contract.id, contract as ContractRecord);
       }
     }
     contractStore.nextId = Number(parsed.nextId) || contractStore.contracts.size + 1;
@@ -45,7 +68,7 @@ export function saveStore() {
   fs.writeFileSync(dataFile, JSON.stringify(payload, null, 2));
 }
 
-export function getContract(id: string) {
+export function getContract(id: string): ContractRecord {
   const contract = contractStore.contracts.get(id);
   if (!contract) {
     fail(`Unknown Contract "${id}".`);
