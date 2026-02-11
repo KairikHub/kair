@@ -44,6 +44,15 @@ function buildRefinedPlan(request: PlanRequest): Plan {
     return existing;
   }
   const next = JSON.parse(JSON.stringify(existing)) as Plan;
+  if (/rename step a title/i.test(instructions) && request.currentPlanJson) {
+    const targetIndex = next.steps.findIndex((step) => step.id === "step-a");
+    const resolvedIndex = targetIndex >= 0 ? targetIndex : 0;
+    if (next.steps[resolvedIndex]) {
+      next.steps[resolvedIndex].summary = "Renamed step A title";
+      next.steps[resolvedIndex].details = "Deterministic mock refine transform.";
+    }
+    return next;
+  }
   next.title = `${existing.title} (refined)`;
   const newId = normalizeStepId(instructions);
   if (!next.steps.find((step) => step.id === newId)) {

@@ -426,6 +426,9 @@ async function requestPlanFromProvider(params: {
   if (params.attemptsUsed >= MAX_PLAN_PROVIDER_ATTEMPTS) {
     fail(`Exceeded maximum provider planning attempts (${MAX_PLAN_PROVIDER_ATTEMPTS}).`);
   }
+  if (params.mode === "refine" && !params.currentPlan) {
+    fail("Refine planning requires current plan JSON.");
+  }
   let raw = "";
   const promptRecord: PlanLlmRequestRecord = {
     provider: params.provider.name,

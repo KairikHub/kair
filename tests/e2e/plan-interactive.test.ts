@@ -165,4 +165,69 @@ describe("e2e: interactive plan", () => {
     }
   });
 
+  test("refine uses current plan JSON and preserves step ids for deterministic rename transform", async () => {
+    const tmp = makeTempRoot();
+    const contractId = "interactive_plan_refine_existing";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Interactive refine existing plan contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const initialPlanRaw = JSON.stringify({
+        version: "kair.plan.v1",
+        title: "Initial plan",
+        steps: [
+          {
+            id: "step-a",
+            summary: "Original step A title",
+          },
+          {
+            id: "step-b",
+            summary: "Original step B title",
+          },
+        ],
+      });
+      const seedPlan = runCli(["plan", contractId, "--interactive=false", initialPlanRaw], env);
+      expect(seedPlan.status).toBe(0);
+
+      const plan = await runCliInteractive(
+        ["plan", contractId, "--provider", "mock"],
+        env,
+        [
+          {
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            send: "r\n",
+          },
+          {
+            whenStdoutIncludes: "Explain changes:",
+            send: "rename step A title\n",
+          },
+          {
+            whenStdoutIncludes: "Renamed step A title",
+            send: "a\n",
+          },
+        ]
+      );
+      expect(plan.status).toBe(0);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract).toBeDefined();
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.steps.map((step: any) => step.id)).toEqual(["step-a", "step-b"]);
+      expect(after.contract.plan_v1.steps[0].summary).toBe("Renamed step A title");
+      expect(after.contract.plan_v1.steps[1].summary).toBe("Original step B title");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
 });
