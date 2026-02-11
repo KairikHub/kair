@@ -5,6 +5,23 @@ describe("providers registry", () => {
     expect(listProviders()).toContain("openai");
   });
 
+  test("listProviders includes mock only in test mode", () => {
+    const previous = process.env.KAIR_TEST_MODE;
+    try {
+      process.env.KAIR_TEST_MODE = "1";
+      expect(listProviders()).toContain("mock");
+
+      delete process.env.KAIR_TEST_MODE;
+      expect(listProviders()).not.toContain("mock");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.KAIR_TEST_MODE;
+      } else {
+        process.env.KAIR_TEST_MODE = previous;
+      }
+    }
+  });
+
   test("getProvider('openai') works", () => {
     const provider = getProvider("openai");
     expect(provider.name).toBe("openai");
@@ -12,6 +29,8 @@ describe("providers registry", () => {
   });
 
   test("getProvider('nope') throws with supported list", () => {
-    expect(() => getProvider("nope")).toThrow("Unsupported provider: nope. Supported: openai");
+    expect(() => getProvider("nope")).toThrow(/Unsupported provider: nope\./);
+    expect(() => getProvider("nope")).toThrow(/Supported:/);
+    expect(() => getProvider("nope")).toThrow(/openai/);
   });
 });

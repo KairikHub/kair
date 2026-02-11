@@ -6,6 +6,7 @@ export function printTopHelp() {
 ${label("Usage:")}
   kair contract <subcommand> [args]
   kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [<plan_json>]
   kair review [<contract_id>] [--last]
   kair accept "<contract_id>" [--actor <name>]
   kair emit "<contract_id>" [--last]
@@ -13,6 +14,7 @@ ${label("Usage:")}
 ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
   co-plan "<contract_id>"
+  plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [<plan_json>]
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   add-control "<contract_id>" "<control>" [--actor <name>]
@@ -30,6 +32,8 @@ ${label("Common subcommands:")}
 
 ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
+  Top-level "plan" defaults to --interactive=true and --last when no contract id is provided.
+  Use --interactive=false with JSON input as an argument or via stdin.
 
 ${label("Alias:")}
   kair propose (shorthand for contract propose)

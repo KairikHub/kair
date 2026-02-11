@@ -93,12 +93,6 @@ describe("e2e: plan non-interactive", () => {
 
       const afterDefaultLast = readContractFromStore(tmp.dataDir, contractId);
       expect(afterDefaultLast.contract.planJson.steps).toHaveLength(1);
-
-      const interactiveNotImplemented = runCli(["plan", contractId, planJsonRaw], env);
-      expect(interactiveNotImplemented.status).not.toBe(0);
-      expect(interactiveNotImplemented.stderr).toContain(
-        "Interactive planning not implemented yet. Use --interactive=false with a JSON plan input."
-      );
     } finally {
       tmp.cleanup();
     }

@@ -38,7 +38,11 @@ function resolveInvocation() {
   };
 }
 
-export function runCli(args: string[], envOverrides: Record<string, string> = {}): CliResult {
+export function runCli(
+  args: string[],
+  envOverrides: Record<string, string> = {},
+  stdinRaw?: string
+): CliResult {
   const invocation = resolveInvocation();
   const result = spawnSync(invocation.command, [...invocation.prefixArgs, ...args], {
     cwd: process.cwd(),
@@ -47,6 +51,7 @@ export function runCli(args: string[], envOverrides: Record<string, string> = {}
       ...envOverrides,
     },
     encoding: "utf8",
+    input: stdinRaw,
   });
 
   if (result.error) {
