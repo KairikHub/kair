@@ -136,3 +136,36 @@ Q:  # Open Questions (must be falsifiable)
 E:  # Evidence Pointers (optional)
   - `docs/DECISIONS.md`
   - `docs/CLI_COMMANDS.md`
+
+## Idea: Scoped Invariants for Agent Outputs
+dpc_version: 0.1
+topic: Enforcing binding decisions and eliminations across agent outputs using scoped, typed constraints
+
+A:  # Facts / Assumptions
+  - Agent systems frequently violate prior binding decisions (e.g., reintroducing eliminated commands).
+  - Keyword-based forbids are brittle and cause false positives and false negatives.
+  - This problem closely mirrors classical programming-language scope and name resolution (global vs local rules).
+  - Current AI orchestration tools treat rules as soft context, not hard constraints.
+
+C:  # Constraints
+  - Must not rely on keyword banning or string matching.
+  - Must support multiple scopes (e.g., global, repo, contract, command, prompt).
+  - Must be enforceable deterministically (reject/accept), not advisory.
+  - Must not turn `kair` into an orchestration or execution engine.
+  - Must remain CLI-first and local-first.
+
+D:  # Decisions (include rejected alternatives)
+  - Decision: Prefer typed schemas, enums, and structured output envelopes over word-based forbids.
+    Why: Structured validation avoids synonym drift (e.g., “deprecate” vs “sunset” vs “suppress”).
+    Rejected:
+      - Keyword forbidding / token scanning
+      - Relying on conversational memory or “please remember” instructions
+      - Manual human review as the primary enforcement mechanism
+
+Q:  # Open Questions (falsifiable)
+  - Can agent outputs reliably self-report structured compliance fields without external verification?
+  - What is the minimal schema that meaningfully enforces eliminations without over-constraining agents?
+  - How should scoped precedence (global → local) be resolved when invariants conflict?
+
+E:  # Evidence Pointers (optional)
+  - None (conceptual insight only)
