@@ -30,6 +30,7 @@ describe("plan llm request record sanitizer", () => {
       "another key sk-abcdef1234567890",
     ].join("\n");
     const record = buildRecordWithMessage(content);
+    record.changeRequestText = `Use key ${secret} only for local testing.`;
 
     const sanitized = sanitizePlanLlmRequestRecord(record, {
       secrets: [secret],
@@ -42,6 +43,7 @@ describe("plan llm request record sanitizer", () => {
     expect(serialized).toContain("[REDACTED_API_KEY]");
     expect(sanitized.messages[0].content).toContain("Bearer [REDACTED_API_KEY]");
     expect(sanitized.messages[0].content).toContain("KAIR_OPENAI_API_KEY=[REDACTED_API_KEY]");
+    expect(sanitized.changeRequestText).toContain("[REDACTED_API_KEY]");
   });
 
   test("truncates message content to safe length", () => {

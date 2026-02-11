@@ -434,6 +434,7 @@ async function requestPlanFromProvider(params: {
     timestamp: new Date().toISOString(),
     contractId: params.contractId,
     mode: params.mode,
+    changeRequestText: params.mode === "refine" ? params.instructions : undefined,
     messages: [
       {
         role: "system",

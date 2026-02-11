@@ -1,5 +1,5 @@
 import { OPENAI_PLAN_SYSTEM_PROMPT, buildPlanPrompt } from "../../src/core/llm/openai_responses";
-import { buildPlanGeneratePrompt } from "../../src/core/llm/plan_prompt";
+import { buildPlanGeneratePrompt, buildPlanRefinePrompt } from "../../src/core/llm/plan_prompt";
 
 describe("openai plan prompt", () => {
   test("buildPlanGeneratePrompt enforces strict JSON-only output with required schema fields", () => {
@@ -36,5 +36,30 @@ describe("openai plan prompt", () => {
     expect(prompt).toContain("Requested changes:");
     expect(prompt).toContain("Refine the plan to improve safety checks.");
     expect(prompt).toContain("Current plan text:");
+  });
+
+  test("buildPlanRefinePrompt includes modify rule and current plan JSON verbatim", () => {
+    const currentPlanJson = {
+      version: "kair.plan.v1" as const,
+      title: "Current plan",
+      steps: [
+        {
+          id: "step-alpha",
+          summary: "Do alpha work.",
+          details: "Alpha details.",
+        },
+      ],
+    };
+    const prompt = buildPlanRefinePrompt({
+      intent: "Improve plan quality",
+      currentPlanJson,
+      changeRequestText: "Add one validation step and keep current IDs.",
+    });
+
+    expect(prompt.system).toContain("ONLY a single JSON object");
+    expect(prompt.user).toContain(
+      "modify the existing plan; preserve step ids unless necessary; change only what user asked"
+    );
+    expect(prompt.user).toContain(JSON.stringify(currentPlanJson, null, 2));
   });
 });

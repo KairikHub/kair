@@ -12,6 +12,7 @@ export type PlanLlmRequestRecord = {
   timestamp: string;
   contractId: string;
   mode: PlanLlmRequestMode;
+  changeRequestText?: string;
   messages: PlanLlmRequestMessage[];
 };
 
@@ -64,6 +65,14 @@ export function sanitizePlanLlmRequestRecord(
   const secrets = (options.secrets || []).map((secret) => String(secret || "")).filter(Boolean);
   const maxMessageLength = clampMaxMessageLength(options.maxMessageLength);
 
+  const changeRequestTextRaw = record.changeRequestText;
+  let changeRequestText: string | undefined;
+  if (typeof changeRequestTextRaw === "string") {
+    changeRequestText = redactKnownSecrets(changeRequestTextRaw, secrets);
+    changeRequestText = redactApiKeys(changeRequestText);
+    changeRequestText = truncateMessage(changeRequestText, maxMessageLength);
+  }
+
   return {
     provider: String(record.provider || ""),
     model: String(record.model || ""),
@@ -71,6 +80,7 @@ export function sanitizePlanLlmRequestRecord(
     timestamp: String(record.timestamp || ""),
     contractId: String(record.contractId || ""),
     mode: record.mode,
+    changeRequestText,
     messages: (record.messages || []).map((message) => {
       const role = String(message?.role || "");
       let content = String(message?.content || "");

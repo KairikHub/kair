@@ -79,6 +79,13 @@ describe("integration: plan prompt artifacts", () => {
         expect(["generate", "refine"]).toContain(artifact.json.mode);
         expect(Array.isArray(artifact.json.messages)).toBe(true);
       }
+
+      const refineArtifacts = artifacts.filter((artifact) => artifact.file.endsWith("-plan-refine.json"));
+      expect(refineArtifacts.length).toBeGreaterThan(0);
+      for (const artifact of refineArtifacts) {
+        expect(typeof artifact.json.changeRequestText).toBe("string");
+        expect(artifact.json.changeRequestText.length).toBeGreaterThan(0);
+      }
     } finally {
       tmp.cleanup();
     }

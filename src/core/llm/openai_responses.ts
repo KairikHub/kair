@@ -1,6 +1,10 @@
 import type { Plan } from "../plans/schema";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "./plan_request_record";
-import { buildPlanGeneratePrompt, PLAN_GENERATE_SYSTEM_PROMPT } from "./plan_prompt";
+import {
+  buildPlanGeneratePrompt,
+  buildPlanRefinePrompt,
+  PLAN_GENERATE_SYSTEM_PROMPT,
+} from "./plan_prompt";
 
 type OpenAIPlanTextRequest = {
   contractId: string;
@@ -58,6 +62,18 @@ export function buildPlanPrompt(
     "contractId" | "intent" | "currentPlanJson" | "currentPlanText" | "instructions"
   >
 ) {
+  const hasCurrentPlan = Boolean(request.currentPlanJson);
+  const hasInstructions = Boolean(request.instructions && request.instructions.trim());
+
+  if (hasCurrentPlan && hasInstructions) {
+    const refinePrompt = buildPlanRefinePrompt({
+      intent: request.intent,
+      currentPlanJson: request.currentPlanJson as Plan,
+      changeRequestText: String(request.instructions || "").trim(),
+    });
+    return [refinePrompt.user, "", `Contract ID: ${request.contractId}`].join("\n");
+  }
+
   const prompt = buildPlanGeneratePrompt({
     intent: request.intent,
     currentPlanJson: request.currentPlanJson ?? null,

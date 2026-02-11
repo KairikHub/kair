@@ -5,6 +5,12 @@ type BuildPlanGeneratePromptInput = {
   currentPlanJson?: Plan | null;
 };
 
+type BuildPlanRefinePromptInput = {
+  intent: string;
+  currentPlanJson: Plan;
+  changeRequestText: string;
+};
+
 export const PLAN_GENERATE_SYSTEM_PROMPT =
   "You are a planning assistant. You output ONLY a single JSON object. No markdown. No code fences. No commentary.";
 
@@ -30,6 +36,19 @@ function safeJson(value: unknown) {
   }
 }
 
+function buildJsonOutputRequirements() {
+  return [
+    "Output requirements:",
+    `- Return a JSON object conforming exactly to this schema:\n${PLAN_JSON_SCHEMA}`,
+    '- "version" must equal "kair.plan.v1".',
+    '- Include top-level fields: "version", "title", and "steps".',
+    '- Each step must include "id" and "summary". Optional fields: "details", "tags", "risks".',
+    "- No markdown, no code fences, no commentary.",
+    "",
+    "If you cannot comply, output a valid fallback JSON object with version kair.plan.v1 and a single step explaining failure.",
+  ];
+}
+
 export function buildPlanGeneratePrompt(
   input: BuildPlanGeneratePromptInput
 ): { system: string; user: string } {
@@ -44,14 +63,30 @@ export function buildPlanGeneratePrompt(
       "Current plan JSON:",
       currentPlan,
       "",
-      "Output requirements:",
-      `- Return a JSON object conforming exactly to this schema:\n${PLAN_JSON_SCHEMA}`,
-      '- "version" must equal "kair.plan.v1".',
-      '- Include top-level fields: "version", "title", and "steps".',
-      '- Each step must include "id" and "summary". Optional fields: "details", "tags", "risks".',
-      "- No markdown, no code fences, no commentary.",
+      ...buildJsonOutputRequirements(),
+    ].join("\n"),
+  };
+}
+
+export function buildPlanRefinePrompt(
+  input: BuildPlanRefinePromptInput
+): { system: string; user: string } {
+  return {
+    system: PLAN_GENERATE_SYSTEM_PROMPT,
+    user: [
+      "Intent:",
+      input.intent,
       "",
-      "If you cannot comply, output a valid fallback JSON object with version kair.plan.v1 and a single step explaining failure.",
+      "Current plan JSON (verbatim):",
+      safeJson(input.currentPlanJson),
+      "",
+      "Requested changes:",
+      input.changeRequestText,
+      "",
+      "Refinement rules:",
+      "- modify the existing plan; preserve step ids unless necessary; change only what user asked",
+      "",
+      ...buildJsonOutputRequirements(),
     ].join("\n"),
   };
 }
