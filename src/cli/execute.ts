@@ -21,6 +21,7 @@ import { runContract, resumeContract } from "../core/contracts/run";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "../core/llm/plan_request_record";
 import type { Plan } from "../core/plans/schema";
 import { renderPlanPretty } from "../core/plans/render";
+import { diffPlansByStepId, type PlanStepDiffById } from "../core/plans/diff";
 import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
@@ -356,6 +357,35 @@ function renderPlanPreview(plan: Plan, options: { jsonOutput?: boolean } = {}) {
   console.log(["Preview current plan", renderPlanPretty(plan)].join("\n"));
 }
 
+function renderPlanDiffSection(diff: PlanStepDiffById) {
+  const lines = ["Plan diff:"];
+  if (!diff.added.length && !diff.removed.length && !diff.changed.length) {
+    lines.push("- no step-level changes");
+    console.log(lines.join("\n"));
+    return;
+  }
+  if (diff.added.length) {
+    lines.push(`- added: ${diff.added.map((step) => step.id).join(", ")}`);
+  }
+  if (diff.removed.length) {
+    lines.push(`- removed: ${diff.removed.map((step) => step.id).join(", ")}`);
+  }
+  if (diff.changed.length) {
+    const changed = diff.changed.map((step) => {
+      const fields: string[] = [];
+      if (step.before.title !== step.after.title) {
+        fields.push("title");
+      }
+      if (step.before.description !== step.after.description) {
+        fields.push("description");
+      }
+      return `${step.id}${fields.length ? ` (${fields.join(", ")})` : ""}`;
+    });
+    lines.push(`- changed: ${changed.join(", ")}`);
+  }
+  console.log(lines.join("\n"));
+}
+
 function readPlanFromFile(filePathRaw: string) {
   const resolved = path.resolve(filePathRaw);
   try {
@@ -638,8 +668,12 @@ async function handleTopLevelPlan(rest: string[]) {
             mode: candidatePlan ? "refine" : "generate",
             attemptsUsed: attempts,
           });
+          const priorPlan = candidatePlan;
           candidatePlan = result.plan;
           attempts = result.attemptsUsed;
+          if (!parsed.jsonOutput && priorPlan) {
+            renderPlanDiffSection(diffPlansByStepId(priorPlan, candidatePlan));
+          }
           printPlanDebugOutput({
             parsed,
             sanitizedRequestRecord: result.sanitizedRequestRecord,
@@ -696,8 +730,12 @@ async function handleTopLevelPlan(rest: string[]) {
             mode: "refine",
             attemptsUsed: attempts,
           });
+          const priorPlan = candidatePlan;
           candidatePlan = result.plan;
           attempts = result.attemptsUsed;
+          if (!parsed.jsonOutput && priorPlan) {
+            renderPlanDiffSection(diffPlansByStepId(priorPlan, candidatePlan));
+          }
           printPlanDebugOutput({
             parsed,
             sanitizedRequestRecord: result.sanitizedRequestRecord,
