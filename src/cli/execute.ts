@@ -11,7 +11,9 @@ import {
 } from "../core/contracts/controls";
 import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
+import { setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
+import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
@@ -23,6 +25,156 @@ import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
 import { renderEvidence, renderReview } from "./review";
+
+type ParsedTopLevelPlanOptions = {
+  contractIdRaw: string;
+  planInputRaw: string;
+  providerRaw: string;
+  modelRaw: string;
+  interactive: boolean;
+  last: boolean;
+  actorRaw: string;
+};
+
+function parseBooleanFlag(value: string, flagName: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") {
+    return true;
+  }
+  if (normalized === "false") {
+    return false;
+  }
+  fail(`Invalid value for ${flagName}: ${value}. Use true or false.`);
+}
+
+function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
+  const positional: string[] = [];
+  let providerRaw = "";
+  let modelRaw = "";
+  let interactive = true;
+  let last = false;
+  let actorRaw = "";
+
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token === "--last") {
+      last = true;
+      continue;
+    }
+    if (token === "--provider") {
+      providerRaw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!providerRaw) {
+        fail("Missing value for --provider.");
+      }
+      continue;
+    }
+    if (token.startsWith("--provider=")) {
+      providerRaw = token.slice("--provider=".length).trim();
+      if (!providerRaw) {
+        fail("Missing value for --provider.");
+      }
+      continue;
+    }
+    if (token === "--model") {
+      modelRaw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!modelRaw) {
+        fail("Missing value for --model.");
+      }
+      continue;
+    }
+    if (token.startsWith("--model=")) {
+      modelRaw = token.slice("--model=".length).trim();
+      if (!modelRaw) {
+        fail("Missing value for --model.");
+      }
+      continue;
+    }
+    if (token === "--interactive") {
+      const raw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!raw) {
+        fail("Missing value for --interactive.");
+      }
+      interactive = parseBooleanFlag(raw, "--interactive");
+      continue;
+    }
+    if (token.startsWith("--interactive=")) {
+      const raw = token.slice("--interactive=".length).trim();
+      if (!raw) {
+        fail("Missing value for --interactive.");
+      }
+      interactive = parseBooleanFlag(raw, "--interactive");
+      continue;
+    }
+    if (token === "--actor" || token === "--by") {
+      actorRaw = (args[i + 1] || "").trim();
+      i += 1;
+      if (!actorRaw) {
+        fail(`Missing value for ${token}.`);
+      }
+      continue;
+    }
+    if (token.startsWith("--actor=")) {
+      actorRaw = token.slice("--actor=".length).trim();
+      if (!actorRaw) {
+        fail("Missing value for --actor.");
+      }
+      continue;
+    }
+    if (token.startsWith("--by=")) {
+      actorRaw = token.slice("--by=".length).trim();
+      if (!actorRaw) {
+        fail("Missing value for --by.");
+      }
+      continue;
+    }
+    positional.push(token);
+  }
+
+  let contractIdRaw = "";
+  let planInputRaw = "";
+  if (positional.length === 1) {
+    if (positional[0].trim().startsWith("{")) {
+      planInputRaw = positional[0];
+    } else {
+      contractIdRaw = positional[0];
+    }
+  } else if (positional.length >= 2) {
+    contractIdRaw = positional[0];
+    planInputRaw = positional.slice(1).join(" ");
+  }
+
+  return {
+    contractIdRaw,
+    planInputRaw,
+    providerRaw,
+    modelRaw,
+    interactive,
+    last,
+    actorRaw,
+  };
+}
+
+async function readStdinUtf8() {
+  if (process.stdin.isTTY) {
+    return "";
+  }
+  return await new Promise<string>((resolve, reject) => {
+    let chunks = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (chunk: string) => {
+      chunks += chunk;
+    });
+    process.stdin.on("end", () => {
+      resolve(chunks);
+    });
+    process.stdin.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
 
 export async function executeCommand(tokens: string[], options: any = {}) {
   const parsed = parseContractCommand(tokens);
@@ -98,16 +250,63 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "plan": {
-      requireArgs(rest, 2, 'contract plan "<contract_id>" "<plan>"');
-      const [contractId, ...planParts] = rest;
-      const plan = planParts.join(" ").trim();
-      if (!plan) {
-        fail("Plan cannot be empty.");
+      if (isContractGroup) {
+        requireArgs(rest, 2, 'contract plan "<contract_id>" "<plan>"');
+        const [contractId, ...planParts] = rest;
+        const plan = planParts.join(" ").trim();
+        if (!plan) {
+          fail("Plan cannot be empty.");
+        }
+        const contract = getContract(contractId);
+        assertState(contract, ["DRAFT"], "plan");
+        contract.plan = plan;
+        transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
+        break;
       }
-      const contract = getContract(contractId);
-      assertState(contract, ["DRAFT"], "plan");
-      contract.plan = plan;
-      transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
+      const parsed = parseTopLevelPlanOptions(rest);
+      const providerName = normalizeProviderName(parsed.providerRaw || null);
+      try {
+        const provider = getProvider(providerName);
+        if (!provider.isInstalled()) {
+          fail(`Provider '${providerName}' is not installed.`);
+        }
+      } catch (error: any) {
+        fail(error && error.message ? error.message : String(error));
+      }
+      if (parsed.interactive) {
+        fail(
+          "Interactive planning not implemented yet. Use --interactive=false with a JSON plan input."
+        );
+      }
+      if (parsed.contractIdRaw && parsed.last) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      let contractId = parsed.contractIdRaw;
+      if (!contractId) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      }
+      let rawInput = parsed.planInputRaw.trim();
+      if (!rawInput) {
+        rawInput = (await readStdinUtf8()).trim();
+      }
+      if (!rawInput) {
+        fail("Missing plan input.");
+      }
+      let planJson;
+      try {
+        planJson = parseAndValidatePlanJson(rawInput);
+      } catch (error: any) {
+        const message = error && error.message ? error.message : String(error);
+        fail(`Invalid plan JSON: ${message}`);
+      }
+      const hasActorInput = Boolean(parsed.actorRaw || (process.env.KAIR_ACTOR || "").trim());
+      const actor = hasActorInput ? resolveActor(parsed.actorRaw) : undefined;
+      setPlanJson(contractId, planJson, actor);
+      console.log(`Structured plan set for Contract ${contractId}.`);
       break;
     }
     case "co-plan": {
