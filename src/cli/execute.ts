@@ -5,6 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { resolveActor } from "../core/actor";
 import { fail, warn } from "../core/errors";
 import { loadEvidenceIndex } from "../core/contracts/evidence";
+import { writePlanPromptArtifact } from "../core/contracts/artifacts";
 import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
 import {
   describeControls,
@@ -17,6 +18,7 @@ import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
 import { setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
+import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "../core/llm/plan_request_record";
 import type { Plan } from "../core/plans/schema";
 import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
@@ -394,12 +396,44 @@ async function requestPlanFromProvider(params: {
   currentPlanText: string | null;
   instructions: string;
   model: string | null;
+  mode: "generate" | "refine";
   attemptsUsed: number;
 }) {
   if (params.attemptsUsed >= MAX_PLAN_PROVIDER_ATTEMPTS) {
     fail(`Exceeded maximum provider planning attempts (${MAX_PLAN_PROVIDER_ATTEMPTS}).`);
   }
   let raw = "";
+  const promptRecord: PlanLlmRequestRecord = {
+    provider: params.provider.name,
+    model: params.model || (process.env.KAIR_LLM_MODEL || "").trim() || "default",
+    temperature: 0.1,
+    timestamp: new Date().toISOString(),
+    contractId: params.contractId,
+    mode: params.mode,
+    messages: [
+      {
+        role: "system",
+        content: "kair plan provider invocation",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(
+          {
+            intent: params.intent,
+            currentPlan: params.currentPlan,
+            currentPlanText: params.currentPlanText,
+            requestedChanges: params.instructions,
+          },
+          null,
+          2
+        ),
+      },
+    ],
+  };
+  const sanitizedPromptRecord = sanitizePlanLlmRequestRecord(promptRecord, {
+    maxMessageLength: 4000,
+  });
+  const promptArtifactPath = writePlanPromptArtifact(sanitizedPromptRecord);
   try {
     raw = await params.provider.planJson({
       contractId: params.contractId,
@@ -415,7 +449,7 @@ async function requestPlanFromProvider(params: {
 
   try {
     const parsed = parseAndValidatePlanJson(raw);
-    return { plan: parsed, attemptsUsed: params.attemptsUsed + 1 };
+    return { plan: parsed, attemptsUsed: params.attemptsUsed + 1, promptArtifactPath };
   } catch (error: any) {
     const message = error && error.message ? error.message : String(error);
     throw new Error(`Invalid plan JSON from provider: ${message}`);
@@ -471,6 +505,7 @@ async function handleTopLevelPlan(rest: string[]) {
           currentPlanText: targetContract.plan ?? null,
           instructions: parsed.instructionsRaw.trim(),
           model,
+          mode: existingPlan ? "refine" : "generate",
           attemptsUsed: 0,
         });
       } catch (error: any) {
@@ -531,6 +566,7 @@ async function handleTopLevelPlan(rest: string[]) {
             currentPlanText: targetContract.plan ?? null,
             instructions: initialInstructions,
             model,
+            mode: candidatePlan ? "refine" : "generate",
             attemptsUsed: attempts,
           });
           candidatePlan = result.plan;
@@ -583,6 +619,7 @@ async function handleTopLevelPlan(rest: string[]) {
             currentPlanText: targetContract.plan ?? null,
             instructions: refineInstructions,
             model,
+            mode: "refine",
             attemptsUsed: attempts,
           });
           candidatePlan = result.plan;
