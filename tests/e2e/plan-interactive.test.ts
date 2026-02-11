@@ -13,6 +13,14 @@ function readContractFromStore(dataDir: string, contractId: string) {
   return { storePath, contract, parsed };
 }
 
+function readPromptArtifactFiles(artifactsDir: string, contractId: string) {
+  const promptsDir = path.join(artifactsDir, contractId, "prompts");
+  if (!fs.existsSync(promptsDir)) {
+    return [];
+  }
+  return fs.readdirSync(promptsDir).sort();
+}
+
 type ScriptedInput = {
   whenStdoutIncludes: string;
   send: string;
@@ -140,7 +148,7 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [r]etry [c]ancel: ",
+            whenStdoutIncludes: "Provider output invalid. [r]etry or [c]ancel: ",
             send: "r\n",
           },
           {
@@ -158,7 +166,8 @@ describe("e2e: interactive plan", () => {
         ]
       );
       expect(plan.status).toBe(0);
-      expect(plan.stdout).toContain("Invalid plan JSON from provider");
+      expect(plan.stdout).toContain("Provider produced invalid plan JSON:");
+      expect(plan.stdout).toContain("Provider output invalid. [r]etry or [c]ancel: ");
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
@@ -167,6 +176,51 @@ describe("e2e: interactive plan", () => {
       expect(after.contract.plan_v1.steps.some((step: any) => step.id === "add-safety-gate")).toBe(
         true
       );
+      const promptArtifacts = readPromptArtifactFiles(tmp.artifactsDir, contractId);
+      expect(promptArtifacts.length).toBeGreaterThanOrEqual(2);
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("invalid-first cancel exits cleanly without persisting plan", async () => {
+    const tmp = makeTempRoot();
+    const contractId = "interactive_plan_invalid_cancel";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+      KAIR_MOCK_INVALID_FIRST: "1",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Interactive invalid cancel contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const plan = await runCliInteractive(
+        ["plan", contractId, "--provider", "mock"],
+        env,
+        [
+          {
+            whenStdoutIncludes: "Provider output invalid. [r]etry or [c]ancel: ",
+            send: "c\n",
+          },
+        ]
+      );
+      expect(plan.status).toBe(0);
+      expect(plan.stdout).toContain("Provider produced invalid plan JSON:");
+      expect(plan.stdout).toContain("Planning cancelled.");
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract).toBeDefined();
+      expect(after.contract.plan_v1).toBeUndefined();
+
+      const promptArtifacts = readPromptArtifactFiles(tmp.artifactsDir, contractId);
+      expect(promptArtifacts.length).toBeGreaterThanOrEqual(1);
     } finally {
       tmp.cleanup();
     }

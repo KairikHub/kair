@@ -334,7 +334,7 @@ async function promptPlanChoice(rl: any) {
 
 async function promptRetryOrCancel(rl: any) {
   while (true) {
-    const answer = (await rl.question("Plan options [r]etry [c]ancel: "))
+    const answer = (await rl.question("Provider output invalid. [r]etry or [c]ancel: "))
       .trim()
       .toLowerCase();
     if (answer === "r" || answer === "retry") {
@@ -494,7 +494,7 @@ async function requestPlanFromProvider(params: {
     };
   } catch (error: any) {
     const message = error && error.message ? error.message : String(error);
-    throw new Error(`Invalid plan JSON from provider: ${message}`);
+    throw new Error(`Provider produced invalid plan JSON: ${message}`);
   }
 }
 
