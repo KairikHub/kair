@@ -349,11 +349,11 @@ async function promptRetryOrCancel(rl: any) {
 
 function renderPlanPreview(plan: Plan, options: { jsonOutput?: boolean } = {}) {
   if (options.jsonOutput) {
-    console.log("PLAN PREVIEW");
+    console.log("Preview current plan");
     console.log(JSON.stringify(plan, null, 2));
     return;
   }
-  console.log(["PLAN PREVIEW", renderPlanPretty(plan)].join("\n"));
+  console.log(["Preview current plan", renderPlanPretty(plan)].join("\n"));
 }
 
 function readPlanFromFile(filePathRaw: string) {

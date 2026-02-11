@@ -25,7 +25,7 @@ function runCliInteractive(
 ) {
   return new Promise<{ status: number; stdout: string; stderr: string }>((resolve) => {
     const command = process.platform === "win32" ? "npm.cmd" : "npm";
-    const child = spawn(command, ["run", "kair", "--", ...args], {
+    const child = spawn(command, ["run", "--silent", "kair", "--", ...args], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -92,12 +92,14 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
             send: "a\n",
           },
         ]
       );
       expect(plan.status).toBe(0);
+      expect(plan.stdout).toContain("Preview current plan");
+      expect(plan.stdout).toContain("Plan options [a]ccept [r]efine [c]ancel: ");
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
@@ -105,6 +107,11 @@ describe("e2e: interactive plan", () => {
       expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
       expect(after.contract.plan_v1.steps.length).toBeGreaterThan(0);
       expect(after.contract.current_state).toBe("PLANNED");
+      expect(
+        after.contract.history.some((entry: any) =>
+          String(entry.message || "").startsWith("Plan updated via interactive refine.")
+        )
+      ).toBe(true);
     } finally {
       tmp.cleanup();
     }
@@ -133,15 +140,15 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [r]etry [c]ancel:",
+            whenStdoutIncludes: "Plan options [r]etry [c]ancel: ",
             send: "r\n",
           },
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
             send: "r\n",
           },
           {
-            whenStdoutIncludes: "Explain changes:",
+            whenStdoutIncludes: "Explain changes: ",
             send: "Add safety gate\n",
           },
           {
@@ -204,11 +211,11 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel:",
+            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
             send: "r\n",
           },
           {
-            whenStdoutIncludes: "Explain changes:",
+            whenStdoutIncludes: "Explain changes: ",
             send: "rename step A title\n",
           },
           {
@@ -218,6 +225,13 @@ describe("e2e: interactive plan", () => {
         ]
       );
       expect(plan.status).toBe(0);
+      expect(plan.stdout).toContain("Preview current plan");
+      expect(plan.stdout).toContain("Plan options [a]ccept [r]efine [c]ancel: ");
+      expect(plan.stdout).toContain("Explain changes: ");
+      expect((plan.stdout.match(/Preview current plan/g) || []).length).toBeGreaterThanOrEqual(2);
+      expect(
+        (plan.stdout.match(/Plan options \[a\]ccept \[r\]efine \[c\]ancel: /g) || []).length
+      ).toBeGreaterThanOrEqual(2);
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
@@ -225,6 +239,11 @@ describe("e2e: interactive plan", () => {
       expect(after.contract.plan_v1.steps.map((step: any) => step.id)).toEqual(["step-a", "step-b"]);
       expect(after.contract.plan_v1.steps[0].summary).toBe("Renamed step A title");
       expect(after.contract.plan_v1.steps[1].summary).toBe("Original step B title");
+      expect(
+        after.contract.history.some((entry: any) =>
+          String(entry.message || "").startsWith("Plan updated via interactive refine.")
+        )
+      ).toBe(true);
     } finally {
       tmp.cleanup();
     }
