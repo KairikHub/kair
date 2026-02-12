@@ -73,6 +73,20 @@ Grant List Output (current static set):
 - Written on `run` to `artifacts/<contract_id>/<timestamp>-run.json`.
 - Artifacts include `executedVersion`, `controlsApproved`, an intent/plan snapshot, and outcome.
 
+## DPC (Decision-Preserving Compression)
+- DPC is a compact, structured decision-state artifact used to preserve planning/refinement-critical context in a portable form.
+- Canonical shape (`kair.dpc.v1`) maps to A/C/D/Q/E semantics:
+  - A = `assumptions`
+  - C = `constraints`
+  - D = `decisions`
+  - Q = `open_questions`
+  - E = `evidence`
+  - Plus `topic`, `version`, and `updated_at`.
+- Storage path: `artifacts/<contract_id>/dpc/dpc_v1.json`.
+- Current plan generate/refine flows append prompt/plan evidence into DPC so context remains deterministic and replay-friendly across runs.
+- DPC is not narrative prose; it is decision-critical state meant for validation, portability, and auditability.
+- Debug visibility: `kair plan --debug` prints the prompt payload plus the DPC artifact path (and a DPC preview). `--json` mode suppresses this debug output.
+
 ## UI Shell
 - Local UI is a thin shell over the same CLI engine and store.
 - The UI server exposes a local HTTP API in the same process; there is no separate API service/container.

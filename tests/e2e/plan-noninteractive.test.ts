@@ -243,7 +243,7 @@ describe("e2e: plan non-interactive", () => {
     }
   });
 
-  test("kair plan --debug prints provider details and prompt artifact path", () => {
+  test("kair plan --debug prints provider details, prompt artifact path, and dpc artifact path", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_debug";
     const env = {
@@ -276,6 +276,10 @@ describe("e2e: plan non-interactive", () => {
       expect(debugResult.status).toBe(0);
       expect(debugResult.stdout).toContain("Provider: mock");
       expect(debugResult.stdout).toContain("prompts/");
+      expect(debugResult.stdout).toContain("DPC artifact:");
+      expect(debugResult.stdout).toContain("/dpc/dpc_v1.json");
+      expect(debugResult.stdout).toContain("DPC preview:");
+      expect(debugResult.stdout).toContain("DPC (kair.dpc.v1)");
 
       const jsonRaw = JSON.stringify({
         version: "kair.plan.v1",
@@ -300,6 +304,8 @@ describe("e2e: plan non-interactive", () => {
       expect(suppressedDebugResult.status).toBe(0);
       expect(suppressedDebugResult.stdout).not.toContain("PLAN DEBUG");
       expect(suppressedDebugResult.stdout).not.toContain("Prompt artifact:");
+      expect(suppressedDebugResult.stdout).not.toContain("DPC artifact:");
+      expect(suppressedDebugResult.stdout).not.toContain("DPC (kair.dpc.v1)");
       expect(() => JSON.parse(suppressedDebugResult.stdout)).not.toThrow();
     } finally {
       tmp.cleanup();

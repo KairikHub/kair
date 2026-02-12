@@ -6,6 +6,8 @@ import { resolveActor } from "../core/actor";
 import { fail, warn } from "../core/errors";
 import { loadEvidenceIndex } from "../core/contracts/evidence";
 import { writePlanPromptArtifact } from "../core/contracts/artifacts";
+import { DPC_VERSION, DpcV1 } from "../core/dpc/schema";
+import { getDpcPath, loadDpcV1, saveDpcV1 } from "../core/dpc/storage";
 import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
 import {
   describeControls,
@@ -16,7 +18,7 @@ import {
 } from "../core/contracts/controls";
 import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
-import { setPlanJson } from "../core/contracts/plan_json";
+import { getPlanJsonRef, setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "../core/llm/plan_request_record";
 import type { Plan } from "../core/plans/schema";
@@ -27,6 +29,7 @@ import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
+import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
@@ -35,6 +38,7 @@ import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
 import { renderEvidence, renderReview } from "./review";
+import { renderDpcPretty } from "./render_dpc";
 
 type ParsedTopLevelPlanOptions = {
   contractIdRaw: string;
@@ -57,6 +61,12 @@ const MAX_PLAN_PROVIDER_ATTEMPTS = 5;
 const GRANT_FORMAT_REGEX = /^[a-z0-9]+:[a-z0-9_-]+$/;
 const INVALID_GRANT_FORMAT_MESSAGE =
   "Invalid grant format. Expected <namespace>:<permission> (example: local:write).";
+const DPC_DEFAULT_CONSTRAINTS = [
+  "LLM output must be strict JSON-only.",
+  "Pretty formatting is produced by the CLI renderer only.",
+  "--json mode outputs only JSON.",
+  "Refine operates on existing plan and preserves step IDs.",
+];
 const AVAILABLE_GRANTS = [
   "local:read",
   "local:write",
@@ -64,6 +74,46 @@ const AVAILABLE_GRANTS = [
   "network:read",
   "network:write",
 ];
+
+function buildInitialDpc(contractId: string): DpcV1 {
+  return {
+    version: DPC_VERSION,
+    topic: contractId,
+    assumptions: [],
+    constraints: [...DPC_DEFAULT_CONSTRAINTS],
+    decisions: [],
+    open_questions: [],
+    evidence: [],
+    updated_at: now(),
+  };
+}
+
+function buildDpcEvidenceId(kind: "prompt" | "plan") {
+  const timestampPrefix = now().replace(/[^0-9]/g, "");
+  const randomSuffix = Math.random().toString(16).slice(2, 8);
+  return `${timestampPrefix}-${kind}-${randomSuffix}`;
+}
+
+function updateDpcEvidenceForPlanAttempt(params: {
+  contractId: string;
+  promptArtifactPath: string;
+}) {
+  const dpcArtifactPath = getDpcPath(params.contractId);
+  const dpc = loadDpcV1(params.contractId) || buildInitialDpc(params.contractId);
+  dpc.evidence.push({
+    id: buildDpcEvidenceId("prompt"),
+    kind: "prompt",
+    ref: params.promptArtifactPath,
+  });
+  dpc.evidence.push({
+    id: buildDpcEvidenceId("plan"),
+    kind: "plan",
+    ref: getPlanJsonRef(params.contractId),
+  });
+  dpc.updated_at = now();
+  saveDpcV1(params.contractId, dpc);
+  return { dpcArtifactPath, dpc };
+}
 
 function resolveContractPlanV1(contract: any): Plan | null {
   if (contract?.plan_v1 && contract.plan_v1.version === "kair.plan.v1") {
@@ -408,6 +458,8 @@ function printPlanDebugOutput(params: {
   parsed: ParsedTopLevelPlanOptions;
   sanitizedRequestRecord: PlanLlmRequestRecord;
   promptArtifactPath: string;
+  dpcArtifactPath?: string;
+  dpcPreview?: DpcV1;
 }) {
   if (!params.parsed.debug || params.parsed.jsonOutput) {
     return;
@@ -417,6 +469,13 @@ function printPlanDebugOutput(params: {
   console.log(`Model: ${params.sanitizedRequestRecord.model}`);
   console.log(`Temperature: ${params.sanitizedRequestRecord.temperature}`);
   console.log(`Prompt artifact: ${params.promptArtifactPath}`);
+  if (params.dpcArtifactPath && fs.existsSync(params.dpcArtifactPath)) {
+    console.log(`DPC artifact: ${params.dpcArtifactPath}`);
+    if (params.dpcPreview) {
+      console.log("DPC preview:");
+      console.log(renderDpcPretty(params.dpcPreview));
+    }
+  }
   console.log("Sanitized request JSON:");
   console.log(JSON.stringify(params.sanitizedRequestRecord, null, 2));
 }
@@ -514,18 +573,36 @@ async function requestPlanFromProvider(params: {
     fail(error && error.message ? error.message : String(error));
   }
 
+  let parsed: Plan;
   try {
-    const parsed = parseAndValidatePlanJson(raw);
-    return {
-      plan: parsed,
-      attemptsUsed: params.attemptsUsed + 1,
-      promptArtifactPath,
-      sanitizedRequestRecord: sanitizedPromptRecord,
-    };
+    parsed = parseAndValidatePlanJson(raw);
   } catch (error: any) {
     const message = error && error.message ? error.message : String(error);
     throw new Error(`Provider produced invalid plan JSON: ${message}`);
   }
+
+  let dpcArtifactPath = "";
+  let dpcPreview: DpcV1 | undefined;
+  try {
+    const dpcUpdate = updateDpcEvidenceForPlanAttempt({
+      contractId: params.contractId,
+      promptArtifactPath,
+    });
+    dpcArtifactPath = dpcUpdate.dpcArtifactPath;
+    dpcPreview = dpcUpdate.dpc;
+  } catch (error: any) {
+    const message = error && error.message ? error.message : String(error);
+    fail(`Failed to persist DPC for Contract "${params.contractId}": ${message}`);
+  }
+
+  return {
+    plan: parsed,
+    attemptsUsed: params.attemptsUsed + 1,
+    promptArtifactPath,
+    dpcArtifactPath,
+    dpcPreview,
+    sanitizedRequestRecord: sanitizedPromptRecord,
+  };
 }
 
 async function handleTopLevelPlan(rest: string[]) {
@@ -615,6 +692,8 @@ async function handleTopLevelPlan(rest: string[]) {
         parsed,
         sanitizedRequestRecord: result.sanitizedRequestRecord,
         promptArtifactPath: result.promptArtifactPath,
+        dpcArtifactPath: result.dpcArtifactPath,
+        dpcPreview: result.dpcPreview,
       });
       console.log(`Structured plan set for Contract ${contractId}.`);
       return;
@@ -678,6 +757,8 @@ async function handleTopLevelPlan(rest: string[]) {
             parsed,
             sanitizedRequestRecord: result.sanitizedRequestRecord,
             promptArtifactPath: result.promptArtifactPath,
+            dpcArtifactPath: result.dpcArtifactPath,
+            dpcPreview: result.dpcPreview,
           });
           break;
         } catch (error: any) {
@@ -740,6 +821,8 @@ async function handleTopLevelPlan(rest: string[]) {
             parsed,
             sanitizedRequestRecord: result.sanitizedRequestRecord,
             promptArtifactPath: result.promptArtifactPath,
+            dpcArtifactPath: result.dpcArtifactPath,
+            dpcPreview: result.dpcPreview,
           });
           break;
         } catch (error: any) {
