@@ -16,16 +16,14 @@ kair <command>
 ### Propose and Plan
 - `kair propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
   - Top-level shorthand for contract propose.
-- `kair contract create --id <contract_id> "<intent>"`
-  - Create a new contract with an explicit ID.
 - `kair contract propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
   - Propose a contract with optional required controls.
-- `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--instructions <text>] [--file <path>] [--json] [<plan_json>]`
+- `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
   - With no contract id, defaults to the most recently updated contract.
-  - `--interactive=false --instructions "<text>"` performs one provider refine and persists.
-  - `--interactive=false` without instructions accepts JSON from `--file`, positional argument, or stdin.
+  - `--interactive=false` accepts JSON from positional argument or stdin.
   - `--json` implies `--interactive=false`, requires JSON from positional argument or stdin, and prints only validated JSON.
+  - `--actor` (alias: `--by`) attributes plan history entries.
 - `kair contract plan <contract_id> "<plan>"`
   - Attach a legacy text plan and transition to `PLANNED`.
 
@@ -83,7 +81,7 @@ kair <command>
 
 ```bash
 kair propose --id contract_demo "Contract Demo"
-kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details"},{"id":"validate-change","summary":"Run tests and verify outcomes"}]}'
+kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
 kair contract request-approval contract_demo
 kair contract approve contract_demo --actor Damien
 kair contract run contract_demo

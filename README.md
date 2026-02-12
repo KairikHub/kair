@@ -26,7 +26,7 @@ docker exec -it kair bash
 kair --help
 kair grant list
 kair propose --id smoke_demo "Smoke test install"
-kair plan smoke_demo --interactive=false '{"version":"kair.plan.v1","title":"Smoke test plan","steps":[{"id":"smoke-check","summary":"Run a minimal install verification"}]}'
+kair plan smoke_demo --interactive=false '{"version":"kair.plan.v1","title":"Smoke test plan","steps":[{"id":"smoke-check","summary":"Run a minimal install verification","details":"Verify CLI help, governance, and review outputs are functional."}]}'
 kair contract request-approval smoke_demo
 kair contract approve smoke_demo --actor tester
 kair contract run smoke_demo
