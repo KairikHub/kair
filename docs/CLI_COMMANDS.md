@@ -64,8 +64,11 @@ kair <command>
   - `--last` targets the most recently updated contract.
 
 ### Inspection
-- `kair contract status <contract_id>`
+- `kair status [<contract_id>] [--last]`
   - Print detailed contract state, versions, history, and artifacts.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract status [<contract_id>] [--last]`
+  - Same behavior as top-level `kair status`.
 - `kair contract list`
   - List known contract IDs.
 

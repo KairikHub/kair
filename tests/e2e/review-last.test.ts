@@ -38,6 +38,21 @@ describe("e2e: review surface", () => {
       expect(reviewDefault.stdout).toContain("KAIR REVIEW");
       expect(reviewDefault.stdout).toContain(contractId);
 
+      const statusDefault = runCli(["status"], env);
+      expect(statusDefault.status).toBe(0);
+      expect(statusDefault.stdout).toContain("Contract Summary");
+      expect(statusDefault.stdout).toContain(`Contract: ${contractId}`);
+
+      const statusLast = runCli(["status", "--last"], env);
+      expect(statusLast.status).toBe(0);
+      expect(statusLast.stdout).toContain("Contract Summary");
+      expect(statusLast.stdout).toContain(`Contract: ${contractId}`);
+
+      const statusById = runCli(["status", contractId], env);
+      expect(statusById.status).toBe(0);
+      expect(statusById.stdout).toContain("Contract Summary");
+      expect(statusById.stdout).toContain(`Contract: ${contractId}`);
+
       const accept = runCli(["accept", contractId, "--actor", "e2e-actor"], env);
       expect(accept.status).toBe(0);
 

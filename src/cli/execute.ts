@@ -1030,8 +1030,21 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "status": {
-      requireArgs(rest, 1, 'contract status "<contract_id>"');
-      const [contractId] = rest;
+      let contractId = "";
+      if (rest.length === 0 || (rest.length === 1 && rest[0] === "--last")) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else if (rest.length === 1) {
+        contractId = rest[0];
+      } else {
+        const usage = isContractGroup
+          ? "contract status [<contract_id>] [--last]"
+          : "status [<contract_id>] [--last]";
+        fail(`Invalid arguments. Usage: ${usage}`);
+      }
       const contract = getContract(contractId);
       showContractStatus(contract);
       break;

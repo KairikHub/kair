@@ -27,7 +27,7 @@ ${label("Common subcommands:")}
   review [<contract_id>] [--last]
   accept "<contract_id>" [--actor <name>]
   emit "<contract_id>" [--last]
-  status "<contract_id>"
+  status [<contract_id>] [--last]
   list
 
 ${label("Advanced/demo:")}
@@ -63,7 +63,7 @@ ${label("Subcommands:")}
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
-  status "<contract_id>"
+  status [<contract_id>] [--last]
   list
 
 ${label("Advanced/demo:")}
