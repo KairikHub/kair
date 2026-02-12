@@ -19,7 +19,7 @@ ${label("Common subcommands:")}
   require-controls "<contract_id>" "<controls_csv>"
   grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   request-approval "<contract_id>"
-  approve "<contract_id>" [--actor <name>]
+  approve [<contract_id>] [--last] [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
@@ -58,7 +58,7 @@ ${label("Subcommands:")}
   plan "<contract_id>" "<plan>"
   require-controls "<contract_id>" "<controls_csv>"
   request-approval "<contract_id>"
-  approve "<contract_id>" [--actor <name>]
+  approve [<contract_id>] [--last] [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]

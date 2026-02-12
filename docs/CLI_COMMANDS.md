@@ -39,8 +39,11 @@ kair <command>
   - Approve a namespaced grant on a specific contract.
 - `kair contract request-approval <contract_id>`
   - Move a planned contract into approval request state.
-- `kair contract approve <contract_id> [--actor <name>]`
+- `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract approve [<contract_id>] [--last] [--actor <name>]`
+  - Same behavior as top-level `kair approve`.
 
 ### Execution and Recovery
 - `kair contract run <contract_id> [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`

@@ -886,8 +886,23 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "approve": {
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 1, 'contract approve "<contract_id>" [--actor <name>]');
-      const [contractId, ...legacyParts] = remaining;
+      const hasLast = remaining.includes("--last");
+      const positional = remaining.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      let contractId = "";
+      let legacyParts: string[] = [];
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+        legacyParts = positional.slice(1);
+      }
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();

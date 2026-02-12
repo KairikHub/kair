@@ -1,5 +1,15 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
+
+function loadContract(dataDir: string, contractId: string) {
+  const storePath = path.join(dataDir, "contracts.json");
+  const raw = fs.readFileSync(storePath, "utf8");
+  const parsed = JSON.parse(raw);
+  return (parsed.contracts || []).find((item: any) => item.id === contractId);
+}
 
 describe("e2e: review surface", () => {
   test("review defaults to last and top-level review/accept/emit render one-screen summary", () => {
@@ -87,6 +97,73 @@ describe("e2e: review surface", () => {
 
       const oldTopLevelEvidence = runCli(["evidence", contractId], env);
       expect(oldTopLevelEvidence.status).not.toBe(0);
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("approve defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "approve_first";
+    const secondId = "approve_second";
+    const thirdId = "approve_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Approve first"],
+        ["contract", "plan", firstId, "Plan first"],
+        ["contract", "request-approval", firstId],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Approve second"],
+        ["contract", "plan", secondId, "Plan second"],
+        ["contract", "request-approval", secondId],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const approveDefault = runCli(["approve", "--actor", "e2e-actor"], env);
+      expect(approveDefault.status).toBe(0);
+
+      const firstAfterDefault = loadContract(tmp.dataDir, firstId);
+      const secondAfterDefault = loadContract(tmp.dataDir, secondId);
+      expect(firstAfterDefault.current_state).toBe("AWAITING_APPROVAL");
+      expect(secondAfterDefault.current_state).toBe("APPROVED");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Approve third"],
+        ["contract", "plan", thirdId, "Plan third"],
+        ["contract", "request-approval", thirdId],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const approveLast = runCli(["approve", "--last", "--actor", "e2e-actor"], env);
+      expect(approveLast.status).toBe(0);
+
+      const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
+      expect(thirdAfterLast.current_state).toBe("APPROVED");
+
+      const approveExplicit = runCli(["approve", firstId, "--actor", "e2e-actor"], env);
+      expect(approveExplicit.status).toBe(0);
+
+      const firstAfterExplicit = loadContract(tmp.dataDir, firstId);
+      expect(firstAfterExplicit.current_state).toBe("APPROVED");
     } finally {
       tmp.cleanup();
     }
