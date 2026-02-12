@@ -20,6 +20,7 @@ kair <command>
   - Propose a contract with optional required controls.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.
   - `--interactive=false` accepts JSON from positional argument or stdin.
   - `--json` implies `--interactive=false`, requires JSON from positional argument or stdin, and prints only validated JSON.

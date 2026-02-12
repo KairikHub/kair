@@ -34,6 +34,7 @@ ${label("Advanced/demo:")}
   --pause-at pauses at an internal execution milestone (not user-facing yet).
   Top-level "plan" defaults to --interactive=true and --last when no contract id is provided.
   Use --interactive=false with positional JSON input or stdin for direct plan input.
+  Plan JSON shape: version/title/steps; each step requires id + summary, with optional details.
   --json implies --interactive=false and requires JSON via positional arg or stdin (no prompts).
   Use --debug to print provider/model/temp, prompt artifact path, and sanitized request JSON (--json mode suppresses debug output).
 
