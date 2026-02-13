@@ -3,7 +3,10 @@ AI outputs faster than humans can take responsibility for it.  Kair is here to c
 
 In our pipe dream roadmap, "kair" will be the "git" for ai work, and "Kairik" will be the github of AI. 
 
-<img alt="image" src="https://github.com/user-attachments/assets/f6be94d7-c859-4533-b889-d14ac808127c" />
+<img alt="visualize who kair works with" src="https://github.com/user-attachments/assets/f6be94d7-c859-4533-b889-d14ac808127c" />
+
+<img alt="visualize how a kair workflow works" src="https://github.com/user-attachments/assets/889354fe-3725-49d9-b1c9-e57e39444286" />
+
 
 # How? 
 Kair is a CLI-first control plane for delegated cognition and AI work, built around auditable contracts and controls and evidence to let humans safely take responsibility for AI generated work.  
