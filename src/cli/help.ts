@@ -28,16 +28,6 @@ ${label("review and inspection")}
   status                  Show full Contract status.
   list                    List known Contracts.
 
-${label("common usage examples")}
-  kair propose "<intent>" [--id <contract_id>]
-  kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
-  kair request-approval [<contract_id>] [--last]
-  kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
-  kair review [<contract_id>] [--last]
-  kair accept "<contract_id>" [--actor <name>]
-  kair emit [<contract_id>] [--last]
-
 See "kair contract --help" for contract subcommands.
 See "kair grant --help" for grant usage.`);
 }
