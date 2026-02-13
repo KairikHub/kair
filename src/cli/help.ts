@@ -1,10 +1,34 @@
 import { label, title } from "./format";
 
 export function printTopHelp() {
-  console.log(`${title("Kair CLI")}
+  console.log(`${title("Kair")}
 
-${label("Usage:")}
-  kair contract <subcommand> [args]
+${label("usage:")} kair [--help] <command> [<args>]
+
+These are common Kair commands used in various situations:
+
+${label("start a workflow")}
+  propose                 Create a new Contract in DRAFT.
+  plan                    Generate/refine a structured plan (kair.plan.v1).
+  contract request-approval
+                          Move a planned Contract to approval requested.
+  approve                 Approve a Contract version.
+  contract run            Execute an approved Contract.
+
+${label("governance and controls")}
+  grant                   Approve a control grant.
+  contract pause          Pause execution.
+  contract resume         Resume execution.
+  contract rewind         Rewind/supersede a Contract version.
+
+${label("review and inspection")}
+  review                  Show one-screen review summary.
+  accept                  Record acceptance of responsibility.
+  emit                    Show evidence checklist.
+  status                  Show full Contract status.
+  contract list           List known Contracts.
+
+${label("common usage examples")}
   kair propose "<intent>" [--id <contract_id>]
   kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
   kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
@@ -12,38 +36,8 @@ ${label("Usage:")}
   kair accept "<contract_id>" [--actor <name>]
   kair emit "<contract_id>" [--last]
 
-${label("Common subcommands:")}
-  propose "<intent>"
-  plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
-  plan "<contract_id>" "<plan>"
-  grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
-  request-approval "<contract_id>"
-  approve [<contract_id>] [--last] [--actor <name>]
-  run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  resume "<contract_id>" [--actor <name>]
-  pause "<contract_id>" [--actor <name>]
-  rewind "<contract_id>" [--actor <name>] [<reason>]
-  review [<contract_id>] [--last]
-  accept "<contract_id>" [--actor <name>]
-  emit "<contract_id>" [--last]
-  status [<contract_id>] [--last]
-  list
-
-${label("Advanced/demo:")}
-  --pause-at pauses at an internal execution milestone (not user-facing yet).
-  Top-level "plan" defaults to --interactive=true and --last when no contract id is provided.
-  Use --interactive=false with positional JSON input or stdin for direct plan input.
-  Plan JSON shape: version/title/steps; each step requires id + summary, with optional details.
-  --json implies --interactive=false and requires JSON via positional arg or stdin (no prompts).
-  Use --debug to print provider/model/temp, prompt artifact path, and sanitized request JSON (--json mode suppresses debug output).
-
-${label("Alias:")}
-  kair propose (shorthand for contract propose)
-
-${label("Actor flags:")}
-  --actor <name> (alias: --by)
-
-Run "kair contract --help" for full details.`);
+See "kair contract --help" for contract subcommands.
+See "kair grant --help" for grant usage.`);
 }
 
 export function printContractHelp() {
