@@ -36,6 +36,7 @@ import {
   printPauseHelp,
   printPlanHelp,
   printProposeHelp,
+  printReviewHelp,
   printRewindHelp,
   printRequestApprovalHelp,
   printResumeHelp,
@@ -1258,6 +1259,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "review": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printReviewHelp();
+        return;
+      }
       let contractId = "";
       if (rest.length === 0 || rest[0] === "--last") {
         const lastId = getLastContractId();

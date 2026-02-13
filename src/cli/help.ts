@@ -167,6 +167,21 @@ ${label("Notes:")}
 `);
 }
 
+export function printReviewHelp() {
+  console.log(`${title("Kair Review Command")}
+
+${label("Usage:")}
+  kair review [<contract_id>] [--last]
+
+${label("Description:")}
+  Show a one-screen review summary for a Contract.
+
+${label("Notes:")}
+  If <contract_id> is omitted, review targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
