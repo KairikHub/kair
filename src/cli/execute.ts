@@ -29,7 +29,7 @@ import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
-import { printContractHelp, printGrantHelp, printProposeHelp, printTopHelp } from "./help";
+import { printContractHelp, printGrantHelp, printPlanHelp, printProposeHelp, printTopHelp } from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
@@ -931,6 +931,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "plan": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printPlanHelp();
+        return;
+      }
       if (isContractGroup) {
         requireArgs(rest, 2, 'contract plan "<contract_id>" "<plan>"');
         const [contractId, ...planParts] = rest;

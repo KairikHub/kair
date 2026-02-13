@@ -47,6 +47,25 @@ ${label("Notes:")}
 `);
 }
 
+export function printPlanHelp() {
+  console.log(`${title("Kair Plan Command")}
+
+${label("Usage:")}
+  kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [--instructions <text>] [--file <path>] [<plan_json>]
+  kair contract plan "<contract_id>" "<plan>"
+
+${label("Modes:")}
+  Interactive (default): generates/refines plans with accept/refine/cancel prompts.
+  Non-interactive: use --interactive=false with JSON from arg, --file, or stdin.
+  JSON output: --json prints only validated kair.plan.v1 JSON.
+
+${label("Notes:")}
+  If <contract_id> is omitted, plan targets the most recently updated Contract.
+  --json implies --interactive=false.
+  --debug prints prompt payload and DPC details (suppressed in --json mode).
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
