@@ -228,6 +228,20 @@ ${label("Notes:")}
 `);
 }
 
+export function printContractsHelp() {
+  console.log(`${title("Kair Contracts Command")}
+
+${label("Usage:")}
+  kair contracts
+  kair contracts --help
+  kair contract list
+  kair contract list --help
+
+${label("Description:")}
+  List known Contract IDs.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

@@ -32,6 +32,7 @@ import { parseContractCommand, extractActorFlags, extractProposeOptions, extract
 import {
   printAcceptHelp,
   printApproveHelp,
+  printContractsHelp,
   printContractHelp,
   printEmitHelp,
   printGrantHelp,
@@ -1351,6 +1352,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "contracts": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printContractsHelp();
+        return;
+      }
       requireArgs(rest, 0, "contracts");
       listContracts();
       break;
@@ -1358,6 +1363,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     case "list": {
       if (!isContractGroup) {
         failWithHelp('Unknown command "list".', "top");
+      }
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printContractsHelp();
+        return;
       }
       requireArgs(rest, 0, "contract list");
       listContracts();
