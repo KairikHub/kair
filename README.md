@@ -19,6 +19,20 @@ docker compose up -d --build
 This starts the local UI at `http://localhost:3000` and prepares the CLI container runtime.
 OpenClaw is installed from npm during image build; no git submodule setup is required.
 
+## CLI Command Surface
+The current `kair --help` command groups are:
+
+- Start a workflow:
+  - `contract` create a new Contract in `DRAFT`
+  - `plan` generate/refine structured `kair.plan.v1`
+  - `propose` submit a planned Contract for approval
+  - `approve` approve a Contract version
+  - `run` execute an approved Contract
+- Governance and controls:
+  - `grant`, `pause`, `resume`, `rewind`
+- Review and inspection:
+  - `review`, `accept`, `emit`, `status`, `contracts`
+
 ## Quick Smoke Test
 Run these commands to verify the install works end-to-end:
 
@@ -28,11 +42,13 @@ kair --help
 kair grant list
 kair contract --id smoke_demo "Smoke test install"
 kair plan smoke_demo --interactive=false '{"version":"kair.plan.v1","title":"Docs example plan","steps":[{"id":"s1","summary":"Verify install","details":"Run kair --help and confirm core commands work."}]}'
-kair propose
+kair propose --last
 kair approve smoke_demo --actor tester
 kair run
 kair review
+kair status
 kair emit
+kair contracts
 kair accept smoke_demo --actor tester
 ```
 
