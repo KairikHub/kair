@@ -14,6 +14,7 @@ services:
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
       KAIR_LLM_PROVIDER: ${KAIR_LLM_PROVIDER:-openai}
       KAIR_LLM_MODEL: ${KAIR_LLM_MODEL:-gpt-5.1}
+      OPENCLAW_STATE_DIR: ${OPENCLAW_STATE_DIR:-/home/node/.openclaw}
     volumes:
       - .:/app
       - /app/node_modules

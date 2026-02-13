@@ -48,6 +48,7 @@ export function extractRunOptions(args: string[]) {
   let pauseReason = "";
   let debug = false;
   let jsonOutput = false;
+  let force = false;
   let providerRaw = "";
   let modelRaw = "";
   for (let i = 0; i < args.length; i += 1) {
@@ -72,6 +73,10 @@ export function extractRunOptions(args: string[]) {
     }
     if (args[i] === "--json") {
       jsonOutput = true;
+      continue;
+    }
+    if (args[i] === "--force") {
+      force = true;
       continue;
     }
     if (args[i] === "--provider") {
@@ -101,6 +106,7 @@ export function extractRunOptions(args: string[]) {
     pauseReason,
     debug,
     jsonOutput,
+    force,
     providerRaw: providerRaw.trim(),
     modelRaw: modelRaw.trim(),
   };

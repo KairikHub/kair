@@ -15,7 +15,7 @@ describe("e2e: run help", () => {
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Run Command");
       expect(result.stdout).toContain(
-        "kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]"
+        "kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--force] [--debug] [--json]"
       );
       expect(result.stdout).not.toContain('Unknown Contract "--help".');
     } finally {
@@ -36,7 +36,7 @@ describe("e2e: run help", () => {
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Run Command");
       expect(result.stdout).toContain(
-        "kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]"
+        "kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--force] [--debug] [--json]"
       );
       expect(result.stdout).not.toContain("Unknown Contract");
     } finally {

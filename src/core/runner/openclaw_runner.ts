@@ -11,6 +11,8 @@ type OpenClawRunnerOptions = {
 
 const DEFAULT_TIMEOUT_SECONDS = 120;
 const MAX_LOG_SUMMARY_CHARS = 1200;
+const DEFAULT_PROVIDER = "openai";
+const DEFAULT_MODEL = "gpt-5.1";
 
 function failed(summary: string, outputs: any = {}, extras: Partial<RunnerResult> = {}): RunnerResult {
   return {
@@ -56,10 +58,62 @@ function resolveEnabledTools(grants: string[]) {
   return enabled;
 }
 
+function resolveEffectiveProvider(options: OpenClawRunnerOptions) {
+  return String(options.provider || process.env.KAIR_LLM_PROVIDER || DEFAULT_PROVIDER)
+    .trim()
+    .toLowerCase();
+}
+
+function resolveEffectiveModel(options: OpenClawRunnerOptions, effectiveProvider: string) {
+  const raw = String(options.model || process.env.KAIR_LLM_MODEL || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
+  if (raw.includes("/")) {
+    return raw;
+  }
+  return `${effectiveProvider}/${raw}`;
+}
+
+function resolveOpenClawStateDir(artifactsDir: string) {
+  const explicit = String(process.env.OPENCLAW_STATE_DIR || "").trim();
+  if (explicit) {
+    return explicit;
+  }
+  const mountedDefault = "/home/node/.openclaw";
+  if (fs.existsSync(mountedDefault)) {
+    return mountedDefault;
+  }
+  return path.join(artifactsDir, ".openclaw-state");
+}
+
+function writeOpenClawConfigFile(configPath: string, effectiveModel: string) {
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify(
+      {
+        agents: {
+          defaults: {
+            model: {
+              primary: effectiveModel,
+            },
+          },
+        },
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+}
+
 function buildExecutionPrompt(
   request: ExecutionRequest,
   enabledTools: string[],
-  options: OpenClawRunnerOptions = {}
+  params: {
+    requestedProvider: string | null;
+    requestedModel: string | null;
+    effectiveProvider: string;
+    effectiveModel: string;
+  }
 ) {
   const steps = request.plan.steps.map((step: any, index: number) => ({
     order: index + 1,
@@ -90,8 +144,10 @@ function buildExecutionPrompt(
           fs_write: "requires local:write",
           web_fetch: "requires web:fetch",
         },
-        requestedProvider: options.provider || null,
-        requestedModel: options.model || null,
+        requestedProvider: params.requestedProvider,
+        requestedModel: params.requestedModel,
+        effectiveProvider: params.effectiveProvider,
+        effectiveModel: params.effectiveModel,
       },
       null,
       2
@@ -172,15 +228,61 @@ export async function runWithOpenClaw(
   request: ExecutionRequest,
   options: OpenClawRunnerOptions = {}
 ): Promise<RunnerResult> {
+  const effectiveProvider = resolveEffectiveProvider(options);
+  const effectiveModel = resolveEffectiveModel(options, effectiveProvider);
+  const openclawStateDir = resolveOpenClawStateDir(request.artifactsDir);
+  const openclawConfigPath = path.join(request.artifactsDir, "openclaw-config.json");
+
+  if (effectiveProvider !== DEFAULT_PROVIDER) {
+    return failed(
+      `Unsupported run provider "${effectiveProvider}". kair run currently supports only provider "openai".`,
+      {
+        parserMode: "preflight",
+        effectiveProvider,
+        effectiveModel,
+        openclawStateDir,
+        openclawConfigPath,
+      }
+    );
+  }
+
   const apiKey = (process.env.KAIR_OPENAI_API_KEY || "").trim();
   if (!apiKey) {
     return failed(
-      "Missing KAIR_OPENAI_API_KEY. Set it before running `kair run` with the OpenClaw runner."
+      "Missing KAIR_OPENAI_API_KEY. Set it before running `kair run` with the OpenClaw runner.",
+      {
+        parserMode: "preflight",
+        effectiveProvider,
+        effectiveModel,
+        openclawStateDir,
+        openclawConfigPath,
+      }
+    );
+  }
+
+  try {
+    fs.mkdirSync(openclawStateDir, { recursive: true });
+    writeOpenClawConfigFile(openclawConfigPath, effectiveModel);
+  } catch (error: any) {
+    return failed(
+      `Failed to prepare OpenClaw runtime config: ${trimSummary(error?.message || String(error))}`,
+      {
+        parserMode: "preflight",
+        effectiveProvider,
+        effectiveModel,
+        openclawStateDir,
+        openclawConfigPath,
+      }
     );
   }
 
   const enabledTools = resolveEnabledTools(request.grants);
-  const prompt = buildExecutionPrompt(request, enabledTools, options);
+  const prompt = buildExecutionPrompt(request, enabledTools, {
+    requestedProvider: options.provider ? String(options.provider).trim() : null,
+    requestedModel: options.model ? String(options.model).trim() : null,
+    effectiveProvider,
+    effectiveModel,
+  });
   const openclawPath = resolveOpenClawBinaryPath();
   const timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
   const commandArgs = [
@@ -197,6 +299,8 @@ export async function runWithOpenClaw(
 
   const childEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    OPENCLAW_STATE_DIR: openclawStateDir,
+    OPENCLAW_CONFIG_PATH: openclawConfigPath,
   };
   if (!String(childEnv.OPENAI_API_KEY || "").trim()) {
     childEnv.OPENAI_API_KEY = apiKey;
@@ -223,6 +327,10 @@ export async function runWithOpenClaw(
       KAIR_OPENAI_API_KEY: apiKey ? "[set]" : "[missing]",
       OPENAI_API_KEY: String(childEnv.OPENAI_API_KEY || "").trim() ? "[set]" : "[missing]",
       KAIR_OPENCLAW_BIN: (process.env.KAIR_OPENCLAW_BIN || "").trim() ? "[set]" : "[default]",
+      OPENCLAW_STATE_DIR: openclawStateDir,
+      OPENCLAW_CONFIG_PATH: openclawConfigPath,
+      effectiveProvider,
+      effectiveModel,
     },
   });
 
@@ -232,8 +340,13 @@ export async function runWithOpenClaw(
     commandArgs,
     stdoutLogPath: diagnostics.stdoutLogPath,
     stderrLogPath: diagnostics.stderrLogPath,
+    effectiveProvider,
+    effectiveModel,
+    openclawStateDir,
+    openclawConfigPath,
   };
   const evidencePaths = [
+    openclawConfigPath,
     diagnostics.commandArtifactPath,
     diagnostics.stdoutLogPath,
     diagnostics.stderrLogPath,

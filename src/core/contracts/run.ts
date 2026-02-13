@@ -4,14 +4,17 @@ import * as path from "node:path";
 import type { Plan } from "../plans/schema";
 import { getArtifactsDir } from "../store/paths";
 import { now } from "../time";
+import { fail } from "../errors";
 import { enforceControls } from "./controls";
-import { assertState, transition } from "./history";
+import { assertState, recordHistory, transition } from "./history";
 import { runWithOpenClaw } from "../runner/openclaw_runner";
 import type { ExecutionRequest, RunnerResult } from "../runner/types";
 
 export type RunContractOptions = {
   provider?: string;
   model?: string;
+  force?: boolean;
+  actor?: string;
 };
 
 export type RunContractOutcome = {
@@ -85,7 +88,22 @@ export async function runContract(
   contract: any,
   options: RunContractOptions = {}
 ): Promise<RunContractOutcome> {
-  assertState(contract, ["APPROVED"], "run");
+  if (contract.current_state === "APPROVED") {
+    // default happy path
+  } else if (options.force) {
+    if (contract.current_state !== "FAILED") {
+      fail(`--force is only allowed when state is FAILED (current: ${contract.current_state}).`);
+    }
+    const actor = options.actor;
+    recordHistory(
+      contract,
+      "FAILED",
+      `Force run override requested; allowing rerun from FAILED.${actor ? ` Actor: ${actor}.` : ""}`,
+      actor
+    );
+  } else {
+    assertState(contract, ["APPROVED"], "run");
+  }
   if (!enforceControls(contract, "execution", { fatal: true })) {
     throw new Error(`Contract "${contract.id}" blocked due to missing controls.`);
   }

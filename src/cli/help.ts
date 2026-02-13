@@ -98,7 +98,7 @@ export function printRunHelp() {
   console.log(`${title("Kair Run Command")}
 
 ${label("Usage:")}
-  kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]
+  kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--force] [--debug] [--json]
 
 ${label("Description:")}
   Execute an approved Contract via the OpenClaw runner.
@@ -106,6 +106,7 @@ ${label("Description:")}
 ${label("Notes:")}
   If <contract_id> is omitted, run targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
+  --force is only valid when the Contract is in FAILED state.
   --debug prints enabled tool grants and run artifact paths.
   --json prints machine-readable run output only.
 `);

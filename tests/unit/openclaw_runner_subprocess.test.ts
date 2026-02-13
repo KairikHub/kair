@@ -44,6 +44,9 @@ describe("openclaw runner subprocess adapter", () => {
     process.env = { ...originalEnv };
     process.env.KAIR_OPENAI_API_KEY = "test-kair-openai-key";
     process.env.KAIR_OPENCLAW_BIN = "openclaw";
+    process.env.KAIR_LLM_PROVIDER = "openai";
+    process.env.KAIR_LLM_MODEL = "gpt-5.1";
+    delete process.env.OPENAI_API_KEY;
   });
 
   afterAll(() => {
@@ -58,6 +61,22 @@ describe("openclaw runner subprocess adapter", () => {
 
     expect(result.status).toBe("failed");
     expect(result.summary).toContain("Missing KAIR_OPENAI_API_KEY");
+    expect(result.outputs.effectiveProvider).toBe("openai");
+    expect(result.outputs.effectiveModel).toBe("openai/gpt-5.1");
+    expect(spawnSyncMock).not.toHaveBeenCalled();
+  });
+
+  test("unsupported provider fails before subprocess execution", async () => {
+    const artifactsDir = makeTempDir();
+
+    const result = await runWithOpenClaw(makeRequest(artifactsDir), {
+      provider: "anthropic",
+    });
+
+    expect(result.status).toBe("failed");
+    expect(result.summary).toContain("supports only provider \"openai\"");
+    expect(result.outputs.effectiveProvider).toBe("anthropic");
+    expect(result.outputs.effectiveModel).toBe("anthropic/gpt-5.1");
     expect(spawnSyncMock).not.toHaveBeenCalled();
   });
 
@@ -79,12 +98,15 @@ describe("openclaw runner subprocess adapter", () => {
     expect(result.summary).toContain("OpenClaw CLI not found");
     expect(result.outputs.commandPath).toBe("/missing/openclaw");
     expect(result.outputs.parserMode).toBe("spawn_error");
+    expect(result.outputs.openclawConfigPath).toBe(path.join(artifactsDir, "openclaw-config.json"));
     expect(fs.existsSync(path.join(artifactsDir, "openclaw-command.json"))).toBe(true);
+    expect(fs.existsSync(path.join(artifactsDir, "openclaw-config.json"))).toBe(true);
     expect(fs.existsSync(path.join(artifactsDir, "openclaw-stderr.log"))).toBe(true);
   });
 
   test("exit 0 with valid JSON stdout maps to completed result", async () => {
     const artifactsDir = makeTempDir();
+    process.env.OPENCLAW_STATE_DIR = path.join(artifactsDir, "state");
     spawnSyncMock.mockReturnValue({
       status: 0,
       stdout: JSON.stringify({
@@ -102,7 +124,21 @@ describe("openclaw runner subprocess adapter", () => {
     expect(result.logsPath).toBe(path.join(artifactsDir, "openclaw-stdout.log"));
     expect(result.outputs.parserMode).toBe("json");
     expect(result.outputs.enabledTools).toEqual(["fs_read", "fs_write"]);
+    expect(result.outputs.effectiveProvider).toBe("openai");
+    expect(result.outputs.effectiveModel).toBe("openai/gpt-5.1");
+    expect(result.outputs.openclawStateDir).toBe(path.join(artifactsDir, "state"));
+    expect(result.outputs.openclawConfigPath).toBe(path.join(artifactsDir, "openclaw-config.json"));
     expect(fs.existsSync(path.join(artifactsDir, "openclaw-command.json"))).toBe(true);
+    expect(fs.existsSync(path.join(artifactsDir, "openclaw-config.json"))).toBe(true);
+
+    const config = JSON.parse(fs.readFileSync(path.join(artifactsDir, "openclaw-config.json"), "utf8"));
+    expect(config.agents.defaults.model.primary).toBe("openai/gpt-5.1");
+
+    const spawnArgs = spawnSyncMock.mock.calls[0];
+    const spawnEnv = spawnArgs[2].env;
+    expect(spawnEnv.OPENAI_API_KEY).toBe("test-kair-openai-key");
+    expect(spawnEnv.OPENCLAW_CONFIG_PATH).toBe(path.join(artifactsDir, "openclaw-config.json"));
+    expect(spawnEnv.OPENCLAW_STATE_DIR).toBe(path.join(artifactsDir, "state"));
   });
 
   test("non-zero exit returns failed summary with stderr and logs", async () => {

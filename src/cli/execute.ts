@@ -1134,6 +1134,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         pauseReason,
         debug,
         jsonOutput,
+        force,
         providerRaw,
         modelRaw,
       } = extractRunOptions(rest);
@@ -1144,7 +1145,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
       if (positional.length > 1) {
         fail(
-          "Invalid arguments. Usage: run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]"
+          "Invalid arguments. Usage: run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--force] [--debug] [--json]"
         );
       }
       const requestedProvider =
@@ -1170,6 +1171,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = positional[0];
       }
       const contract = getContract(contractId);
+      const runActor = resolveActor("");
       if (!jsonOutput) {
         console.log("Delegating execution to OpenClaw runner...");
       }
@@ -1182,6 +1184,8 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         runOutcome = await runContract(contract, {
           provider: providerRaw || undefined,
           model: modelRaw || undefined,
+          force,
+          actor: runActor,
         });
       } finally {
         if (jsonOutput) {
@@ -1228,6 +1232,18 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           console.log(`Run result path: ${runOutcome.resultPath}`);
           if (runnerOutputs.commandPath) {
             console.log(`OpenClaw command: ${runnerOutputs.commandPath}`);
+          }
+          if (runnerOutputs.effectiveProvider) {
+            console.log(`OpenClaw provider: ${runnerOutputs.effectiveProvider}`);
+          }
+          if (runnerOutputs.effectiveModel) {
+            console.log(`OpenClaw model: ${runnerOutputs.effectiveModel}`);
+          }
+          if (runnerOutputs.openclawStateDir) {
+            console.log(`OpenClaw state dir: ${runnerOutputs.openclawStateDir}`);
+          }
+          if (runnerOutputs.openclawConfigPath) {
+            console.log(`OpenClaw config path: ${runnerOutputs.openclawConfigPath}`);
           }
           if (runnerOutputs.stdoutLogPath) {
             console.log(`OpenClaw stdout log: ${runnerOutputs.stdoutLogPath}`);
