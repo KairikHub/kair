@@ -1,5 +1,69 @@
 # Changelog
 
+## 2026-02-13
+- Breaking CLI command remap (no compatibility aliases):
+  - `kair contract "<intent>"` now creates contracts (old `propose` behavior).
+  - `kair propose [<contract_id>] [--last]` now submits planned contracts for approval (old `request-approval` behavior).
+  - Removed `request-approval` command path and old create aliases.
+- Contract ID safety:
+  - Reserved contract id `help`; creation now fails with a clear error.
+- OpenClaw packaging migration:
+  - Removed `vendor/openclaw` submodule integration.
+  - Switched to pinned npm dependency `openclaw@2026.2.12`.
+  - Reworked Docker/compose bootstrap scripts to validate/install npm dependency instead of building vendored sources.
+  - Added integration smoke coverage for OpenClaw npm resolve/import in Docker test harness.
+- Test runtime hardening:
+  - Added `jest-util` dev dependency to keep clean Docker installs deterministic with `ts-jest`.
+
+## 2026-02-12
+- DPC v1 implementation and integration:
+  - Added strict DPC schema + validator and persistence helpers.
+  - Added `renderDpcPretty` for compact human-readable DPC output.
+  - Wired DPC artifacts into plan generate/refine flow with append-only evidence updates.
+  - Added debug output for DPC artifact path and preview (`kair plan --debug`, suppressed in `--json` mode).
+- Plan/provider reliability:
+  - Provider resolution now requires explicit configuration (env/flag) for LLM planning paths.
+  - Removed hardcoded OpenAI fallback behavior and aligned provider defaults to env configuration.
+- CLI surface updates:
+  - Default-to-last behavior expanded across lifecycle commands (request/approve/run/emit/pause/resume/rewind/status/review paths).
+  - Replaced top-level `kair list` with `kair contracts`.
+  - Removed legacy `--requires` propose flag and the `require-controls` command path.
+- Help and docs quality:
+  - Top-level help reshaped into concise git-style command index.
+  - Fixed per-command `--help` output across command set.
+  - Updated command/docs references to match current CLI behavior.
+
+## 2026-02-11
+- Plan UX and determinism improvements:
+  - Added interactive refine loop with explicit accept/refine/cancel flow hardening.
+  - Added pretty plan renderer for interactive previews.
+  - Added strict `--json` non-interactive plan mode behavior.
+  - Added step-id diff rendering for refine cycles.
+- Provider prompt observability:
+  - Added sanitized `PlanLlmRequestRecord` capture with secret redaction.
+  - Persisted plan prompt request artifacts for provider calls.
+  - Added `kair plan --debug` prompt/provider diagnostics.
+
+## 2026-02-10
+- Governance CLI evolution:
+  - Shifted to verb-first review surfaces (`review`, `emit`, `accept`).
+  - Replaced `add-control` with top-level `grant` command.
+  - Removed `co-plan` command and references.
+- Plan platform foundation:
+  - Added strict `kair.plan.v1` schema validation.
+  - Added provider registry and OpenAI provider wrapper.
+  - Added top-level interactive/non-interactive planning command paths.
+  - Added migration-safe `planJson` persistence model.
+  - Enforced strict JSON-only provider planning responses.
+- Repository/product direction:
+  - Open-sourced repository surfaces and removed confidentiality notices.
+  - Added DPC ideas catalog and updated docs/readme for current flow.
+
+## 2026-02-08
+- Product/CLI rename rollout:
+  - Renamed repo and command surface from `kairik` to `kair` across code, docs, and tests.
+  - Cleaned up duplicate files and residual naming references.
+
 ## 2026-02-07
 - Runtime and Docker:
   - Vendored OpenClaw runtime and hardened Docker integration; builds are non-interactive and run inside containers.
