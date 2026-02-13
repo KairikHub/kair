@@ -33,6 +33,7 @@ import {
   printAcceptHelp,
   printApproveHelp,
   printContractHelp,
+  printEmitHelp,
   printGrantHelp,
   printPauseHelp,
   printPlanHelp,
@@ -1312,6 +1313,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "emit": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printEmitHelp();
+        return;
+      }
       const hasLast = rest.includes("--last");
       const positional = rest.filter((token) => token !== "--last");
       if (hasLast && positional.length > 0) {

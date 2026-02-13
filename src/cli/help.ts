@@ -197,6 +197,21 @@ ${label("Notes:")}
 `);
 }
 
+export function printEmitHelp() {
+  console.log(`${title("Kair Emit Command")}
+
+${label("Usage:")}
+  kair emit [<contract_id>] [--last]
+
+${label("Description:")}
+  Show the evidence checklist for a Contract.
+
+${label("Notes:")}
+  If <contract_id> is omitted, emit targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
