@@ -14,14 +14,14 @@ describe("e2e: propose help", () => {
       const result = runCli(["propose", "--help"], env);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Propose Command");
-      expect(result.stdout).toContain('kair propose "<intent>" [--id <contract_id>]');
-      expect(result.stdout).not.toContain("Kair Contract Commands");
+      expect(result.stdout).toContain("kair propose [<contract_id>] [--last]");
+      expect(result.stdout).not.toContain('Unknown Contract "--help".');
     } finally {
       tmp.cleanup();
     }
   });
 
-  test("propose without intent shows propose-specific help on error", () => {
+  test("propose help shows propose-specific help", () => {
     const tmp = makeTempRoot();
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
@@ -30,19 +30,17 @@ describe("e2e: propose help", () => {
     };
 
     try {
-      const result = runCli(["propose"], env);
-      expect(result.status).not.toBe(0);
+      const result = runCli(["propose", "help"], env);
+      expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Propose Command");
-      expect(result.stdout).not.toContain("Kair Contract Commands");
-      expect(result.stderr).toContain(
-        "Missing intent. Provide it as an argument or run interactively in a TTY."
-      );
+      expect(result.stdout).toContain("kair propose [<contract_id>] [--last]");
+      expect(result.stdout).not.toContain("Unknown Contract");
     } finally {
       tmp.cleanup();
     }
   });
 
-  test('propose rejects reserved contract id "help"', () => {
+  test("propose with no contracts fails clearly", () => {
     const tmp = makeTempRoot();
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
@@ -51,9 +49,26 @@ describe("e2e: propose help", () => {
     };
 
     try {
-      const result = runCli(["propose", "--id", "help", "Reserved id"], env);
+      const result = runCli(["propose", "--last"], env);
       expect(result.status).not.toBe(0);
-      expect(result.stderr).toContain('Contract id "help" is reserved.');
+      expect(result.stderr).toContain("No Contracts found.");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("request-approval command is removed", () => {
+    const tmp = makeTempRoot();
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const result = runCli(["request-approval"], env);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('Unknown command "request-approval".');
     } finally {
       tmp.cleanup();
     }

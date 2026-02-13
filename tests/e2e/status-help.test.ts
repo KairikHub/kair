@@ -21,7 +21,7 @@ describe("e2e: status help", () => {
     }
   });
 
-  test("contract status --help shows status-specific help", () => {
+  test("status help shows status-specific help", () => {
     const tmp = makeTempRoot();
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
@@ -30,10 +30,10 @@ describe("e2e: status help", () => {
     };
 
     try {
-      const result = runCli(["contract", "status", "--help"], env);
+      const result = runCli(["status", "help"], env);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Status Command");
-      expect(result.stdout).toContain("kair contract status [<contract_id>] [--last]");
+      expect(result.stdout).toContain("kair status [<contract_id>] [--last]");
       expect(result.stdout).not.toContain("Unknown Contract");
     } finally {
       tmp.cleanup();

@@ -8,10 +8,9 @@ ${label("usage:")} kair [--help] <command> [<args>]
 These are common Kair commands used in various situations:
 
 ${label("start a workflow")}
-  propose                 Create a new Contract in DRAFT.
+  contract                Create a new Contract in DRAFT.
   plan                    Generate/refine a structured plan (kair.plan.v1).
-  request-approval
-                          Move a planned Contract to approval requested.
+  propose                 Submit a planned Contract for approval.
   approve                 Approve a Contract version.
   run                     Execute an approved Contract.
 
@@ -28,16 +27,15 @@ ${label("review and inspection")}
   status                  Show full Contract status.
   contracts               List known Contracts.
 
-See "kair contract --help" for contract subcommands.
+See "kair contract --help" for contract creation usage.
 See "kair grant --help" for grant usage.`);
 }
 
-export function printProposeHelp() {
-  console.log(`${title("Kair Propose Command")}
+export function printContractHelp() {
+  console.log(`${title("Kair Contract Command")}
 
 ${label("Usage:")}
-  kair propose "<intent>" [--id <contract_id>]
-  kair contract propose "<intent>" [--id <contract_id>]
+  kair contract "<intent>" [--id <contract_id>]
 
 ${label("Description:")}
   Create a new Contract in DRAFT state.
@@ -47,12 +45,26 @@ ${label("Notes:")}
 `);
 }
 
+export function printProposeHelp() {
+  console.log(`${title("Kair Propose Command")}
+
+${label("Usage:")}
+  kair propose [<contract_id>] [--last]
+
+${label("Description:")}
+  Move a planned Contract to AWAITING_APPROVAL.
+
+${label("Notes:")}
+  If <contract_id> is omitted, propose targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+`);
+}
+
 export function printPlanHelp() {
   console.log(`${title("Kair Plan Command")}
 
 ${label("Usage:")}
   kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [--instructions <text>] [--file <path>] [<plan_json>]
-  kair contract plan "<contract_id>" "<plan>"
 
 ${label("Modes:")}
   Interactive (default): generates/refines plans with accept/refine/cancel prompts.
@@ -66,28 +78,11 @@ ${label("Notes:")}
 `);
 }
 
-export function printRequestApprovalHelp() {
-  console.log(`${title("Kair Request-Approval Command")}
-
-${label("Usage:")}
-  kair request-approval [<contract_id>] [--last]
-  kair contract request-approval [<contract_id>] [--last]
-
-${label("Description:")}
-  Move a planned Contract to AWAITING_APPROVAL.
-
-${label("Notes:")}
-  If <contract_id> is omitted, request-approval targets the most recently updated Contract.
-  Do not combine <contract_id> with --last.
-`);
-}
-
 export function printApproveHelp() {
   console.log(`${title("Kair Approve Command")}
 
 ${label("Usage:")}
   kair approve [<contract_id>] [--last] [--actor <name>]
-  kair contract approve [<contract_id>] [--last] [--actor <name>]
 
 ${label("Description:")}
   Approve a Contract version and transition it to APPROVED.
@@ -104,7 +99,6 @@ export function printRunHelp() {
 
 ${label("Usage:")}
   kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
 
 ${label("Description:")}
   Execute an approved Contract.
@@ -121,7 +115,6 @@ export function printPauseHelp() {
 
 ${label("Usage:")}
   kair pause [<contract_id>] [--last] [--actor <name>]
-  kair contract pause [<contract_id>] [--last] [--actor <name>]
 
 ${label("Description:")}
   Pause execution of a RUNNING Contract.
@@ -138,7 +131,6 @@ export function printResumeHelp() {
 
 ${label("Usage:")}
   kair resume [<contract_id>] [--last] [--actor <name>]
-  kair contract resume [<contract_id>] [--last] [--actor <name>]
 
 ${label("Description:")}
   Resume execution of a PAUSED Contract.
@@ -155,7 +147,6 @@ export function printRewindHelp() {
 
 ${label("Usage:")}
   kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
-  kair contract rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
 
 ${label("Description:")}
   Rewind and supersede a previously executed Contract version.
@@ -217,7 +208,6 @@ export function printStatusHelp() {
 
 ${label("Usage:")}
   kair status [<contract_id>] [--last]
-  kair contract status [<contract_id>] [--last]
 
 ${label("Description:")}
   Show full Contract status, versions, history, and artifacts.
@@ -234,43 +224,9 @@ export function printContractsHelp() {
 ${label("Usage:")}
   kair contracts
   kair contracts --help
-  kair contract list
-  kair contract list --help
 
 ${label("Description:")}
   List known Contract IDs.
-`);
-}
-
-export function printContractHelp() {
-  console.log(`${title("Kair Contract Commands")}
-
-${label("Usage:")}
-  kair contract <subcommand> [args]
-
-${label("Subcommands:")}
-  propose "<intent>" [--id <contract_id>]
-  plan "<contract_id>" "<plan>"
-  request-approval [<contract_id>] [--last]
-  approve [<contract_id>] [--last] [--actor <name>]
-  run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  pause [<contract_id>] [--last] [--actor <name>]
-  resume [<contract_id>] [--last] [--actor <name>]
-  rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
-  status [<contract_id>] [--last]
-  list
-
-${label("Advanced/demo:")}
-  request-approval defaults to the most recently updated Contract when no id is provided.
-  run defaults to the most recently updated Contract when no id is provided.
-  pause/resume/rewind default to the most recently updated Contract when no id is provided.
-  --pause-at pauses at an internal execution milestone (not user-facing yet).
-
-${label("Alias:")}
-  kair propose (shorthand for contract propose)
-
-${label("Actor flags:")}
-  --actor <name> (alias: --by)
 `);
 }
 

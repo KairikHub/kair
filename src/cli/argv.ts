@@ -1,25 +1,10 @@
-import { printContractHelp } from "./help";
 import { fail } from "../core/errors";
 import { RUN_CHECKPOINT_IDS, RUN_CHECKPOINTS } from "../core/contracts/constants";
 
 export function parseContractCommand(tokens: string[]) {
-  let command = tokens[0];
-  let args = tokens.slice(1);
-  let isContractGroup = false;
-  if (command === "contract") {
-    isContractGroup = true;
-    if (args.length === 0) {
-      printContractHelp();
-      process.exit(0);
-    }
-    if (args[0] === "-h" || args[0] === "--help") {
-      printContractHelp();
-      process.exit(0);
-    }
-    command = args[0];
-    args = args.slice(1);
-  }
-  return { command, args, isContractGroup };
+  const command = tokens[0];
+  const args = tokens.slice(1);
+  return { command, args };
 }
 
 export function requireArgs(args: string[], minCount: number, usage: string) {

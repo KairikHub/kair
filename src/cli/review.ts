@@ -100,7 +100,7 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
     heading("DECISIONS"),
     `${label("Accept responsibility:")} kair accept ${contract.id} --actor <name>`,
     `${label("Approve grant:")}         kair grant ${contract.id} <namespace>:<permission>`,
-    `${label("Rewind approval:")}       kair contract rewind ${contract.id} --actor <name> "<reason>"`,
+    `${label("Rewind approval:")}       kair rewind ${contract.id} --actor <name> "<reason>"`,
     `${label("Inspect evidence:")}      kair emit ${contract.id}`,
     divider(),
   ];

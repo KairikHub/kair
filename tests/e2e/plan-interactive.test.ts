@@ -90,7 +90,7 @@ describe("e2e: interactive plan", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Interactive plan contract"],
+        ["contract", "--id", contractId, "Interactive plan contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -138,7 +138,7 @@ describe("e2e: interactive plan", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Interactive retry contract"],
+        ["contract", "--id", contractId, "Interactive retry contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -196,7 +196,7 @@ describe("e2e: interactive plan", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Interactive invalid cancel contract"],
+        ["contract", "--id", contractId, "Interactive invalid cancel contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -238,7 +238,7 @@ describe("e2e: interactive plan", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Interactive refine existing plan contract"],
+        ["contract", "--id", contractId, "Interactive refine existing plan contract"],
         env
       );
       expect(create.status).toBe(0);

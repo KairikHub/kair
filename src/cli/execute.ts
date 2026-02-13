@@ -41,7 +41,6 @@ import {
   printProposeHelp,
   printReviewHelp,
   printRewindHelp,
-  printRequestApprovalHelp,
   printResumeHelp,
   printRunHelp,
   printStatusHelp,
@@ -187,6 +186,10 @@ function validateGrantFormat(grantRaw: string) {
     fail(INVALID_GRANT_FORMAT_MESSAGE);
   }
   return grant;
+}
+
+function hasHelpFlag(args: string[]) {
+  return args.includes("-h") || args.includes("--help") || (args.length === 1 && args[0] === "help");
 }
 
 function printGrantList() {
@@ -873,7 +876,6 @@ export async function executeCommand(tokens: string[], options: any = {}) {
   const parsed = parseContractCommand(tokens);
   const command = parsed.command;
   const rest = parsed.args;
-  const isContractGroup = parsed.isContractGroup;
   if (!command) {
     printTopHelp();
     process.exit(0);
@@ -884,22 +886,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     return;
   }
 
-  if (
-    isContractGroup &&
-    (command === "review" ||
-      command === "accept" ||
-      command === "evidence" ||
-      command === "emit" ||
-      command === "grant")
-  ) {
-    failWithHelp(`Unknown contract subcommand "${command}".`, "contract");
-  }
-
   switch (command) {
-    case "propose":
-    case "create": {
-      if (rest.includes("-h") || rest.includes("--help")) {
-        printProposeHelp();
+    case "contract": {
+      if (hasHelpFlag(rest)) {
+        printContractHelp();
         return;
       }
       const { remaining, idRaw } = extractProposeOptions(rest);
@@ -919,7 +909,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       if (!intent && !allowPrompt) {
         failWithHelp(
           "Missing intent. Provide it as an argument or run interactively in a TTY.",
-          "propose"
+          "contract"
         );
       }
       if (!intent && allowPrompt) {
@@ -941,36 +931,15 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         }
       }
       const contract = proposeContract(intent, [], id);
-      console.log(`Proposed a Kair Contract: ${contract.id}`);
+      console.log(`Created a Kair Contract: ${contract.id}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
       console.log(`Next: kair plan ${contract.id}`);
       break;
     }
-    case "plan": {
-      if (rest.includes("-h") || rest.includes("--help")) {
-        printPlanHelp();
-        return;
-      }
-      if (isContractGroup) {
-        requireArgs(rest, 2, 'contract plan "<contract_id>" "<plan>"');
-        const [contractId, ...planParts] = rest;
-        const plan = planParts.join(" ").trim();
-        if (!plan) {
-          fail("Plan cannot be empty.");
-        }
-        const contract = getContract(contractId);
-        assertState(contract, ["DRAFT"], "plan");
-        contract.plan = plan;
-        transition(contract, "PLANNED", `Plan captured for Contract: "${plan}".`);
-        break;
-      }
-      await handleTopLevelPlan(rest);
-      break;
-    }
-    case "request-approval": {
-      if (rest.includes("-h") || rest.includes("--help")) {
-        printRequestApprovalHelp();
+    case "propose": {
+      if (hasHelpFlag(rest)) {
+        printProposeHelp();
         return;
       }
       const hasLast = rest.includes("--last");
@@ -979,10 +948,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         fail("Specify either a contract id or --last, not both.");
       }
       if (positional.length > 1) {
-        const usage = isContractGroup
-          ? "contract request-approval [<contract_id>] [--last]"
-          : "request-approval [<contract_id>] [--last]";
-        fail(`Invalid arguments. Usage: ${usage}`);
+        fail("Invalid arguments. Usage: propose [<contract_id>] [--last]");
       }
       let contractId = "";
       if (positional.length === 0) {
@@ -995,15 +961,35 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = positional[0];
       }
       const contract = getContract(contractId);
-      assertState(contract, ["PLANNED"], "request-approval");
+      assertState(contract, ["PLANNED"], "propose");
       if (!enforceControls(contract, "approval request")) {
         return;
       }
       transition(contract, "AWAITING_APPROVAL", "Approval requested for Contract.");
       break;
     }
+    case "plan": {
+      if (hasHelpFlag(rest)) {
+        printPlanHelp();
+        return;
+      }
+      const hasOptionToken = rest.some((token) => token.startsWith("--"));
+      if (!hasOptionToken && rest.length >= 2) {
+        const contractId = rest[0];
+        const planText = rest.slice(1).join(" ").trim();
+        if (planText && !planText.startsWith("{")) {
+          const contract = getContract(contractId);
+          assertState(contract, ["DRAFT"], "plan");
+          contract.plan = planText;
+          transition(contract, "PLANNED", `Plan captured for Contract: "${planText}".`);
+          break;
+        }
+      }
+      await handleTopLevelPlan(rest);
+      break;
+    }
     case "approve": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printApproveHelp();
         return;
       }
@@ -1029,7 +1015,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
         warn(
-          'Positional approver is deprecated. Use "contract approve <id> --actor <name>" instead.'
+          'Positional approver is deprecated. Use "approve <id> --actor <name>" instead.'
         );
       }
       if (actorRaw && legacyActor) {
@@ -1043,7 +1029,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "grant": {
-      if (rest.length === 0 || rest.includes("-h") || rest.includes("--help")) {
+      if (rest.length === 0 || hasHelpFlag(rest)) {
         printGrantHelp();
         break;
       }
@@ -1081,7 +1067,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "run":
     case "execute": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printRunHelp();
         return;
       }
@@ -1092,10 +1078,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         fail("Specify either a contract id or --last, not both.");
       }
       if (positional.length > 1) {
-        const usage = isContractGroup
-          ? "contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
-          : "run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]";
-        fail(`Invalid arguments. Usage: ${usage}`);
+        fail(
+          "Invalid arguments. Usage: run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
+        );
       }
       let contractId = "";
       if (positional.length === 0) {
@@ -1117,7 +1102,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "pause": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printPauseHelp();
         return;
       }
@@ -1142,7 +1127,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
-        warn('Positional actor is deprecated. Use "contract pause <id> --actor <name>" instead.');
+        warn('Positional actor is deprecated. Use "pause <id> --actor <name>" instead.');
       }
       if (actorRaw && legacyActor) {
         warn('Both --actor and positional actor provided; using "--actor".');
@@ -1154,7 +1139,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "resume": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printResumeHelp();
         return;
       }
@@ -1179,7 +1164,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
-        warn('Positional actor is deprecated. Use "contract resume <id> --actor <name>" instead.');
+        warn('Positional actor is deprecated. Use "resume <id> --actor <name>" instead.');
       }
       if (actorRaw && legacyActor) {
         warn('Both --actor and positional actor provided; using "--actor".');
@@ -1190,7 +1175,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "rewind": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printRewindHelp();
         return;
       }
@@ -1220,7 +1205,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         legacyActor = reasonParts[0].trim();
         reasonText = reasonParts.slice(1).join(" ").trim();
         warn(
-          'Positional actor is deprecated. Use "contract rewind <id> --actor <name> <reason>" instead.'
+          'Positional actor is deprecated. Use "rewind <id> --actor <name> <reason>" instead.'
         );
       } else if (reasonParts.length >= 1) {
         reasonText = reasonParts.join(" ").trim();
@@ -1243,7 +1228,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "status": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printStatusHelp();
         return;
       }
@@ -1257,17 +1242,14 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       } else if (rest.length === 1) {
         contractId = rest[0];
       } else {
-        const usage = isContractGroup
-          ? "contract status [<contract_id>] [--last]"
-          : "status [<contract_id>] [--last]";
-        fail(`Invalid arguments. Usage: ${usage}`);
+        fail("Invalid arguments. Usage: status [<contract_id>] [--last]");
       }
       const contract = getContract(contractId);
       showContractStatus(contract);
       break;
     }
     case "review": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printReviewHelp();
         return;
       }
@@ -1292,7 +1274,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "accept": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printAcceptHelp();
         return;
       }
@@ -1319,7 +1301,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "emit": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printEmitHelp();
         return;
       }
@@ -1352,7 +1334,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "contracts": {
-      if (rest.includes("-h") || rest.includes("--help")) {
+      if (hasHelpFlag(rest)) {
         printContractsHelp();
         return;
       }
@@ -1360,23 +1342,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       listContracts();
       break;
     }
-    case "list": {
-      if (!isContractGroup) {
-        failWithHelp('Unknown command "list".', "top");
-      }
-      if (rest.includes("-h") || rest.includes("--help")) {
-        printContractsHelp();
-        return;
-      }
-      requireArgs(rest, 0, "contract list");
-      listContracts();
-      break;
-    }
     default:
-      if (isContractGroup) {
-        failWithHelp(`Unknown contract subcommand "${command}".`, "contract");
-      } else {
-        failWithHelp(`Unknown command "${command}".`, "top");
-      }
+      failWithHelp(`Unknown command "${command}".`, "top");
   }
 }

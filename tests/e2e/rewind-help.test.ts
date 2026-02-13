@@ -23,7 +23,7 @@ describe("e2e: rewind help", () => {
     }
   });
 
-  test("contract rewind --help shows rewind-specific help", () => {
+  test("rewind help shows rewind-specific help", () => {
     const tmp = makeTempRoot();
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
@@ -32,11 +32,11 @@ describe("e2e: rewind help", () => {
     };
 
     try {
-      const result = runCli(["contract", "rewind", "--help"], env);
+      const result = runCli(["rewind", "help"], env);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Rewind Command");
       expect(result.stdout).toContain(
-        "kair contract rewind [<contract_id>] [--last] [--actor <name>] [<reason>]"
+        "kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]"
       );
       expect(result.stdout).not.toContain("Unknown Contract");
     } finally {

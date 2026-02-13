@@ -24,10 +24,10 @@ describe("e2e: grant command", () => {
     };
 
     try {
-      const createFirst = runCli(["contract", "create", "--id", firstId, "Grant first"], env);
+      const createFirst = runCli(["contract", "--id", firstId, "Grant first"], env);
       expect(createFirst.status).toBe(0);
 
-      const createSecond = runCli(["contract", "create", "--id", secondId, "Grant second"], env);
+      const createSecond = runCli(["contract", "--id", secondId, "Grant second"], env);
       expect(createSecond.status).toBe(0);
 
       const grantHelp = runCli(["grant"], env);

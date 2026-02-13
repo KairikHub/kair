@@ -25,11 +25,11 @@ describe("e2e: cli contract flow", () => {
 
     try {
       const steps = [
-        ["contract", "create", "--id", contractId, "E2E Contract"],
-        ["contract", "plan", contractId, "Execute test flow"],
-        ["contract", "request-approval", contractId],
-        ["contract", "approve", contractId, "--actor", "e2e-actor"],
-        ["contract", "run", contractId],
+        ["contract", "--id", contractId, "E2E Contract"],
+        ["plan", contractId, "Execute test flow"],
+        ["propose", contractId],
+        ["approve", contractId, "--actor", "e2e-actor"],
+        ["run", contractId],
       ] as string[][];
 
       for (const args of steps) {
@@ -37,7 +37,7 @@ describe("e2e: cli contract flow", () => {
         expect(result.status).toBe(0);
       }
 
-      const statusBeforeRewind = runCli(["contract", "status", contractId], env);
+      const statusBeforeRewind = runCli(["status", contractId], env);
       expect(statusBeforeRewind.status).toBe(0);
       expect(statusBeforeRewind.stdout).toContain("Active version");
 
@@ -48,12 +48,12 @@ describe("e2e: cli contract flow", () => {
       const activeVersionBefore = before.contract.activeVersion;
 
       const rewind = runCli(
-        ["contract", "rewind", contractId, "--actor", "e2e-actor", "test rewind"],
+        ["rewind", contractId, "--actor", "e2e-actor", "test rewind"],
         env
       );
       expect(rewind.status).toBe(0);
 
-      const statusAfterRewind = runCli(["contract", "status", contractId], env);
+      const statusAfterRewind = runCli(["status", contractId], env);
       expect(statusAfterRewind.status).toBe(0);
       expect(statusAfterRewind.stdout).toContain("REWOUND");
 

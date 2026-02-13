@@ -74,7 +74,7 @@ describe("e2e: plan dpc persistence", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan DPC e2e contract"],
+        ["contract", "--id", contractId, "Plan DPC e2e contract"],
         env
       );
       expect(create.status).toBe(0);

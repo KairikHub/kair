@@ -32,7 +32,7 @@ describe("integration: plan prompt artifacts", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Prompt artifact contract"],
+        ["contract", "--id", contractId, "Prompt artifact contract"],
         env
       );
       expect(create.status).toBe(0);

@@ -13,11 +13,10 @@ kair <command>
 
 ## Command Groups
 
-### Propose and Plan
-- `kair propose "<intent>" [--id <contract_id>]`
-  - Top-level shorthand for contract propose.
-- `kair contract propose "<intent>" [--id <contract_id>]`
-  - Propose a contract.
+### Contract Creation and Planning
+- `kair contract "<intent>" [--id <contract_id>]`
+  - Create a contract in `DRAFT`.
+  - If `--id` is omitted, kair generates an id from intent.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
@@ -25,7 +24,7 @@ kair <command>
   - `--interactive=false` accepts JSON from positional argument or stdin.
   - `--json` implies `--interactive=false`, requires JSON from positional argument or stdin, and prints only validated JSON.
   - `--actor` (alias: `--by`) attributes plan history entries.
-- `kair contract plan <contract_id> "<plan>"`
+- `kair plan <contract_id> "<plan>"`
   - Attach a legacy text plan and transition to `PLANNED`.
 
 ### Controls and Approval
@@ -35,40 +34,24 @@ kair <command>
   - Approve a namespaced grant on the most recently updated contract.
 - `kair grant <contract_id> <grant> [--actor <name>]`
   - Approve a namespaced grant on a specific contract.
-- `kair request-approval [<contract_id>] [--last]`
-  - Top-level shorthand for contract request-approval.
-  - With no args, defaults to the most recently updated contract.
-- `kair contract request-approval [<contract_id>] [--last]`
+- `kair propose [<contract_id>] [--last]`
   - Move a planned contract into approval request state.
   - With no args, defaults to the most recently updated contract.
 - `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
   - With no args, defaults to the most recently updated contract.
-- `kair contract approve [<contract_id>] [--last] [--actor <name>]`
-  - Same behavior as top-level `kair approve`.
 
 ### Execution and Recovery
 - `kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
-  - Top-level shorthand for contract run.
-  - With no contract id, defaults to the most recently updated contract.
-- `kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
   - Execute the approved contract.
   - With no contract id, defaults to the most recently updated contract.
 - `kair pause [<contract_id>] [--last] [--actor <name>]`
-  - Top-level shorthand for contract pause.
-  - With no args, defaults to the most recently updated contract.
-- `kair contract pause [<contract_id>] [--last] [--actor <name>]`
   - Pause a running contract.
   - With no args, defaults to the most recently updated contract.
 - `kair resume [<contract_id>] [--last] [--actor <name>]`
-  - Top-level shorthand for contract resume.
-  - With no args, defaults to the most recently updated contract.
-- `kair contract resume [<contract_id>] [--last] [--actor <name>]`
   - Resume from pause.
-- `kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
-  - Top-level shorthand for contract rewind.
   - With no args, defaults to the most recently updated contract.
-- `kair contract rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
+- `kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
   - Append a rewind/supersession event.
   - With no args, defaults to the most recently updated contract.
 
@@ -88,13 +71,8 @@ kair <command>
 - `kair status [<contract_id>] [--last]`
   - Print detailed contract state, versions, history, and artifacts.
   - With no args, defaults to the most recently updated contract.
-- `kair contract status [<contract_id>] [--last]`
-  - Same behavior as top-level `kair status`.
 - `kair contracts`
   - List known contract IDs.
-  - Top-level shorthand for `kair contract list`.
-- `kair contract list`
-  - Same behavior as top-level `kair contracts`.
 
 ## Review Output (What It Includes)
 `kair review` and `kair review <id>` include:
@@ -108,10 +86,10 @@ kair <command>
 ## Minimal Demo Flow
 
 ```bash
-kair propose --id contract_demo "Contract Demo"
+kair contract --id contract_demo "Contract Demo"
 kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
-kair request-approval
-kair contract approve contract_demo --actor Damien
+kair propose
+kair approve contract_demo --actor Damien
 kair run
 kair review
 kair accept contract_demo --actor Damien

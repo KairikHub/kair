@@ -25,7 +25,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan non-interactive contract"],
+        ["contract", "--id", contractId, "Plan non-interactive contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -108,7 +108,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan invalid JSON contract"],
+        ["contract", "--id", contractId, "Plan invalid JSON contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -133,7 +133,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan instructions contract"],
+        ["contract", "--id", contractId, "Plan instructions contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -174,7 +174,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan missing provider contract"],
+        ["contract", "--id", contractId, "Plan missing provider contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -210,7 +210,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan json output contract"],
+        ["contract", "--id", contractId, "Plan json output contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -253,7 +253,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan json interactive conflict contract"],
+        ["contract", "--id", contractId, "Plan json interactive conflict contract"],
         env
       );
       expect(create.status).toBe(0);
@@ -292,7 +292,7 @@ describe("e2e: plan non-interactive", () => {
 
     try {
       const create = runCli(
-        ["contract", "create", "--id", contractId, "Plan debug contract"],
+        ["contract", "--id", contractId, "Plan debug contract"],
         env
       );
       expect(create.status).toBe(0);

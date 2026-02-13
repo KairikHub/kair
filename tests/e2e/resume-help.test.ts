@@ -21,7 +21,7 @@ describe("e2e: resume help", () => {
     }
   });
 
-  test("contract resume --help shows resume-specific help", () => {
+  test("resume help shows resume-specific help", () => {
     const tmp = makeTempRoot();
     const env = {
       KAIR_DATA_DIR: tmp.dataDir,
@@ -30,12 +30,10 @@ describe("e2e: resume help", () => {
     };
 
     try {
-      const result = runCli(["contract", "resume", "--help"], env);
+      const result = runCli(["resume", "help"], env);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Resume Command");
-      expect(result.stdout).toContain(
-        "kair contract resume [<contract_id>] [--last] [--actor <name>]"
-      );
+      expect(result.stdout).toContain("kair resume [<contract_id>] [--last] [--actor <name>]");
       expect(result.stdout).not.toContain("Unknown Contract");
     } finally {
       tmp.cleanup();
