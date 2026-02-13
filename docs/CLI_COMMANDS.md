@@ -29,8 +29,6 @@ kair <command>
   - Attach a legacy text plan and transition to `PLANNED`.
 
 ### Controls and Approval
-- `kair contract require-controls <contract_id> "<controls_csv>"`
-  - Set required controls on an existing contract.
 - `kair grant list`
   - List static starter grants.
 - `kair grant <grant> [--actor <name>]`

@@ -16,7 +16,6 @@ ${label("Common subcommands:")}
   propose "<intent>" [--requires <controls_csv>]
   plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
   plan "<contract_id>" "<plan>"
-  require-controls "<contract_id>" "<controls_csv>"
   grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   request-approval "<contract_id>"
   approve [<contract_id>] [--last] [--actor <name>]
@@ -56,7 +55,6 @@ ${label("Usage:")}
 ${label("Subcommands:")}
   propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
   plan "<contract_id>" "<plan>"
-  require-controls "<contract_id>" "<controls_csv>"
   request-approval "<contract_id>"
   approve [<contract_id>] [--last] [--actor <name>]
   run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]

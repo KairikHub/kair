@@ -47,7 +47,7 @@ Pause definition (v0):
 - Controls are explicit, revocable authority grants (kill switches).
 - Missing Controls block approval/execution.
 - Controls are recorded in audit history, status output, and artifacts.
-- Required controls (`kair contract require-controls`) are validated against a registry.
+- Required controls are validated against a registry.
 - Granted controls (`kair grant`) must match `<namespace>:<permission>` format and are append-only history events.
 
 Required Controls Registry (v0):

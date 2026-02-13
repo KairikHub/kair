@@ -10,7 +10,6 @@ import { DPC_VERSION, DpcV1 } from "../core/dpc/schema";
 import { getDpcPath, loadDpcV1, saveDpcV1 } from "../core/dpc/storage";
 import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
 import {
-  describeControls,
   enforceControls,
   normalizeControls,
   parseControls,
@@ -936,24 +935,6 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         break;
       }
       await handleTopLevelPlan(rest);
-      break;
-    }
-    case "require-controls": {
-      requireArgs(rest, 2, 'contract require-controls "<contract_id>" "<controls_csv>"');
-      const [contractId, ...controlsParts] = rest;
-      const controlsRaw = controlsParts.join(" ").trim();
-      if (!controlsRaw) {
-        fail("Controls list cannot be empty.");
-      }
-      const controlsRequired = normalizeControls(parseControls(controlsRaw));
-      validateControls(controlsRequired);
-      const contract = getContract(contractId);
-      contract.controlsRequired = controlsRequired;
-      recordHistory(
-        contract,
-        "CONTROLS",
-        `Controls required by this proposal set to: ${describeControls(controlsRequired)}.`
-      );
       break;
     }
     case "request-approval": {
