@@ -1,6 +1,13 @@
 import * as path from "node:path";
 
 import { EvidenceItem } from "../core/contracts/evidence";
+import { COLORS, formatState, heading, label, style, title } from "./format";
+
+const DIVIDER_WIDTH = 72;
+
+function divider() {
+  return style("-".repeat(DIVIDER_WIDTH), COLORS.gray);
+}
 
 function formatControls(list: any) {
   if (!Array.isArray(list) || list.length === 0) {
@@ -53,10 +60,14 @@ function extractLastRunTimestamp(contract: any) {
 
 function renderEvidenceChecklist(contractId: string, evidenceItems: EvidenceItem[]) {
   if (evidenceItems.length === 0) {
-    return ["Evidence: none (run will seed mock evidence)."];
+    return [`${style("[ ]", COLORS.gray)} Evidence: none (run will seed mock evidence).`];
   }
   return evidenceItems.map(
-    (item) => `[ ] ${item.type} - ${item.label} (artifacts/${contractId}/evidence/${item.path})`
+    (item) =>
+      `${style("[ ]", COLORS.green)} ${item.type} - ${item.label} (${style(
+        `artifacts/${contractId}/evidence/${item.path}`,
+        COLORS.gray
+      )})`
   );
 }
 
@@ -64,37 +75,42 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
   const active = contract?.activeVersion ? `v${contract.activeVersion}` : "n/a";
   const artifacts = Array.isArray(contract?.artifacts) ? contract.artifacts.length : 0;
   const lines = [
-    "KAIR REVIEW",
-    `Contract: ${contract.id}   State: ${contract.current_state}   Active: ${active}`,
+    title("KAIR REVIEW"),
+    divider(),
+    `${label("Contract:")} ${contract.id}   ${label("State:")} ${formatState(
+      String(contract.current_state || "n/a")
+    )}   ${label("Active:")} ${active}`,
     "",
-    "APPROVED INTENT",
+    heading("APPROVED INTENT"),
     resolveApprovedIntent(contract),
     "",
-    "CONSTRAINTS",
-    `Required controls: ${formatControls(contract.controlsRequired)}`,
-    `Approved controls: ${formatControls(contract.controlsApproved)}`,
-    `Budget: ${resolveBudget(contract)}`,
+    heading("CONSTRAINTS"),
+    `${label("Required controls:")} ${formatControls(contract.controlsRequired)}`,
+    `${label("Approved controls:")} ${formatControls(contract.controlsApproved)}`,
+    `${label("Budget:")} ${resolveBudget(contract)}`,
     "",
-    "EXECUTION SUMMARY",
-    `Artifacts: ${artifacts}`,
-    `Last run artifact: ${extractLastRunTimestamp(contract)}`,
-    `Evidence items: ${evidenceItems.length}`,
+    heading("EXECUTION SUMMARY"),
+    `${label("Artifacts:")} ${artifacts}`,
+    `${label("Last run artifact:")} ${extractLastRunTimestamp(contract)}`,
+    `${label("Evidence items:")} ${evidenceItems.length}`,
     "",
-    "EVIDENCE",
+    heading("EVIDENCE"),
     ...renderEvidenceChecklist(contract.id, evidenceItems),
     "",
-    "DECISIONS",
-    `✅ Accept responsibility:  kair accept ${contract.id} --actor <name>`,
-    `🛂 Approve grant:          kair grant ${contract.id} <namespace>:<permission>`,
-    `⏪ Rewind approval:        kair contract rewind ${contract.id} --actor <name> "<reason>"`,
-    `🔍 Inspect evidence:       kair emit ${contract.id}`,
+    heading("DECISIONS"),
+    `${label("Accept responsibility:")} kair accept ${contract.id} --actor <name>`,
+    `${label("Approve grant:")}         kair grant ${contract.id} <namespace>:<permission>`,
+    `${label("Rewind approval:")}       kair contract rewind ${contract.id} --actor <name> "<reason>"`,
+    `${label("Inspect evidence:")}      kair emit ${contract.id}`,
+    divider(),
   ];
   return lines.join("\n");
 }
 
 export function renderEvidence(contract: any, evidenceItems: EvidenceItem[]) {
   const lines = [
-    `EVIDENCE CHECKLIST | ${contract.id}`,
+    title(`EVIDENCE CHECKLIST | ${contract.id}`),
+    divider(),
     ...renderEvidenceChecklist(contract.id, evidenceItems),
   ];
   return lines.join("\n");
