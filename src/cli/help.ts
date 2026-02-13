@@ -10,23 +10,23 @@ These are common Kair commands used in various situations:
 ${label("start a workflow")}
   propose                 Create a new Contract in DRAFT.
   plan                    Generate/refine a structured plan (kair.plan.v1).
-  contract request-approval
+  request-approval
                           Move a planned Contract to approval requested.
   approve                 Approve a Contract version.
-  contract run            Execute an approved Contract.
+  run                     Execute an approved Contract.
 
 ${label("governance and controls")}
   grant                   Approve a control grant.
-  contract pause          Pause execution.
-  contract resume         Resume execution.
-  contract rewind         Rewind/supersede a Contract version.
+  pause                   Pause execution.
+  resume                  Resume execution.
+  rewind                  Rewind/supersede a Contract version.
 
 ${label("review and inspection")}
   review                  Show one-screen review summary.
   accept                  Record acceptance of responsibility.
   emit                    Show evidence checklist.
   status                  Show full Contract status.
-  contract list           List known Contracts.
+  list                    List known Contracts.
 
 ${label("common usage examples")}
   kair propose "<intent>" [--id <contract_id>]
