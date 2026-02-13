@@ -35,7 +35,7 @@ ${label("common usage examples")}
   kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   kair review [<contract_id>] [--last]
   kair accept "<contract_id>" [--actor <name>]
-  kair emit "<contract_id>" [--last]
+  kair emit [<contract_id>] [--last]
 
 See "kair contract --help" for contract subcommands.
 See "kair grant --help" for grant usage.`);

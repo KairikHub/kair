@@ -64,8 +64,9 @@ kair <command>
 - `kair accept <contract_id> [--actor <name>]`
   - Record explicit acceptance-of-responsibility as an append-only history event (audit trail).
   - Keeps lifecycle state unchanged; this is a governance acknowledgment step after reviewing evidence.
-- `kair emit <contract_id> [--last]`
+- `kair emit [<contract_id>] [--last]`
   - List evidence checklist from `artifacts/<contract_id>/evidence/index.json`.
+  - With no args, defaults to the most recently updated contract.
   - `--last` targets the most recently updated contract.
 
 ### Inspection
@@ -96,5 +97,5 @@ kair contract approve contract_demo --actor Damien
 kair run
 kair review
 kair accept contract_demo --actor Damien
-kair emit contract_demo
+kair emit
 ```

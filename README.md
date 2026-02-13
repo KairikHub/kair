@@ -31,7 +31,7 @@ kair contract request-approval smoke_demo
 kair contract approve smoke_demo --actor tester
 kair run
 kair review
-kair emit smoke_demo
+kair emit
 kair accept smoke_demo --actor tester
 ```
 

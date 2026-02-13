@@ -71,10 +71,19 @@ describe("e2e: review surface", () => {
       expect(emit.stdout).toContain("EVIDENCE CHECKLIST");
       expect(emit.stdout).toContain("diff.patch");
 
+      const emitDefault = runCli(["emit"], env);
+      expect(emitDefault.status).toBe(0);
+      expect(emitDefault.stdout).toContain("EVIDENCE CHECKLIST");
+      expect(emitDefault.stdout).toContain(contractId);
+
       const emitLast = runCli(["emit", "--last"], env);
       expect(emitLast.status).toBe(0);
       expect(emitLast.stdout).toContain("EVIDENCE CHECKLIST");
       expect(emitLast.stdout).toContain(contractId);
+
+      const emitConflict = runCli(["emit", contractId, "--last"], env);
+      expect(emitConflict.status).not.toBe(0);
+      expect(emitConflict.stderr).toContain("Specify either a contract id or --last, not both.");
 
       const reviewContract = runCli(["review", contractId], env);
       expect(reviewContract.status).toBe(0);

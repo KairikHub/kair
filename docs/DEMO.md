@@ -12,7 +12,7 @@ kair contract request-approval demo_review
 kair contract approve demo_review --actor CTO
 kair run
 kair review
-kair emit demo_review
+kair emit
 kair accept demo_review --actor CTO
 kair review demo_review
 ```

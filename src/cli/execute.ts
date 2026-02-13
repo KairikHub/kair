@@ -1198,16 +1198,23 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "emit": {
+      const hasLast = rest.includes("--last");
+      const positional = rest.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      if (positional.length > 1) {
+        fail("Invalid arguments. Usage: emit [<contract_id>] [--last]");
+      }
       let contractId = "";
-      if (rest[0] === "--last") {
+      if (positional.length === 0) {
         const lastId = getLastContractId();
         if (!lastId) {
           fail("No Contracts found.");
         }
         contractId = lastId;
       } else {
-        requireArgs(rest, 1, 'emit "<contract_id>"');
-        contractId = rest[0];
+        contractId = positional[0];
       }
       const contract = getContract(contractId);
       let evidenceItems: any[] = [];
