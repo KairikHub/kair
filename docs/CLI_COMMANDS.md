@@ -35,8 +35,12 @@ kair <command>
   - Approve a namespaced grant on the most recently updated contract.
 - `kair grant <contract_id> <grant> [--actor <name>]`
   - Approve a namespaced grant on a specific contract.
-- `kair contract request-approval <contract_id>`
+- `kair request-approval [<contract_id>] [--last]`
+  - Top-level shorthand for contract request-approval.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract request-approval [<contract_id>] [--last]`
   - Move a planned contract into approval request state.
+  - With no args, defaults to the most recently updated contract.
 - `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
   - With no args, defaults to the most recently updated contract.
@@ -92,7 +96,7 @@ kair <command>
 ```bash
 kair propose --id contract_demo "Contract Demo"
 kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
-kair contract request-approval contract_demo
+kair request-approval
 kair contract approve contract_demo --actor Damien
 kair run
 kair review

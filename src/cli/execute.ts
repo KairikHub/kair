@@ -948,8 +948,27 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "request-approval": {
-      requireArgs(rest, 1, 'contract request-approval "<contract_id>"');
-      const [contractId] = rest;
+      const hasLast = rest.includes("--last");
+      const positional = rest.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      if (positional.length > 1) {
+        const usage = isContractGroup
+          ? "contract request-approval [<contract_id>] [--last]"
+          : "request-approval [<contract_id>] [--last]";
+        fail(`Invalid arguments. Usage: ${usage}`);
+      }
+      let contractId = "";
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+      }
       const contract = getContract(contractId);
       assertState(contract, ["PLANNED"], "request-approval");
       if (!enforceControls(contract, "approval request")) {

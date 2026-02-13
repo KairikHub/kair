@@ -178,6 +178,76 @@ describe("e2e: review surface", () => {
     }
   });
 
+  test("request-approval defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "request_first";
+    const secondId = "request_second";
+    const thirdId = "request_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Request first"],
+        ["contract", "plan", firstId, "Plan first"],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Request second"],
+        ["contract", "plan", secondId, "Plan second"],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const requestDefault = runCli(["request-approval"], env);
+      expect(requestDefault.status).toBe(0);
+
+      const firstAfterDefault = loadContract(tmp.dataDir, firstId);
+      const secondAfterDefault = loadContract(tmp.dataDir, secondId);
+      expect(firstAfterDefault.current_state).toBe("PLANNED");
+      expect(secondAfterDefault.current_state).toBe("AWAITING_APPROVAL");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Request third"],
+        ["contract", "plan", thirdId, "Plan third"],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const requestLast = runCli(["contract", "request-approval", "--last"], env);
+      expect(requestLast.status).toBe(0);
+
+      const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
+      expect(thirdAfterLast.current_state).toBe("AWAITING_APPROVAL");
+
+      const requestExplicit = runCli(["request-approval", firstId], env);
+      expect(requestExplicit.status).toBe(0);
+
+      const firstAfterExplicit = loadContract(tmp.dataDir, firstId);
+      expect(firstAfterExplicit.current_state).toBe("AWAITING_APPROVAL");
+
+      const requestConflict = runCli(["request-approval", thirdId, "--last"], env);
+      expect(requestConflict.status).not.toBe(0);
+      expect(requestConflict.stderr).toContain(
+        "Specify either a contract id or --last, not both."
+      );
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("run defaults to last and supports --last", () => {
     const tmp = makeTempRoot();
     const firstId = "run_first";
