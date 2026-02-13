@@ -41,4 +41,21 @@ describe("e2e: propose help", () => {
       tmp.cleanup();
     }
   });
+
+  test('propose rejects reserved contract id "help"', () => {
+    const tmp = makeTempRoot();
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const result = runCli(["propose", "--id", "help", "Reserved id"], env);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain('Contract id "help" is reserved.');
+    } finally {
+      tmp.cleanup();
+    }
+  });
 });

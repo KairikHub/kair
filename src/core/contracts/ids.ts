@@ -1,5 +1,6 @@
 const MAX_ID_LENGTH = 80;
 const ID_PATTERN = /^[a-z0-9][a-z0-9-_]*$/;
+const RESERVED_CONTRACT_IDS = new Set(["help"]);
 
 function slugify(text: string) {
   return text
@@ -35,6 +36,9 @@ export function validateContractId(id: string) {
   if (!id) {
     return "Contract id cannot be empty.";
   }
+  if (RESERVED_CONTRACT_IDS.has(id)) {
+    return `Contract id "${id}" is reserved.`;
+  }
   if (id.length > MAX_ID_LENGTH) {
     return `Contract id must be ${MAX_ID_LENGTH} characters or fewer.`;
   }
@@ -43,4 +47,3 @@ export function validateContractId(id: string) {
   }
   return null;
 }
-
