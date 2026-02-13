@@ -14,10 +14,10 @@ kair <command>
 ## Command Groups
 
 ### Propose and Plan
-- `kair propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
+- `kair propose "<intent>" [--id <contract_id>]`
   - Top-level shorthand for contract propose.
-- `kair contract propose "<intent>" [--id <contract_id>] [--requires <controls_csv>]`
-  - Propose a contract with optional required controls.
+- `kair contract propose "<intent>" [--id <contract_id>]`
+  - Propose a contract.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.

@@ -13,6 +13,29 @@ function readContractFromStore(dataDir: string, contractId: string) {
 }
 
 describe("e2e: cli contract flow", () => {
+  test("propose rejects removed --requires flag", () => {
+    const tmp = makeTempRoot();
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const result = runCli(
+        ["propose", "--requires", "local:read", "Propose with removed flag"],
+        env
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        '--requires is no longer supported. Use "kair grant" after propose if needed.'
+      );
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("create -> plan -> request approval -> approve -> run -> status -> rewind -> status", () => {
     const tmp = makeTempRoot();
     const contractId = "e2e_contract";

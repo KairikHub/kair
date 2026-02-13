@@ -221,10 +221,7 @@ function handlePropose(store, body) {
     approvals: [],
     artifacts: [],
   });
-  const controlsNote = controlsRequired.length
-    ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
-    : " Controls required by this proposal: none.";
-  recordHistory(contract, "DRAFT", `Propose a Kair Contract: "${intent}".${controlsNote}`);
+  recordHistory(contract, "DRAFT", `Propose a Kair Contract: "${intent}".`);
   store.contracts.push(contract);
   saveStore(store);
   return contract;

@@ -11,9 +11,6 @@ import { getDpcPath, loadDpcV1, saveDpcV1 } from "../core/dpc/storage";
 import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
 import {
   enforceControls,
-  normalizeControls,
-  parseControls,
-  validateControls,
 } from "../core/contracts/controls";
 import { proposeContract } from "../core/contracts/propose";
 import { assertState, recordHistory, transition } from "../core/contracts/history";
@@ -888,7 +885,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         printContractHelp();
         return;
       }
-      const { remaining, requiredRaw, idRaw } = extractProposeOptions(rest);
+      const { remaining, idRaw } = extractProposeOptions(rest);
       let intent = remaining.join(" ").trim();
       let id = idRaw.trim();
       const allowPrompt = options.allowPrompt === true;
@@ -926,9 +923,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           fail(`Contract id "${id}" already exists.`);
         }
       }
-      const controlsRequired = normalizeControls(parseControls(requiredRaw));
-      validateControls(controlsRequired);
-      const contract = proposeContract(intent, controlsRequired, id);
+      const contract = proposeContract(intent, [], id);
       console.log(`Proposed a Kair Contract: ${contract.id}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);

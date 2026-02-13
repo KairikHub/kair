@@ -2,7 +2,7 @@ import { now } from "../time";
 import { contractStore, ContractRecord } from "../store/contracts_store";
 import { recordHistory } from "./history";
 
-export function proposeContract(intent: string, controlsRequired: string[], idOverride?: string) {
+export function proposeContract(intent: string, controlsRequired: string[] = [], idOverride?: string) {
   const id = idOverride || `contract_${contractStore.nextId}`;
   contractStore.nextId += 1;
   const timestamp = now();
@@ -26,10 +26,7 @@ export function proposeContract(intent: string, controlsRequired: string[], idOv
     },
   };
   contractStore.contracts.set(id, contract);
-  const controlsNote = controlsRequired.length
-    ? ` Controls required by this proposal: ${controlsRequired.join(", ")}.`
-    : " Controls required by this proposal: none.";
-  const reason = `Propose a Kair Contract: "${intent}".${controlsNote}`;
+  const reason = `Propose a Kair Contract: "${intent}".`;
   recordHistory(contract, "DRAFT", reason);
   return contract;
 }

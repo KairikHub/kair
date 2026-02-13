@@ -5,7 +5,7 @@ export function printTopHelp() {
 
 ${label("Usage:")}
   kair contract <subcommand> [args]
-  kair propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  kair propose "<intent>" [--id <contract_id>]
   kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
   kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   kair review [<contract_id>] [--last]
@@ -13,7 +13,7 @@ ${label("Usage:")}
   kair emit "<contract_id>" [--last]
 
 ${label("Common subcommands:")}
-  propose "<intent>" [--requires <controls_csv>]
+  propose "<intent>"
   plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
   plan "<contract_id>" "<plan>"
   grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
@@ -53,7 +53,7 @@ ${label("Usage:")}
   kair contract <subcommand> [args]
 
 ${label("Subcommands:")}
-  propose "<intent>" [--requires <controls_csv>] [--id <contract_id>]
+  propose "<intent>" [--id <contract_id>]
   plan "<contract_id>" "<plan>"
   request-approval "<contract_id>"
   approve [<contract_id>] [--last] [--actor <name>]

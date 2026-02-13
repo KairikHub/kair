@@ -44,13 +44,13 @@ export function extractActorFlags(args: string[]) {
 
 export function extractProposeOptions(args: string[]) {
   const remaining: string[] = [];
-  let requiredRaw = "";
   let idRaw = "";
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === "--requires") {
-      requiredRaw = args[i + 1] || "";
-      i += 1;
-      continue;
+      fail('--requires is no longer supported. Use "kair grant" after propose if needed.');
+    }
+    if (args[i].startsWith("--requires=")) {
+      fail('--requires is no longer supported. Use "kair grant" after propose if needed.');
     }
     if (args[i] === "--id") {
       idRaw = args[i + 1] || "";
@@ -59,7 +59,7 @@ export function extractProposeOptions(args: string[]) {
     }
     remaining.push(args[i]);
   }
-  return { remaining, requiredRaw, idRaw };
+  return { remaining, idRaw };
 }
 
 export function extractRunOptions(args: string[]) {
@@ -105,4 +105,3 @@ export function normalizePauseAt(pauseAtRaw: string) {
   }
   return pauseAt;
 }
-
