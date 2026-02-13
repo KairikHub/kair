@@ -54,12 +54,23 @@ kair <command>
 - `kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
   - Execute the approved contract.
   - With no contract id, defaults to the most recently updated contract.
-- `kair contract pause <contract_id> [--actor <name>]`
+- `kair pause [<contract_id>] [--last] [--actor <name>]`
+  - Top-level shorthand for contract pause.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract pause [<contract_id>] [--last] [--actor <name>]`
   - Pause a running contract.
-- `kair contract resume <contract_id> [--actor <name>]`
+  - With no args, defaults to the most recently updated contract.
+- `kair resume [<contract_id>] [--last] [--actor <name>]`
+  - Top-level shorthand for contract resume.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract resume [<contract_id>] [--last] [--actor <name>]`
   - Resume from pause.
-- `kair contract rewind <contract_id> [--actor <name>] [<reason>]`
+- `kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
+  - Top-level shorthand for contract rewind.
+  - With no args, defaults to the most recently updated contract.
+- `kair contract rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
   - Append a rewind/supersession event.
+  - With no args, defaults to the most recently updated contract.
 
 ### Review and Evidence
 - `kair review [<contract_id>] [--last]`

@@ -1085,8 +1085,23 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "pause": {
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 1, 'contract pause "<contract_id>" [--actor <name>]');
-      const [contractId, ...legacyParts] = remaining;
+      const hasLast = remaining.includes("--last");
+      const positional = remaining.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      let contractId = "";
+      let legacyParts: string[] = [];
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+        legacyParts = positional.slice(1);
+      }
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
@@ -1103,8 +1118,23 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "resume": {
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 1, 'contract resume "<contract_id>" [--actor <name>]');
-      const [contractId, ...legacyParts] = remaining;
+      const hasLast = remaining.includes("--last");
+      const positional = remaining.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      let contractId = "";
+      let legacyParts: string[] = [];
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+        legacyParts = positional.slice(1);
+      }
       let legacyActor = "";
       if (legacyParts.length > 0) {
         legacyActor = legacyParts.join(" ").trim();
@@ -1120,8 +1150,23 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "rewind": {
       const { remaining, actorRaw } = extractActorFlags(rest);
-      requireArgs(remaining, 1, 'contract rewind "<contract_id>" [--actor <name>] [<reason>]');
-      const [contractId, ...reasonParts] = remaining;
+      const hasLast = remaining.includes("--last");
+      const positional = remaining.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      let contractId = "";
+      let reasonParts: string[] = [];
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+        reasonParts = positional.slice(1);
+      }
       const contract = getContract(contractId);
       assertState(contract, ["RUNNING", "PAUSED", "FAILED", "COMPLETED"], "rewind");
       let legacyActor = "";

@@ -54,15 +54,16 @@ ${label("Subcommands:")}
   request-approval [<contract_id>] [--last]
   approve [<contract_id>] [--last] [--actor <name>]
   run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
-  resume "<contract_id>" [--actor <name>]
-  pause "<contract_id>" [--actor <name>]
-  rewind "<contract_id>" [--actor <name>] [<reason>]
+  pause [<contract_id>] [--last] [--actor <name>]
+  resume [<contract_id>] [--last] [--actor <name>]
+  rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
   status [<contract_id>] [--last]
   list
 
 ${label("Advanced/demo:")}
   request-approval defaults to the most recently updated Contract when no id is provided.
   run defaults to the most recently updated Contract when no id is provided.
+  pause/resume/rewind default to the most recently updated Contract when no id is provided.
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 ${label("Alias:")}

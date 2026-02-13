@@ -315,4 +315,210 @@ describe("e2e: review surface", () => {
       tmp.cleanup();
     }
   });
+
+  test("pause defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "pause_first";
+    const secondId = "pause_second";
+    const thirdId = "pause_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Pause first"],
+        ["contract", "plan", firstId, "Plan first"],
+        ["contract", "request-approval", firstId],
+        ["approve", firstId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Pause second"],
+        ["contract", "plan", secondId, "Plan second"],
+        ["contract", "request-approval", secondId],
+        ["approve", secondId, "--actor", "e2e-actor"],
+        ["run", secondId, "--pause-at", "checkpoint_1"],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const pauseDefault = runCli(["pause"], env);
+      expect(pauseDefault.status).not.toBe(0);
+      expect(pauseDefault.stderr).toContain(`Contract "${secondId}"`);
+      expect(pauseDefault.stderr).toContain("state is PAUSED");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Pause third"],
+        ["contract", "plan", thirdId, "Plan third"],
+        ["contract", "request-approval", thirdId],
+        ["approve", thirdId, "--actor", "e2e-actor"],
+        ["run", thirdId, "--pause-at", "checkpoint_1"],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const pauseLast = runCli(["contract", "pause", "--last"], env);
+      expect(pauseLast.status).not.toBe(0);
+      expect(pauseLast.stderr).toContain(`Contract "${thirdId}"`);
+      expect(pauseLast.stderr).toContain("state is PAUSED");
+
+      const pauseConflict = runCli(["pause", thirdId, "--last"], env);
+      expect(pauseConflict.status).not.toBe(0);
+      expect(pauseConflict.stderr).toContain("Specify either a contract id or --last, not both.");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("resume defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "resume_first";
+    const secondId = "resume_second";
+    const thirdId = "resume_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Resume first"],
+        ["contract", "plan", firstId, "Plan first"],
+        ["contract", "request-approval", firstId],
+        ["approve", firstId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Resume second"],
+        ["contract", "plan", secondId, "Plan second"],
+        ["contract", "request-approval", secondId],
+        ["approve", secondId, "--actor", "e2e-actor"],
+        ["run", secondId, "--pause-at", "checkpoint_1"],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const resumeDefault = runCli(["resume"], env);
+      expect(resumeDefault.status).toBe(0);
+
+      const firstAfterDefault = loadContract(tmp.dataDir, firstId);
+      const secondAfterDefault = loadContract(tmp.dataDir, secondId);
+      expect(firstAfterDefault.current_state).toBe("APPROVED");
+      expect(secondAfterDefault.current_state).toBe("COMPLETED");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Resume third"],
+        ["contract", "plan", thirdId, "Plan third"],
+        ["contract", "request-approval", thirdId],
+        ["approve", thirdId, "--actor", "e2e-actor"],
+        ["run", thirdId, "--pause-at", "checkpoint_1"],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const resumeLast = runCli(["contract", "resume", "--last"], env);
+      expect(resumeLast.status).toBe(0);
+
+      const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
+      expect(thirdAfterLast.current_state).toBe("COMPLETED");
+
+      const resumeConflict = runCli(["resume", thirdId, "--last"], env);
+      expect(resumeConflict.status).not.toBe(0);
+      expect(resumeConflict.stderr).toContain("Specify either a contract id or --last, not both.");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("rewind defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "rewind_first";
+    const secondId = "rewind_second";
+    const thirdId = "rewind_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Rewind first"],
+        ["contract", "plan", firstId, "Plan first"],
+        ["contract", "request-approval", firstId],
+        ["approve", firstId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Rewind second"],
+        ["contract", "plan", secondId, "Plan second"],
+        ["contract", "request-approval", secondId],
+        ["approve", secondId, "--actor", "e2e-actor"],
+        ["run", secondId],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const rewindDefault = runCli(["rewind"], env);
+      expect(rewindDefault.status).toBe(0);
+
+      const firstAfterDefault = loadContract(tmp.dataDir, firstId);
+      const secondAfterDefault = loadContract(tmp.dataDir, secondId);
+      expect(firstAfterDefault.current_state).toBe("APPROVED");
+      expect(secondAfterDefault.current_state).toBe("REWOUND");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Rewind third"],
+        ["contract", "plan", thirdId, "Plan third"],
+        ["contract", "request-approval", thirdId],
+        ["approve", thirdId, "--actor", "e2e-actor"],
+        ["run", thirdId],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const rewindLast = runCli(["contract", "rewind", "--last"], env);
+      expect(rewindLast.status).toBe(0);
+
+      const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
+      expect(thirdAfterLast.current_state).toBe("REWOUND");
+
+      const rewindConflict = runCli(["rewind", thirdId, "--last"], env);
+      expect(rewindConflict.status).not.toBe(0);
+      expect(rewindConflict.stderr).toContain("Specify either a contract id or --last, not both.");
+    } finally {
+      tmp.cleanup();
+    }
+  });
 });
