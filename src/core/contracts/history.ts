@@ -6,6 +6,7 @@ import { STATES } from "./constants";
 export function logAudit(contractId: string, label: string, message: string, timestamp = now()) {
   if (process.env.KAIR_TEST_MODE) return;
   if (process.env.VITEST === "1") return;
+  if ((process.env.KAIR_SUPPRESS_AUDIT_LOGS || "").trim() === "1") return;
   console.log(`${timestamp} | ${contractId} | ${label} | ${message}`);
 }
 

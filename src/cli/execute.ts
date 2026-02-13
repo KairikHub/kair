@@ -28,7 +28,7 @@ import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/ve
 import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
-import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
+import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, requireArgs } from "./argv";
 import {
   printAcceptHelp,
   printApproveHelp,
@@ -1071,7 +1071,16 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         printRunHelp();
         return;
       }
-      const { remaining, pauseAt, pauseAuthority, pauseReason } = extractRunOptions(rest);
+      const {
+        remaining,
+        pauseAt,
+        pauseAuthority,
+        pauseReason,
+        debug,
+        jsonOutput,
+        providerRaw,
+        modelRaw,
+      } = extractRunOptions(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
       if (hasLast && positional.length > 0) {
@@ -1079,8 +1088,20 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
       if (positional.length > 1) {
         fail(
-          "Invalid arguments. Usage: run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
+          "Invalid arguments. Usage: run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]"
         );
+      }
+      const requestedProvider =
+        rest.includes("--provider") || rest.some((token) => token.startsWith("--provider="));
+      const requestedModel = rest.includes("--model") || rest.some((token) => token.startsWith("--model="));
+      if (requestedProvider && !providerRaw) {
+        fail("Missing value for --provider.");
+      }
+      if (requestedModel && !modelRaw) {
+        fail("Missing value for --model.");
+      }
+      if (pauseAt || pauseAuthority || pauseReason) {
+        fail("Run checkpoint pause options are not supported with the OpenClaw runner.");
       }
       let contractId = "";
       if (positional.length === 0) {
@@ -1093,12 +1114,67 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = positional[0];
       }
       const contract = getContract(contractId);
-      const normalizedPauseAt = normalizePauseAt(pauseAt);
-      await runContract(contract, {
-        pauseAt: normalizedPauseAt,
-        pauseAuthority: pauseAuthority ? pauseAuthority.trim() : "",
-        pauseReason: pauseReason ? pauseReason.trim() : "",
-      });
+      if (!jsonOutput) {
+        console.log("Delegating execution to OpenClaw runner...");
+      }
+      const previousSuppressAudit = process.env.KAIR_SUPPRESS_AUDIT_LOGS;
+      if (jsonOutput) {
+        process.env.KAIR_SUPPRESS_AUDIT_LOGS = "1";
+      }
+      let runOutcome;
+      try {
+        runOutcome = await runContract(contract, {
+          provider: providerRaw || undefined,
+          model: modelRaw || undefined,
+        });
+      } finally {
+        if (jsonOutput) {
+          if (previousSuppressAudit === undefined) {
+            delete process.env.KAIR_SUPPRESS_AUDIT_LOGS;
+          } else {
+            process.env.KAIR_SUPPRESS_AUDIT_LOGS = previousSuppressAudit;
+          }
+        }
+      }
+
+      if (jsonOutput) {
+        process.stdout.write(
+          `${JSON.stringify(
+            {
+              contract_id: contract.id,
+              status: runOutcome.result.status,
+              summary: runOutcome.result.summary,
+              request_path: runOutcome.requestPath,
+              result_path: runOutcome.resultPath,
+              enabled_tools: runOutcome.enabledTools,
+              logs_path: runOutcome.result.logsPath || null,
+              evidence_paths: runOutcome.result.evidencePaths || [],
+            },
+            null,
+            2
+          )}\n`
+        );
+      } else {
+        console.log(`Run status: ${runOutcome.result.status}`);
+        console.log(`Summary: ${runOutcome.result.summary}`);
+        console.log(`Run request artifact: ${runOutcome.requestPath}`);
+        console.log(`Run result artifact: ${runOutcome.resultPath}`);
+        if (runOutcome.result.logsPath) {
+          console.log(`Run logs: ${runOutcome.result.logsPath}`);
+        }
+        if (debug) {
+          const grants = Array.isArray(contract.controlsApproved) ? contract.controlsApproved : [];
+          console.log("RUN DEBUG");
+          console.log(`Approved grants: ${grants.length ? grants.join(", ") : "none"}`);
+          console.log(`Enabled tools: ${runOutcome.enabledTools.length ? runOutcome.enabledTools.join(", ") : "none"}`);
+          console.log(`Run request path: ${runOutcome.requestPath}`);
+          console.log(`Run result path: ${runOutcome.resultPath}`);
+        }
+      }
+
+      if (runOutcome.result.status !== "completed") {
+        fail(runOutcome.result.summary || "Execution failed.");
+      }
       break;
     }
     case "pause": {
@@ -1143,35 +1219,27 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         printResumeHelp();
         return;
       }
-      const { remaining, actorRaw } = extractActorFlags(rest);
+      const { remaining } = extractActorFlags(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
       if (hasLast && positional.length > 0) {
         fail("Specify either a contract id or --last, not both.");
       }
-      let contractId = "";
-      let legacyParts: string[] = [];
-      if (positional.length === 0) {
-        const lastId = getLastContractId();
-        if (!lastId) {
-          fail("No Contracts found.");
+      if (positional.length > 1) {
+        fail("Invalid arguments. Usage: resume [<contract_id>] [--last]");
+      }
+      const contractId = (() => {
+        if (positional.length === 0) {
+          const lastId = getLastContractId();
+          if (!lastId) {
+            fail("No Contracts found.");
+          }
+          return lastId;
         }
-        contractId = lastId;
-      } else {
-        contractId = positional[0];
-        legacyParts = positional.slice(1);
-      }
-      let legacyActor = "";
-      if (legacyParts.length > 0) {
-        legacyActor = legacyParts.join(" ").trim();
-        warn('Positional actor is deprecated. Use "resume <id> --actor <name>" instead.');
-      }
-      if (actorRaw && legacyActor) {
-        warn('Both --actor and positional actor provided; using "--actor".');
-      }
-      const actor = resolveActor(actorRaw || legacyActor);
+        return positional[0];
+      })();
       const contract = getContract(contractId);
-      await resumeContract(contract, actor);
+      await resumeContract(contract);
       break;
     }
     case "rewind": {

@@ -70,8 +70,11 @@ Grant List Output (current static set):
   - Future: file locking for concurrency.
 
 ## Artifacts
-- Written on `run` to `artifacts/<contract_id>/<timestamp>-run.json`.
-- Artifacts include `executedVersion`, `controlsApproved`, an intent/plan snapshot, and outcome.
+- Written on `run` under `artifacts/<contract_id>/run/`.
+- Canonical files:
+  - `run-request.json`
+  - `run-result.json`
+- Additional pointers may include OpenClaw session logs and tool-produced evidence file paths.
 
 ## DPC (Decision-Preserving Compression)
 - DPC is a compact, structured decision-state artifact used to preserve planning/refinement-critical context in a portable form.
@@ -92,6 +95,6 @@ Grant List Output (current static set):
 - Contract lifecycle, governance, artifacts, and audit semantics are implemented in the CLI/runtime.
 - Any future interface lives outside this repository and must treat the CLI as source of truth.
 
-## Execution Backends (Planned)
-- OpenClaw can be used as an execution backend during `run`.
+## Execution Backend (v0)
+- `kair run` delegates execution to the OpenClaw npm runner adapter.
 - Kair remains the authority layer; OpenClaw remains an implementation detail.

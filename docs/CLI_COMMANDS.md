@@ -42,14 +42,17 @@ kair <command>
   - With no args, defaults to the most recently updated contract.
 
 ### Execution and Recovery
-- `kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
-  - Execute the approved contract.
+- `kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]`
+  - Execute the approved contract via the OpenClaw runner.
   - With no contract id, defaults to the most recently updated contract.
+  - Always writes `artifacts/<contract_id>/run/run-request.json` and `artifacts/<contract_id>/run/run-result.json`.
+  - `--debug` prints enabled tool grants and run artifact paths.
+  - `--json` prints machine-readable output only.
 - `kair pause [<contract_id>] [--last] [--actor <name>]`
   - Pause a running contract.
   - With no args, defaults to the most recently updated contract.
 - `kair resume [<contract_id>] [--last] [--actor <name>]`
-  - Resume from pause.
+  - Resume from pause (not currently supported by the OpenClaw runner path).
   - With no args, defaults to the most recently updated contract.
 - `kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
   - Append a rewind/supersession event.

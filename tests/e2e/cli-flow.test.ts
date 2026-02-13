@@ -29,13 +29,22 @@ describe("e2e: cli contract flow", () => {
         ["plan", contractId, "Execute test flow"],
         ["propose", contractId],
         ["approve", contractId, "--actor", "e2e-actor"],
-        ["run", contractId],
       ] as string[][];
 
       for (const args of steps) {
         const result = runCli(args, env);
         expect(result.status).toBe(0);
       }
+
+      const run = runCli(["run", contractId], env);
+      expect(run.status).not.toBe(0);
+      expect(run.stderr).toContain("Structured plan required; run `kair plan` first.");
+      expect(fs.existsSync(path.join(tmp.artifactsDir, contractId, "run", "run-request.json"))).toBe(
+        true
+      );
+      expect(fs.existsSync(path.join(tmp.artifactsDir, contractId, "run", "run-result.json"))).toBe(
+        true
+      );
 
       const statusBeforeRewind = runCli(["status", contractId], env);
       expect(statusBeforeRewind.status).toBe(0);

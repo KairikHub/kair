@@ -98,15 +98,16 @@ export function printRunHelp() {
   console.log(`${title("Kair Run Command")}
 
 ${label("Usage:")}
-  kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+  kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]
 
 ${label("Description:")}
-  Execute an approved Contract.
+  Execute an approved Contract via the OpenClaw runner.
 
 ${label("Notes:")}
   If <contract_id> is omitted, run targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
-  --pause-at is an internal/demo checkpoint pause hook.
+  --debug prints enabled tool grants and run artifact paths.
+  --json prints machine-readable run output only.
 `);
 }
 
@@ -139,6 +140,7 @@ ${label("Notes:")}
   If <contract_id> is omitted, resume targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
   --actor (alias: --by) records who resumed execution.
+  Resume is not yet supported by the OpenClaw runner path.
 `);
 }
 

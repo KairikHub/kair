@@ -1,101 +1,155 @@
-import { resolveActor } from "../actor";
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+import type { Plan } from "../plans/schema";
+import { getArtifactsDir } from "../store/paths";
+import { now } from "../time";
 import { enforceControls } from "./controls";
-import { writeArtifact } from "./artifacts";
-import { assertState, logAudit, recordHistory, transition } from "./history";
-import { seedMockEvidence } from "./seed_evidence";
-import { RUN_CHECKPOINTS } from "./constants";
+import { assertState, transition } from "./history";
+import { runWithOpenClaw } from "../runner/openclaw_runner";
+import type { ExecutionRequest, RunnerResult } from "../runner/types";
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export type RunContractOptions = {
+  provider?: string;
+  model?: string;
+};
 
-async function runCheckpoints(contract: any, startIndex: number, options: any) {
-  for (let i = startIndex; i < RUN_CHECKPOINTS.length; i += 1) {
-    const checkpoint = RUN_CHECKPOINTS[i];
-    await wait(400);
-    logAudit(contract.id, contract.current_state, checkpoint.message);
-    if (options.pauseAt && options.pauseAt === checkpoint.id) {
-      const actor = resolveActor(options.pauseAuthority);
-      const reasonChunks = [
-        `Paused Contract execution at ${checkpoint.id}.`,
-        `Actor: ${actor}.`,
-      ];
-      if (options.pauseReason) {
-        reasonChunks.push(`Reason: "${options.pauseReason}".`);
-      } else {
-        reasonChunks.push("Reason: not provided.");
-      }
-      contract.pauseContext = {
-        at: checkpoint.id,
-        nextIndex: i + 1,
-      };
-      transition(contract, "PAUSED", reasonChunks.join(" "), actor);
-      return true;
-    }
+export type RunContractOutcome = {
+  request: ExecutionRequest | null;
+  requestPath: string;
+  resultPath: string;
+  result: RunnerResult;
+  enabledTools: string[];
+};
+
+function resolveStructuredPlan(contract: any): Plan | null {
+  if (contract?.plan_v1 && contract.plan_v1.version === "kair.plan.v1") {
+    return contract.plan_v1;
   }
-  return false;
+  if (contract?.planJson && contract.planJson.version === "kair.plan.v1") {
+    return contract.planJson;
+  }
+  return null;
 }
 
-function finalizeRun(contract: any) {
-  const lastApproval = contract.approvals[contract.approvals.length - 1];
-  const approver = lastApproval ? lastApproval.approver : "an authorized approver";
-  const approvalAt = lastApproval ? lastApproval.at : "an unknown time";
-  const planText = contract.plan
-    ? `Plan executed: "${contract.plan}".`
-    : "Plan text was not recorded.";
-  const summary = `Completed because the approved Contract ran through execution and validation checkpoints without failure. ${planText} Approval recorded from ${approver} at ${approvalAt}.`;
-  contract.artifacts.push({
-    type: "summary",
-    content: summary,
-  });
-  writeArtifact(contract, {
+function writeJson(filePath: string, payload: any) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+}
+
+function buildExecutionRequest(contract: any, runDir: string): ExecutionRequest | null {
+  const plan = resolveStructuredPlan(contract);
+  if (!plan) {
+    return null;
+  }
+  return {
+    contractId: contract.id,
     intent: contract.intent,
-    plan: contract.plan,
+    plan,
+    grants: Array.isArray(contract.controlsApproved) ? [...contract.controlsApproved] : [],
+    expectedEvidence: Array.isArray(plan.steps) ? plan.steps.map((step: any) => String(step.id)) : [],
+    artifactsDir: runDir,
+  };
+}
+
+function appendRunArtifacts(contract: any, params: { requestPath: string; resultPath: string; result: RunnerResult }) {
+  contract.artifacts.push({
+    type: "run_request",
+    content: params.requestPath,
   });
-  if (contract && contract.id && contract.intent) {
-    seedMockEvidence({
-      id: contract.id,
-      intent: contract.intent,
-      plan: contract.plan ?? null,
+  contract.artifacts.push({
+    type: "run_result",
+    content: params.resultPath,
+  });
+  if (params.result.logsPath) {
+    contract.artifacts.push({
+      type: "run_log",
+      content: params.result.logsPath,
     });
   }
-  contract.pauseContext = null;
-  transition(contract, "COMPLETED", "Execution completed successfully for the approved Contract.");
+  if (Array.isArray(params.result.evidencePaths)) {
+    for (const evidencePath of params.result.evidencePaths) {
+      contract.artifacts.push({
+        type: "run_evidence",
+        content: evidencePath,
+      });
+    }
+  }
+  contract.artifacts.push({
+    type: "summary",
+    content: params.result.summary,
+  });
 }
 
-export async function runContract(contract: any, options: any = {}) {
+export async function runContract(
+  contract: any,
+  options: RunContractOptions = {}
+): Promise<RunContractOutcome> {
   assertState(contract, ["APPROVED"], "run");
   if (!enforceControls(contract, "execution", { fatal: true })) {
-    return;
+    throw new Error(`Contract "${contract.id}" blocked due to missing controls.`);
   }
+
   contract.pauseContext = null;
   transition(contract, "RUNNING", "Execution started for the approved Contract.");
-  const paused = await runCheckpoints(contract, 0, options);
-  if (paused) {
-    return;
+
+  const runDir = path.join(getArtifactsDir(), contract.id, "run");
+  const requestPath = path.join(runDir, "run-request.json");
+  const resultPath = path.join(runDir, "run-result.json");
+  const executionRequest = buildExecutionRequest(contract, runDir);
+
+  writeJson(requestPath, {
+    generated_at: now(),
+    request: executionRequest,
+    contract: {
+      id: contract.id,
+      intent: contract.intent,
+      activeVersion: contract.activeVersion,
+      controlsApproved: Array.isArray(contract.controlsApproved) ? [...contract.controlsApproved] : [],
+    },
+  });
+
+  let result: RunnerResult;
+  if (!executionRequest) {
+    result = {
+      status: "failed",
+      summary: "Structured plan required; run `kair plan` first.",
+      outputs: {
+        reason: "missing_structured_plan",
+      },
+      errors: "missing_structured_plan",
+    };
+  } else {
+    result = await runWithOpenClaw(executionRequest, {
+      provider: options.provider,
+      model: options.model,
+    });
   }
-  await wait(400);
-  finalizeRun(contract);
+
+  writeJson(resultPath, {
+    generated_at: now(),
+    result,
+  });
+  appendRunArtifacts(contract, { requestPath, resultPath, result });
+
+  if (result.status === "completed") {
+    transition(contract, "COMPLETED", `Execution completed via OpenClaw runner. ${result.summary}`);
+  } else {
+    transition(contract, "FAILED", `Execution failed via OpenClaw runner. ${result.summary}`);
+  }
+
+  const enabledTools =
+    Array.isArray(result?.outputs?.enabledTools) ? result.outputs.enabledTools.map((item: any) => String(item)) : [];
+
+  return {
+    request: executionRequest,
+    requestPath,
+    resultPath,
+    result,
+    enabledTools,
+  };
 }
 
-export async function resumeContract(contract: any, authority?: string) {
-  assertState(contract, ["PAUSED"], "resume");
-  if (!enforceControls(contract, "execution", { fatal: true })) {
-    return;
-  }
-  const actor = resolveActor(authority);
-  const pauseContext = contract.pauseContext || { at: "unknown", nextIndex: 0 };
-  contract.current_state = "RUNNING";
-  recordHistory(
-    contract,
-    "RESUMED",
-    `Resumed Contract execution after pause at ${pauseContext.at}. Actor: ${actor}.`,
-    actor
-  );
-  const paused = await runCheckpoints(contract, pauseContext.nextIndex, {});
-  if (paused) {
-    return;
-  }
-  await wait(400);
-  finalizeRun(contract);
+export async function resumeContract(_contract: any) {
+  throw new Error("Resume is not supported for OpenClaw runner yet.");
 }

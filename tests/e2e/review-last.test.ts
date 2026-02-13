@@ -28,7 +28,6 @@ describe("e2e: review surface", () => {
         ["plan", contractId, "Execute review demo flow"],
         ["propose", contractId],
         ["approve", contractId, "--actor", "e2e-actor"],
-        ["run", contractId],
       ] as string[][];
 
       for (const args of setupSteps) {
@@ -36,12 +35,16 @@ describe("e2e: review surface", () => {
         expect(result.status).toBe(0);
       }
 
+      const run = runCli(["run", contractId], env);
+      expect(run.status).not.toBe(0);
+      expect(run.stderr).toContain("Structured plan required; run `kair plan` first.");
+
       const reviewLast = runCli(["review", "--last"], env);
       expect(reviewLast.status).toBe(0);
       expect(reviewLast.stdout).toContain("KAIR REVIEW");
       expect(reviewLast.stdout).toContain(contractId);
       expect(reviewLast.stdout).toContain("EVIDENCE");
-      expect(reviewLast.stdout).toContain("diff.patch");
+      expect(reviewLast.stdout).toContain("run_result");
 
       const reviewDefault = runCli(["review"], env);
       expect(reviewDefault.status).toBe(0);
@@ -73,7 +76,7 @@ describe("e2e: review surface", () => {
       const emit = runCli(["emit", contractId], env);
       expect(emit.status).toBe(0);
       expect(emit.stdout).toContain("EVIDENCE CHECKLIST");
-      expect(emit.stdout).toContain("diff.patch");
+      expect(emit.stdout).toContain("run_result");
 
       const emitDefault = runCli(["emit"], env);
       expect(emitDefault.status).toBe(0);
@@ -283,12 +286,13 @@ describe("e2e: review surface", () => {
       }
 
       const runDefault = runCli(["run"], env);
-      expect(runDefault.status).toBe(0);
+      expect(runDefault.status).not.toBe(0);
+      expect(runDefault.stderr).toContain("Structured plan required; run `kair plan` first.");
 
       const firstAfterDefault = loadContract(tmp.dataDir, firstId);
       const secondAfterDefault = loadContract(tmp.dataDir, secondId);
       expect(firstAfterDefault.current_state).toBe("APPROVED");
-      expect(secondAfterDefault.current_state).toBe("COMPLETED");
+      expect(secondAfterDefault.current_state).toBe("FAILED");
 
       const thirdSetup = [
         ["contract", "--id", thirdId, "Run third"],
@@ -302,10 +306,11 @@ describe("e2e: review surface", () => {
       }
 
       const runLast = runCli(["run", "--last"], env);
-      expect(runLast.status).toBe(0);
+      expect(runLast.status).not.toBe(0);
+      expect(runLast.stderr).toContain("Structured plan required; run `kair plan` first.");
 
       const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
-      expect(thirdAfterLast.current_state).toBe("COMPLETED");
+      expect(thirdAfterLast.current_state).toBe("FAILED");
 
       const runConflict = runCli(["run", thirdId, "--last"], env);
       expect(runConflict.status).not.toBe(0);
@@ -344,7 +349,6 @@ describe("e2e: review surface", () => {
         ["plan", secondId, "Plan second"],
         ["propose", secondId],
         ["approve", secondId, "--actor", "e2e-actor"],
-        ["run", secondId, "--pause-at", "checkpoint_1"],
       ] as string[][];
       for (const args of secondSetup) {
         const result = runCli(args, env);
@@ -354,14 +358,13 @@ describe("e2e: review surface", () => {
       const pauseDefault = runCli(["pause"], env);
       expect(pauseDefault.status).not.toBe(0);
       expect(pauseDefault.stderr).toContain(`Contract "${secondId}"`);
-      expect(pauseDefault.stderr).toContain("state is PAUSED");
+      expect(pauseDefault.stderr).toContain("state is APPROVED");
 
       const thirdSetup = [
         ["contract", "--id", thirdId, "Pause third"],
         ["plan", thirdId, "Plan third"],
         ["propose", thirdId],
         ["approve", thirdId, "--actor", "e2e-actor"],
-        ["run", thirdId, "--pause-at", "checkpoint_1"],
       ] as string[][];
       for (const args of thirdSetup) {
         const result = runCli(args, env);
@@ -371,7 +374,7 @@ describe("e2e: review surface", () => {
       const pauseLast = runCli(["pause", "--last"], env);
       expect(pauseLast.status).not.toBe(0);
       expect(pauseLast.stderr).toContain(`Contract "${thirdId}"`);
-      expect(pauseLast.stderr).toContain("state is PAUSED");
+      expect(pauseLast.stderr).toContain("state is APPROVED");
 
       const pauseConflict = runCli(["pause", thirdId, "--last"], env);
       expect(pauseConflict.status).not.toBe(0);
@@ -410,7 +413,6 @@ describe("e2e: review surface", () => {
         ["plan", secondId, "Plan second"],
         ["propose", secondId],
         ["approve", secondId, "--actor", "e2e-actor"],
-        ["run", secondId, "--pause-at", "checkpoint_1"],
       ] as string[][];
       for (const args of secondSetup) {
         const result = runCli(args, env);
@@ -418,19 +420,19 @@ describe("e2e: review surface", () => {
       }
 
       const resumeDefault = runCli(["resume"], env);
-      expect(resumeDefault.status).toBe(0);
+      expect(resumeDefault.status).not.toBe(0);
+      expect(resumeDefault.stderr).toContain("Resume is not supported for OpenClaw runner yet.");
 
       const firstAfterDefault = loadContract(tmp.dataDir, firstId);
       const secondAfterDefault = loadContract(tmp.dataDir, secondId);
       expect(firstAfterDefault.current_state).toBe("APPROVED");
-      expect(secondAfterDefault.current_state).toBe("COMPLETED");
+      expect(secondAfterDefault.current_state).toBe("APPROVED");
 
       const thirdSetup = [
         ["contract", "--id", thirdId, "Resume third"],
         ["plan", thirdId, "Plan third"],
         ["propose", thirdId],
         ["approve", thirdId, "--actor", "e2e-actor"],
-        ["run", thirdId, "--pause-at", "checkpoint_1"],
       ] as string[][];
       for (const args of thirdSetup) {
         const result = runCli(args, env);
@@ -438,10 +440,11 @@ describe("e2e: review surface", () => {
       }
 
       const resumeLast = runCli(["resume", "--last"], env);
-      expect(resumeLast.status).toBe(0);
+      expect(resumeLast.status).not.toBe(0);
+      expect(resumeLast.stderr).toContain("Resume is not supported for OpenClaw runner yet.");
 
       const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
-      expect(thirdAfterLast.current_state).toBe("COMPLETED");
+      expect(thirdAfterLast.current_state).toBe("APPROVED");
 
       const resumeConflict = runCli(["resume", thirdId, "--last"], env);
       expect(resumeConflict.status).not.toBe(0);
@@ -480,12 +483,14 @@ describe("e2e: review surface", () => {
         ["plan", secondId, "Plan second"],
         ["propose", secondId],
         ["approve", secondId, "--actor", "e2e-actor"],
-        ["run", secondId],
       ] as string[][];
       for (const args of secondSetup) {
         const result = runCli(args, env);
         expect(result.status).toBe(0);
       }
+      const runSecond = runCli(["run", secondId], env);
+      expect(runSecond.status).not.toBe(0);
+      expect(runSecond.stderr).toContain("Structured plan required; run `kair plan` first.");
 
       const rewindDefault = runCli(["rewind"], env);
       expect(rewindDefault.status).toBe(0);
@@ -500,12 +505,14 @@ describe("e2e: review surface", () => {
         ["plan", thirdId, "Plan third"],
         ["propose", thirdId],
         ["approve", thirdId, "--actor", "e2e-actor"],
-        ["run", thirdId],
       ] as string[][];
       for (const args of thirdSetup) {
         const result = runCli(args, env);
         expect(result.status).toBe(0);
       }
+      const runThird = runCli(["run", thirdId], env);
+      expect(runThird.status).not.toBe(0);
+      expect(runThird.stderr).toContain("Structured plan required; run `kair plan` first.");
 
       const rewindLast = runCli(["rewind", "--last"], env);
       expect(rewindLast.status).toBe(0);

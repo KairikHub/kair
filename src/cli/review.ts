@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { EvidenceItem } from "../core/contracts/evidence";
@@ -40,15 +41,25 @@ function resolveBudget(contract: any) {
 
 function extractLastRunTimestamp(contract: any) {
   const artifacts = Array.isArray(contract?.artifacts) ? contract.artifacts : [];
-  const runArtifacts = artifacts.filter((entry: any) => entry && entry.type === "run");
-  if (runArtifacts.length === 0) {
+  const runArtifacts = artifacts.filter(
+    (entry: any) => entry && (entry.type === "run_result" || entry.type === "run")
+  );
+  if (!runArtifacts.length) {
     return "n/a";
   }
   const lastRun = runArtifacts[runArtifacts.length - 1];
-  const base = path.basename(String(lastRun.content || ""));
+  const contentPath = String(lastRun.content || "");
+  if (contentPath && fs.existsSync(contentPath)) {
+    try {
+      return fs.statSync(contentPath).mtime.toISOString();
+    } catch {
+      // fall through to filename parsing
+    }
+  }
+  const base = path.basename(contentPath);
   const match = base.match(/^(.+)-run\.json$/);
   if (!match) {
-    return "n/a";
+    return base || "n/a";
   }
   const compact = match[1];
   const normalized = compact.match(/^(.*T\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/);
@@ -58,14 +69,25 @@ function extractLastRunTimestamp(contract: any) {
   return `${normalized[1]}:${normalized[2]}:${normalized[3]}.${normalized[4]}Z`;
 }
 
-function renderEvidenceChecklist(contractId: string, evidenceItems: EvidenceItem[]) {
+function renderEvidenceChecklist(contract: any, evidenceItems: EvidenceItem[]) {
   if (evidenceItems.length === 0) {
-    return [`${style("[ ]", COLORS.gray)} Evidence: none (run will seed mock evidence).`];
+    const runPointers = (Array.isArray(contract?.artifacts) ? contract.artifacts : [])
+      .filter(
+        (entry: any) =>
+          entry &&
+          typeof entry.type === "string" &&
+          ["run_request", "run_result", "run_log", "run_evidence"].includes(entry.type)
+      )
+      .map((entry: any) => `${style("[ ]", COLORS.green)} ${entry.type} - ${style(String(entry.content || ""), COLORS.gray)}`);
+    if (runPointers.length > 0) {
+      return runPointers;
+    }
+    return [`${style("[ ]", COLORS.gray)} Evidence: none recorded.`];
   }
   return evidenceItems.map(
     (item) =>
       `${style("[ ]", COLORS.green)} ${item.type} - ${item.label} (${style(
-        `artifacts/${contractId}/evidence/${item.path}`,
+        `artifacts/${contract.id}/evidence/${item.path}`,
         COLORS.gray
       )})`
   );
@@ -95,7 +117,7 @@ export function renderReview(contract: any, evidenceItems: EvidenceItem[]) {
     `${label("Evidence items:")} ${evidenceItems.length}`,
     "",
     heading("EVIDENCE"),
-    ...renderEvidenceChecklist(contract.id, evidenceItems),
+    ...renderEvidenceChecklist(contract, evidenceItems),
     "",
     heading("DECISIONS"),
     `${label("Accept responsibility:")} kair accept ${contract.id} --actor <name>`,
@@ -111,7 +133,7 @@ export function renderEvidence(contract: any, evidenceItems: EvidenceItem[]) {
   const lines = [
     title(`EVIDENCE CHECKLIST | ${contract.id}`),
     divider(),
-    ...renderEvidenceChecklist(contract.id, evidenceItems),
+    ...renderEvidenceChecklist(contract, evidenceItems),
   ];
   return lines.join("\n");
 }

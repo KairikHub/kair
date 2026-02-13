@@ -16,7 +16,7 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 docker compose up -d --build
 ```
 
-This starts the local UI at `http://localhost:3000` and prepares the CLI container runtime.
+This prepares the CLI container runtime.
 OpenClaw is installed from npm during image build; no git submodule setup is required.
 
 ## CLI Command Surface
@@ -32,6 +32,57 @@ The current `kair --help` command groups are:
   - `kair grant`, `pause`, `resume`, `rewind`
 - Review and inspection:
   - `kair review`, `accept`, `emit`, `status`, `contracts`
+
+## OpenClaw Runner (`kair run`)
+`kair run` delegates execution to the OpenClaw runner adapter and always writes:
+
+- `artifacts/<contract_id>/run/run-request.json`
+- `artifacts/<contract_id>/run/run-result.json`
+
+Required environment:
+
+```bash
+export KAIR_OPENAI_API_KEY=your_key_here
+```
+
+Optional selection:
+
+- `kair run <id> --provider <name> --model <name>`
+
+Tool grants (run-time gated):
+
+- `local:read` enables `fs_read`
+- `local:write` enables `fs_write`
+- `web:fetch` enables `web_fetch`
+
+Example flow:
+
+```bash
+kair contract "Write a hello file under artifacts"
+kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'
+kair propose --last
+kair approve --last --actor <name>
+kair grant --last local:write --actor <name>
+kair run --last --debug
+```
+
+Manual test checklist:
+
+1. Set env vars:
+   - `KAIR_OPENAI_API_KEY=<your key>`
+2. Run:
+   - `kair contract "Write hello evidence"`
+   - `kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'`
+   - `kair propose --last`
+   - `kair approve --last --actor <name>`
+   - `kair grant --last local:write --actor <name>`
+   - `kair run --last --debug`
+3. Verify expected evidence files:
+   - `artifacts/<contract_id>/run/run-request.json`
+   - `artifacts/<contract_id>/run/run-result.json`
+4. Inspect outputs:
+   - Open `run-request.json` for the execution payload.
+   - Open `run-result.json` for runner status, summary, logs path, and evidence paths.
 
 <img alt="visualize how a kair workflow works" src="https://github.com/user-attachments/assets/889354fe-3725-49d9-b1c9-e57e39444286" />
 
