@@ -133,6 +133,23 @@ ${label("Notes:")}
 `);
 }
 
+export function printResumeHelp() {
+  console.log(`${title("Kair Resume Command")}
+
+${label("Usage:")}
+  kair resume [<contract_id>] [--last] [--actor <name>]
+  kair contract resume [<contract_id>] [--last] [--actor <name>]
+
+${label("Description:")}
+  Resume execution of a PAUSED Contract.
+
+${label("Notes:")}
+  If <contract_id> is omitted, resume targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+  --actor (alias: --by) records who resumed execution.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
