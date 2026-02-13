@@ -1,36 +1,12 @@
 import { getProvider, listProviders, normalizeProviderName } from "../../src/core/providers/registry";
 
 describe("providers registry", () => {
-  test("normalizeProviderName defaults to KAIR_LLM_PROVIDER when input is missing", () => {
-    const previousProvider = process.env.KAIR_LLM_PROVIDER;
-    try {
-      process.env.KAIR_LLM_PROVIDER = "mock";
-      expect(normalizeProviderName()).toBe("mock");
-      expect(normalizeProviderName(null)).toBe("mock");
-    } finally {
-      if (previousProvider === undefined) {
-        delete process.env.KAIR_LLM_PROVIDER;
-      } else {
-        process.env.KAIR_LLM_PROVIDER = previousProvider;
-      }
-    }
-  });
-
-  test("normalizeProviderName falls back to openai and explicit value overrides env default", () => {
-    const previousProvider = process.env.KAIR_LLM_PROVIDER;
-    try {
-      delete process.env.KAIR_LLM_PROVIDER;
-      expect(normalizeProviderName()).toBe("openai");
-
-      process.env.KAIR_LLM_PROVIDER = "mock";
-      expect(normalizeProviderName("openai")).toBe("openai");
-    } finally {
-      if (previousProvider === undefined) {
-        delete process.env.KAIR_LLM_PROVIDER;
-      } else {
-        process.env.KAIR_LLM_PROVIDER = previousProvider;
-      }
-    }
+  test("normalizeProviderName only normalizes explicit input", () => {
+    expect(normalizeProviderName(" OpenAI ")).toBe("openai");
+    expect(normalizeProviderName("mock")).toBe("mock");
+    expect(normalizeProviderName("")).toBe("");
+    expect(normalizeProviderName(null)).toBe("");
+    expect(normalizeProviderName(undefined)).toBe("");
   });
 
   test("listProviders includes openai", () => {

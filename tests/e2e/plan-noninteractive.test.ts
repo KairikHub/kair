@@ -161,6 +161,43 @@ describe("e2e: plan non-interactive", () => {
     }
   });
 
+  test("kair plan requiring provider fails when neither --provider nor KAIR_LLM_PROVIDER is set", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_missing_provider";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+      KAIR_LLM_PROVIDER: "",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "create", "--id", contractId, "Plan missing provider contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const result = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--instructions",
+          "Add rollback verification step",
+        ],
+        env
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        "Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>."
+      );
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("kair plan --json prints only validated JSON output", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_json_output";

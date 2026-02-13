@@ -60,6 +60,8 @@ const MAX_PLAN_PROVIDER_ATTEMPTS = 5;
 const GRANT_FORMAT_REGEX = /^[a-z0-9]+:[a-z0-9_-]+$/;
 const INVALID_GRANT_FORMAT_MESSAGE =
   "Invalid grant format. Expected <namespace>:<permission> (example: local:write).";
+const MISSING_PROVIDER_CONFIG_MESSAGE =
+  "Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>.";
 const DPC_DEFAULT_CONSTRAINTS = [
   "LLM output must be strict JSON-only.",
   "Pretty formatting is produced by the CLI renderer only.",
@@ -479,10 +481,21 @@ function printPlanDebugOutput(params: {
   console.log(JSON.stringify(params.sanitizedRequestRecord, null, 2));
 }
 
+function resolveConfiguredProviderName(providerRaw: string) {
+  const explicit = normalizeProviderName(providerRaw);
+  if (explicit) {
+    return explicit;
+  }
+  return normalizeProviderName(process.env.KAIR_LLM_PROVIDER || "");
+}
+
 function resolvePlanProvider(parsed: ParsedTopLevelPlanOptions, required: boolean) {
-  const providerName = normalizeProviderName(parsed.providerRaw || null);
-  if (!required && !parsed.providerRaw) {
+  const providerName = resolveConfiguredProviderName(parsed.providerRaw);
+  if (!required && !providerName) {
     return { providerName, provider: null as Provider | null };
+  }
+  if (!providerName) {
+    fail(MISSING_PROVIDER_CONFIG_MESSAGE);
   }
   try {
     const provider = getProvider(providerName);
@@ -613,10 +626,11 @@ async function handleTopLevelPlan(rest: string[]) {
     ? resolveActor(parsed.actorRaw)
     : undefined;
 
-  const { providerName, provider: preResolvedProvider } = resolvePlanProvider(
+  const { providerName: resolvedProviderName, provider: preResolvedProvider } = resolvePlanProvider(
     parsed,
-    Boolean(parsed.providerRaw)
+    Boolean(resolveConfiguredProviderName(parsed.providerRaw))
   );
+  let providerName = resolvedProviderName;
   let provider = preResolvedProvider;
   let providerApiKeyChecked = false;
   const model = parsed.modelRaw || null;
@@ -625,6 +639,7 @@ async function handleTopLevelPlan(rest: string[]) {
     if (!provider) {
       const resolved = resolvePlanProvider(parsed, true);
       provider = resolved.provider;
+      providerName = resolved.providerName;
     }
     if (!provider) {
       fail("Provider is required for planning.");
