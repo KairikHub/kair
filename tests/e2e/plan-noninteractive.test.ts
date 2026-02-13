@@ -280,6 +280,74 @@ describe("e2e: plan non-interactive", () => {
     }
   });
 
+  test("accepted structured plan moves REWOUND contract back to PLANNED", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_rewound_to_planned";
+    const actor = "e2e-actor";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: actor,
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const setup = [
+        ["contract", "--id", contractId, "Rewound contract plan retry"],
+        ["plan", contractId, "Legacy plan before structured retry"],
+        ["propose", contractId],
+        ["approve", contractId, "--actor", actor],
+      ] as string[][];
+
+      for (const args of setup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const run = runCli(["run", contractId], env);
+      expect(run.status).not.toBe(0);
+      expect(run.stderr).toContain("Structured plan required; run `kair plan` first.");
+
+      const rewind = runCli(["rewind", contractId, "--actor", actor, "Need new structured plan"], env);
+      expect(rewind.status).toBe(0);
+
+      const afterRewind = readContractFromStore(tmp.dataDir, contractId);
+      expect(afterRewind.contract.current_state).toBe("REWOUND");
+
+      const planJsonRaw = JSON.stringify({
+        version: "kair.plan.v1",
+        title: "Recovery plan after rewind",
+        steps: [
+          {
+            id: "step-recover",
+            summary: "Regenerate structured plan and move back to PLANNED.",
+          },
+        ],
+      });
+
+      const planResult = runCli(["plan", contractId, "--interactive=false", planJsonRaw], env);
+      expect(planResult.status).toBe(0);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.current_state).toBe("PLANNED");
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+
+      const plannedEntries = (after.contract.history || []).filter(
+        (entry: any) => entry && entry.state === "PLANNED"
+      );
+      expect(plannedEntries.length).toBeGreaterThanOrEqual(2);
+      expect(
+        plannedEntries.some(
+          (entry: any) =>
+            String(entry.message || "") === "Structured plan accepted; Contract moved to PLANNED."
+        )
+      ).toBe(true);
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("kair plan --debug prints provider details, prompt artifact path, and dpc artifact path", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_debug";

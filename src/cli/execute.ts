@@ -161,11 +161,11 @@ function persistStructuredPlan(params: {
   message: string;
 }) {
   const contract = setPlanJson(params.contractId, params.plan, params.actor, params.message);
-  if (contract.current_state === "DRAFT") {
+  if (contract.current_state !== "PLANNED") {
     transition(
       contract,
       "PLANNED",
-      "Plan captured via top-level plan command.",
+      "Structured plan accepted; Contract moved to PLANNED.",
       params.actor
     );
   }
