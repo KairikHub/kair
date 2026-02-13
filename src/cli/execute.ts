@@ -29,7 +29,7 @@ import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
-import { printContractHelp, printGrantHelp, printTopHelp } from "./help";
+import { printContractHelp, printGrantHelp, printProposeHelp, printTopHelp } from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
@@ -882,7 +882,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     case "propose":
     case "create": {
       if (rest.includes("-h") || rest.includes("--help")) {
-        printContractHelp();
+        printProposeHelp();
         return;
       }
       const { remaining, idRaw } = extractProposeOptions(rest);
@@ -902,7 +902,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       if (!intent && !allowPrompt) {
         failWithHelp(
           "Missing intent. Provide it as an argument or run interactively in a TTY.",
-          "contract"
+          "propose"
         );
       }
       if (!intent && allowPrompt) {

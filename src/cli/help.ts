@@ -32,6 +32,21 @@ See "kair contract --help" for contract subcommands.
 See "kair grant --help" for grant usage.`);
 }
 
+export function printProposeHelp() {
+  console.log(`${title("Kair Propose Command")}
+
+${label("Usage:")}
+  kair propose "<intent>" [--id <contract_id>]
+  kair contract propose "<intent>" [--id <contract_id>]
+
+${label("Description:")}
+  Create a new Contract in DRAFT state.
+
+${label("Notes:")}
+  If --id is omitted, kair generates a suggested contract id from intent.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
