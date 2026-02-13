@@ -150,6 +150,23 @@ ${label("Notes:")}
 `);
 }
 
+export function printRewindHelp() {
+  console.log(`${title("Kair Rewind Command")}
+
+${label("Usage:")}
+  kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
+  kair contract rewind [<contract_id>] [--last] [--actor <name>] [<reason>]
+
+${label("Description:")}
+  Rewind and supersede a previously executed Contract version.
+
+${label("Notes:")}
+  If <contract_id> is omitted, rewind targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+  --actor (alias: --by) records who requested rewind.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

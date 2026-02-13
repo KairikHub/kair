@@ -36,6 +36,7 @@ import {
   printPauseHelp,
   printPlanHelp,
   printProposeHelp,
+  printRewindHelp,
   printRequestApprovalHelp,
   printResumeHelp,
   printRunHelp,
@@ -1184,6 +1185,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "rewind": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printRewindHelp();
+        return;
+      }
       const { remaining, actorRaw } = extractActorFlags(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
