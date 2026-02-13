@@ -46,12 +46,6 @@ export function extractProposeOptions(args: string[]) {
   const remaining: string[] = [];
   let idRaw = "";
   for (let i = 0; i < args.length; i += 1) {
-    if (args[i] === "--requires") {
-      fail('--requires is no longer supported. Use "kair grant" after propose if needed.');
-    }
-    if (args[i].startsWith("--requires=")) {
-      fail('--requires is no longer supported. Use "kair grant" after propose if needed.');
-    }
     if (args[i] === "--id") {
       idRaw = args[i + 1] || "";
       i += 1;
