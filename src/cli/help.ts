@@ -66,6 +66,22 @@ ${label("Notes:")}
 `);
 }
 
+export function printRequestApprovalHelp() {
+  console.log(`${title("Kair Request-Approval Command")}
+
+${label("Usage:")}
+  kair request-approval [<contract_id>] [--last]
+  kair contract request-approval [<contract_id>] [--last]
+
+${label("Description:")}
+  Move a planned Contract to AWAITING_APPROVAL.
+
+${label("Notes:")}
+  If <contract_id> is omitted, request-approval targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

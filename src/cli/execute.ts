@@ -29,7 +29,14 @@ import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
-import { printContractHelp, printGrantHelp, printPlanHelp, printProposeHelp, printTopHelp } from "./help";
+import {
+  printContractHelp,
+  printGrantHelp,
+  printPlanHelp,
+  printProposeHelp,
+  printRequestApprovalHelp,
+  printTopHelp,
+} from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
 import { listContracts } from "./list";
@@ -952,6 +959,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "request-approval": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printRequestApprovalHelp();
+        return;
+      }
       const hasLast = rest.includes("--last");
       const positional = rest.filter((token) => token !== "--last");
       if (hasLast && positional.length > 0) {
