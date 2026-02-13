@@ -90,8 +90,11 @@ kair <command>
   - With no args, defaults to the most recently updated contract.
 - `kair contract status [<contract_id>] [--last]`
   - Same behavior as top-level `kair status`.
-- `kair contract list`
+- `kair contracts`
   - List known contract IDs.
+  - Top-level shorthand for `kair contract list`.
+- `kair contract list`
+  - Same behavior as top-level `kair contracts`.
 
 ## Review Output (What It Includes)
 `kair review` and `kair review <id>` include:

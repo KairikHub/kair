@@ -26,7 +26,7 @@ ${label("review and inspection")}
   accept                  Record acceptance of responsibility.
   emit                    Show evidence checklist.
   status                  Show full Contract status.
-  list                    List known Contracts.
+  contracts               List known Contracts.
 
 See "kair contract --help" for contract subcommands.
 See "kair grant --help" for grant usage.`);

@@ -63,6 +63,10 @@ describe("e2e: review surface", () => {
       expect(statusById.stdout).toContain("Contract Summary");
       expect(statusById.stdout).toContain(`Contract: ${contractId}`);
 
+      const contracts = runCli(["contracts"], env);
+      expect(contracts.status).toBe(0);
+      expect(contracts.stdout).toContain(contractId);
+
       const accept = runCli(["accept", contractId, "--actor", "e2e-actor"], env);
       expect(accept.status).toBe(0);
 
@@ -106,6 +110,10 @@ describe("e2e: review surface", () => {
 
       const oldTopLevelEvidence = runCli(["evidence", contractId], env);
       expect(oldTopLevelEvidence.status).not.toBe(0);
+
+      const oldTopLevelList = runCli(["list"], env);
+      expect(oldTopLevelList.status).not.toBe(0);
+      expect(oldTopLevelList.stderr).toContain('Unknown command "list".');
     } finally {
       tmp.cleanup();
     }

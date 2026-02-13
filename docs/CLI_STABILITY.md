@@ -12,6 +12,7 @@ These commands reflect the core mental model of kair: define intent, plan, reque
 - `kair accept`
 - `kair contract rewind`
 - `kair contract status`
+- `kair contracts`
 - `kair contract list`
 
 ## Experimental (May Change or Break)

@@ -1290,7 +1290,15 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       console.log(renderEvidence(contract, evidenceItems));
       break;
     }
+    case "contracts": {
+      requireArgs(rest, 0, "contracts");
+      listContracts();
+      break;
+    }
     case "list": {
+      if (!isContractGroup) {
+        failWithHelp('Unknown command "list".', "top");
+      }
       requireArgs(rest, 0, "contract list");
       listContracts();
       break;
