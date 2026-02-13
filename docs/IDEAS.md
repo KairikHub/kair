@@ -169,3 +169,33 @@ Q:  # Open Questions (falsifiable)
 
 E:  # Evidence Pointers (optional)
   - None (conceptual insight only)
+
+## Idea: Artifact Indexing for Large Contract Sets
+dpc_version: 0.1
+topic: Make artifacts discoverable at scale without introducing a database
+
+A:  # Facts / Assumptions
+  - Per-contract artifact folders are intuitive but become hard to browse with hundreds of contracts.
+  - Prompt artifacts are valuable for debugging and auditability.
+  - Full database adoption may be unnecessary; lightweight indexing could be enough.
+
+C:  # Constraints
+  - Must remain local-first and CLI-first.
+  - Must not require a database.
+  - Must preserve append-only history semantics.
+  - Must support future redaction/sanitization policies.
+
+D:  # Decisions (include rejected alternatives)
+  - Decision: Keep per-contract artifact folders but add lightweight indexes.
+    Why: Improves discoverability and enables "recent prompts / recent changes" queries without scanning.
+    Rejected:
+      - Moving artifacts into a centralized database
+      - Dropping prompt artifacts to reduce file counts
+
+Q:  # Open Questions (falsifiable)
+  - What minimal fields are needed in an index to enable useful queries?
+  - Should indexing be per-contract only, global only, or both?
+  - What retention rules are needed as repositories grow?
+
+E:  # Evidence Pointers (optional)
+  - None

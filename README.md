@@ -23,15 +23,15 @@ OpenClaw is installed from npm during image build; no git submodule setup is req
 The current `kair --help` command groups are:
 
 - Start a workflow:
-  - `contract` create a new Contract in `DRAFT`
-  - `plan` generate/refine structured `kair.plan.v1`
-  - `propose` submit a planned Contract for approval
-  - `approve` approve a Contract version
-  - `run` execute an approved Contract
+  - `kair contract` create a new Contract in `DRAFT`
+  - `kair plan` generate/refine structured `kair.plan.v1`
+  - `kair propose` submit a planned Contract for approval
+  - `kair approve` approve a Contract version
+  - `kair run` execute an approved Contract
 - Governance and controls:
-  - `grant`, `pause`, `resume`, `rewind`
+  - `kair grant`, `pause`, `resume`, `rewind`
 - Review and inspection:
-  - `review`, `accept`, `emit`, `status`, `contracts`
+  - `kair review`, `accept`, `emit`, `status`, `contracts`
 
 <img alt="visualize how a kair workflow works" src="https://github.com/user-attachments/assets/889354fe-3725-49d9-b1c9-e57e39444286" />
 
