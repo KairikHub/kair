@@ -15,7 +15,8 @@ export function listProviders() {
 }
 
 export function normalizeProviderName(name?: string | null) {
-  const normalized = (name || "openai").trim().toLowerCase();
+  const defaultProvider = (process.env.KAIR_LLM_PROVIDER || "openai").trim().toLowerCase();
+  const normalized = (name || defaultProvider).trim().toLowerCase();
   return normalized || "openai";
 }
 
