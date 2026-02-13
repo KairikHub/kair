@@ -1,0 +1,46 @@
+import { runCli } from "../helpers/cli";
+import { makeTempRoot } from "../helpers/tmp";
+
+describe("e2e: run help", () => {
+  test("run --help shows run-specific help", () => {
+    const tmp = makeTempRoot();
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const result = runCli(["run", "--help"], env);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Kair Run Command");
+      expect(result.stdout).toContain(
+        "kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
+      );
+      expect(result.stdout).not.toContain('Unknown Contract "--help".');
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("contract run --help shows run-specific help", () => {
+    const tmp = makeTempRoot();
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const result = runCli(["contract", "run", "--help"], env);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Kair Run Command");
+      expect(result.stdout).toContain(
+        "kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
+      );
+      expect(result.stdout).not.toContain("Unknown Contract");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+});

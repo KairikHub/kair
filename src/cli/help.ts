@@ -99,6 +99,23 @@ ${label("Notes:")}
 `);
 }
 
+export function printRunHelp() {
+  console.log(`${title("Kair Run Command")}
+
+${label("Usage:")}
+  kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+  kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+
+${label("Description:")}
+  Execute an approved Contract.
+
+${label("Notes:")}
+  If <contract_id> is omitted, run targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+  --pause-at is an internal/demo checkpoint pause hook.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

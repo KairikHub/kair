@@ -36,6 +36,7 @@ import {
   printPlanHelp,
   printProposeHelp,
   printRequestApprovalHelp,
+  printRunHelp,
   printTopHelp,
 } from "./help";
 import { promptForProposeInput } from "./prompt";
@@ -1072,6 +1073,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     }
     case "run":
     case "execute": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printRunHelp();
+        return;
+      }
       const { remaining, pauseAt, pauseAuthority, pauseReason } = extractRunOptions(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
