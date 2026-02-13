@@ -25,6 +25,7 @@ import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
+import { getArtifactsDir, getDataFile } from "../core/store/paths";
 import { now } from "../core/time";
 
 import { failWithHelp } from "./errors";
@@ -39,6 +40,7 @@ import {
   printPauseHelp,
   printPlanHelp,
   printProposeHelp,
+  printPruneHelp,
   printReviewHelp,
   printRewindHelp,
   printResumeHelp,
@@ -195,6 +197,60 @@ function hasHelpFlag(args: string[]) {
 function printGrantList() {
   const lines = ["AVAILABLE GRANTS", ...AVAILABLE_GRANTS.map((grant) => `- ${grant}`)];
   console.log(lines.join("\n"));
+}
+
+function parsePruneOptions(args: string[]) {
+  let all = false;
+  for (const token of args) {
+    if (token === "-a" || token === "--all") {
+      all = true;
+      continue;
+    }
+    fail("Invalid arguments. Usage: prune [-a|--all]");
+  }
+  return { all };
+}
+
+async function promptPruneConfirmation() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    while (true) {
+      const response = (await rl.question("Proceed? [y]es [n]o: ")).trim().toLowerCase();
+      if (response === "y" || response === "yes") {
+        return true;
+      }
+      if (response === "n" || response === "no") {
+        return false;
+      }
+      console.log("Please answer y/yes or n/no.");
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+function resetContractsAndArtifacts() {
+  contractStore.contracts.clear();
+  contractStore.nextId = 1;
+  const dataFile = getDataFile();
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true });
+  fs.writeFileSync(
+    dataFile,
+    JSON.stringify(
+      {
+        nextId: 1,
+        contracts: [],
+      },
+      null,
+      2
+    )
+  );
+  const artifactsDir = getArtifactsDir();
+  fs.mkdirSync(artifactsDir, { recursive: true });
+  for (const entry of fs.readdirSync(artifactsDir)) {
+    fs.rmSync(path.join(artifactsDir, entry), { recursive: true, force: true });
+  }
+  return { dataFile, artifactsDir };
 }
 
 function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
@@ -1408,6 +1464,39 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
       requireArgs(rest, 0, "contracts");
       listContracts();
+      break;
+    }
+    case "prune": {
+      if (rest.length === 0 || hasHelpFlag(rest)) {
+        printPruneHelp();
+        return;
+      }
+      const parsedPrune = parsePruneOptions(rest);
+      if (!parsedPrune.all) {
+        printPruneHelp();
+        return;
+      }
+      const contractIds = [...contractStore.contracts.keys()].sort((a, b) => a.localeCompare(b));
+      const artifactsDir = getArtifactsDir();
+      console.log("PRUNE PREVIEW");
+      console.log("Contracts to delete:");
+      if (contractIds.length === 0) {
+        console.log("- (none)");
+      } else {
+        for (const id of contractIds) {
+          console.log(`- ${id}`);
+        }
+      }
+      console.log(`Artifacts directory to clear: ${artifactsDir}`);
+      const confirmed = await promptPruneConfirmation();
+      if (!confirmed) {
+        console.log("Prune cancelled.");
+        return;
+      }
+      const { dataFile } = resetContractsAndArtifacts();
+      console.log(`Prune complete. Deleted ${contractIds.length} contract(s).`);
+      console.log(`Contracts store reset: ${dataFile}`);
+      console.log(`Artifacts cleared: ${artifactsDir}`);
       break;
     }
     default:

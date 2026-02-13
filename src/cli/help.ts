@@ -232,6 +232,23 @@ ${label("Description:")}
 `);
 }
 
+export function printPruneHelp() {
+  console.log(`${title("Kair Prune Command")}
+
+${label("Usage:")}
+  kair prune
+  kair prune -a
+  kair prune --all
+
+${label("Description:")}
+  Destructively remove all stored Contracts and artifact contents.
+
+${label("Notes:")}
+  Running without flags prints this help.
+  Use -a or --all to preview deletions and confirm with [y]es/[n]o.
+`);
+}
+
 export function printGrantHelp() {
   console.log(`${title("Kair Grant Commands")}
 
