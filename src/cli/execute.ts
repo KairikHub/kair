@@ -43,6 +43,7 @@ import {
   printRequestApprovalHelp,
   printResumeHelp,
   printRunHelp,
+  printStatusHelp,
   printTopHelp,
 } from "./help";
 import { promptForProposeInput } from "./prompt";
@@ -1241,6 +1242,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "status": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printStatusHelp();
+        return;
+      }
       let contractId = "";
       if (rest.length === 0 || (rest.length === 1 && rest[0] === "--last")) {
         const lastId = getLastContractId();

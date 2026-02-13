@@ -212,6 +212,22 @@ ${label("Notes:")}
 `);
 }
 
+export function printStatusHelp() {
+  console.log(`${title("Kair Status Command")}
+
+${label("Usage:")}
+  kair status [<contract_id>] [--last]
+  kair contract status [<contract_id>] [--last]
+
+${label("Description:")}
+  Show full Contract status, versions, history, and artifacts.
+
+${label("Notes:")}
+  If <contract_id> is omitted, status targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
