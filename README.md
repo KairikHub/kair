@@ -17,6 +17,7 @@ docker compose up -d --build
 ```
 
 This starts the local UI at `http://localhost:3000` and prepares the CLI container runtime.
+OpenClaw is installed from npm during image build; no git submodule setup is required.
 
 ## Quick Smoke Test
 Run these commands to verify the install works end-to-end:

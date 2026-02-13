@@ -9,14 +9,8 @@ module.exports = {
   clearMocks: true,
   testTimeout: 60000,
   maxWorkers: "50%",
-  modulePathIgnorePatterns: [
-    "<rootDir>/.pnpm-store/",
-    "<rootDir>/vendor/openclaw/",
-  ],
-  watchPathIgnorePatterns: [
-    "<rootDir>/.pnpm-store/",
-    "<rootDir>/vendor/openclaw/",
-  ],
+  modulePathIgnorePatterns: ["<rootDir>/.pnpm-store/"],
+  watchPathIgnorePatterns: ["<rootDir>/.pnpm-store/"],
   transform: {
     "^.+\\.ts$": [
       "ts-jest",

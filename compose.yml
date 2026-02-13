@@ -1,7 +1,7 @@
 services:
   kair-ui:
     build: .
-    entrypoint: ["/app/bin/ensure-openclaw-built.sh", "npm", "run", "ui", "--"]
+    entrypoint: ["/app/bin/ensure-openclaw-package.sh", "npm", "run", "ui", "--"]
     ports:
       - "3000:3000"
     env_file:

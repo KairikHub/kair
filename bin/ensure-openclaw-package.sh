@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 set -e
 
-OPENCLAW_ROOT="/app/vendor/openclaw"
-ENTRY_FILE="$OPENCLAW_ROOT/dist/entry.js"
 OPENCLAW_STATE_DIR="${OPENCLAW_STATE_DIR:-/home/node/.openclaw}"
 CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"
 
@@ -27,25 +25,22 @@ EOF
   echo "[kair] OpenClaw config initialized for OpenAI."
 fi
 
-if [ -f "$ENTRY_FILE" ]; then
+if node -e "require.resolve('openclaw')" >/dev/null 2>&1; then
   if [ "$#" -gt 0 ]; then
     exec "$@"
   fi
   exit 0
 fi
 
-echo "[kair] OpenClaw build artifacts missing; building inside container."
+echo "[kair] npm dependency 'openclaw' is missing; installing project dependencies."
+CI=1 npm install
 
-if command -v corepack >/dev/null 2>&1; then
-  COREPACK_ENABLE_STRICT=0 corepack enable >/dev/null 2>&1 || true
-  COREPACK_ENABLE_STRICT=0 corepack prepare pnpm@10.23.0 --activate >/dev/null 2>&1 || true
+if node -e "require.resolve('openclaw')" >/dev/null 2>&1; then
+  if [ "$#" -gt 0 ]; then
+    exec "$@"
+  fi
+  exit 0
 fi
 
-CI=1 pnpm -C "$OPENCLAW_ROOT" install
-CI=1 pnpm -C "$OPENCLAW_ROOT" build
-
-echo "[kair] OpenClaw build complete."
-
-if [ "$#" -gt 0 ]; then
-  exec "$@"
-fi
+echo "[kair] Unable to resolve npm dependency 'openclaw' after npm install."
+exit 1

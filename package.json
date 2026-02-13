@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "openclaw": "2026.2.12",
     "tsx": "latest"
   },
   "devDependencies": {
