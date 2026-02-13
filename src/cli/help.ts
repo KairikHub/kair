@@ -82,6 +82,23 @@ ${label("Notes:")}
 `);
 }
 
+export function printApproveHelp() {
+  console.log(`${title("Kair Approve Command")}
+
+${label("Usage:")}
+  kair approve [<contract_id>] [--last] [--actor <name>]
+  kair contract approve [<contract_id>] [--last] [--actor <name>]
+
+${label("Description:")}
+  Approve a Contract version and transition it to APPROVED.
+
+${label("Notes:")}
+  If <contract_id> is omitted, approve targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+  --actor (alias: --by) records who approved.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

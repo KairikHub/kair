@@ -30,6 +30,7 @@ import { now } from "../core/time";
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
 import {
+  printApproveHelp,
   printContractHelp,
   printGrantHelp,
   printPlanHelp,
@@ -993,6 +994,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "approve": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printApproveHelp();
+        return;
+      }
       const { remaining, actorRaw } = extractActorFlags(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
