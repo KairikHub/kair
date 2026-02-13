@@ -1220,11 +1220,24 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         }
         if (debug) {
           const grants = Array.isArray(contract.controlsApproved) ? contract.controlsApproved : [];
+          const runnerOutputs = runOutcome.result?.outputs || {};
           console.log("RUN DEBUG");
           console.log(`Approved grants: ${grants.length ? grants.join(", ") : "none"}`);
           console.log(`Enabled tools: ${runOutcome.enabledTools.length ? runOutcome.enabledTools.join(", ") : "none"}`);
           console.log(`Run request path: ${runOutcome.requestPath}`);
           console.log(`Run result path: ${runOutcome.resultPath}`);
+          if (runnerOutputs.commandPath) {
+            console.log(`OpenClaw command: ${runnerOutputs.commandPath}`);
+          }
+          if (runnerOutputs.stdoutLogPath) {
+            console.log(`OpenClaw stdout log: ${runnerOutputs.stdoutLogPath}`);
+          }
+          if (runnerOutputs.stderrLogPath) {
+            console.log(`OpenClaw stderr log: ${runnerOutputs.stderrLogPath}`);
+          }
+          if (runnerOutputs.parserMode) {
+            console.log(`OpenClaw parser mode: ${runnerOutputs.parserMode}`);
+          }
         }
       }
 

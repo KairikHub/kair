@@ -24,6 +24,7 @@ describe("e2e: run output", () => {
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
       KAIR_ACTOR: "e2e-actor",
       KAIR_TEST_MODE: "1",
+      KAIR_OPENAI_API_KEY: "",
     };
 
     try {
@@ -75,6 +76,7 @@ describe("e2e: run output", () => {
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
       KAIR_ACTOR: "e2e-actor",
       KAIR_TEST_MODE: "1",
+      KAIR_OPENAI_API_KEY: "",
     };
 
     try {
