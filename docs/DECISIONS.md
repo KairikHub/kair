@@ -26,18 +26,18 @@ AI scales execution faster than human trust — KAIR exists to close that gap.
 Kair is **CLI-first**.
 
 - All core behavior, state transitions, and authority boundaries live in the CLI.
-- Any UI (web, Tauri, desktop, etc.) is a *thin shell* over the same commands.
-- No logic is allowed to exist *only* in the UI.
+- This repository contains no bundled UI surface.
+- Any future UI must live in a separate repository/package and call into CLI/runtime boundaries.
 
 **Rationale:**
 - Enables deterministic execution
 - Keeps auditability and replay intact
-- Prevents UI-driven state corruption
+- Prevents interface-driven state corruption
 - Aligns with Git-like mental model
 
 **Implication:**
 - The CLI must remain composable, scriptable, and importable.
-- UI code may call CLI functions, but never reimplement them.
+- External interfaces may call CLI/runtime functions, but never reimplement governance semantics.
 
 ---
 
@@ -135,21 +135,20 @@ Kair supports **bring-your-own API keys** for LLM providers.
 
 ---
 
-## Decision 007 — Refactors Must Preserve the Desktop Path
+## Decision 007 — Refactors Must Preserve External Integration Path
 
 **Status:** Active  
 **Date:** 2026-02-XX  
 
-All refactors must consider a future **Tauri / macOS DMG** build.
+All refactors must preserve a clean path for future external integrations.
 
 Specifically:
 - Core logic must be importable as a library
-- No hard dependency on browser-only APIs
 - Side effects (fs, env, network) must be isolatable
 
 **Rationale:**
 - Prevents architectural dead-ends
-- Keeps CLI and desktop aligned
+- Keeps CLI and external integration paths aligned
 - Avoids expensive rewrites later
 
 ---

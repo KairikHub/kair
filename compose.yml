@@ -1,22 +1,4 @@
 services:
-  kair-ui:
-    build: .
-    entrypoint: ["/app/bin/ensure-openclaw-package.sh", "npm", "run", "ui", "--"]
-    ports:
-      - "3000:3000"
-    env_file:
-      - path: ./.env
-        required: false
-    environment:
-      OPENAI_API_KEY: ${KAIR_OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      KAIR_LLM_PROVIDER: ${KAIR_LLM_PROVIDER:-openai}
-      KAIR_LLM_MODEL: ${KAIR_LLM_MODEL:-gpt-5.1}
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - ${OPENCLAW_CONFIG_DIR:-./.openclaw}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR:-./.openclaw-workspace}:/home/node/.openclaw/workspace
   kair:
     build: .
     container_name: kair

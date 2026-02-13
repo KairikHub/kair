@@ -7,7 +7,6 @@
   },
   "scripts": {
     "kair": "tsx src/kair.ts",
-    "ui": "tsx src/ui.ts",
     "test": "jest"
   },
   "dependencies": {

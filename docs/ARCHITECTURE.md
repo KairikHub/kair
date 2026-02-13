@@ -87,10 +87,10 @@ Grant List Output (current static set):
 - DPC is not narrative prose; it is decision-critical state meant for validation, portability, and auditability.
 - Debug visibility: `kair plan --debug` prints the prompt payload plus the DPC artifact path (and a DPC preview). `--json` mode suppresses this debug output.
 
-## UI Shell
-- Local UI is a thin shell over the same CLI engine and store.
-- The UI server exposes a local HTTP API in the same process; there is no separate API service/container.
-- UI focuses on readability, audit trail, Controls gating, and Rewind visibility.
+## Interface Boundary
+- Kair is CLI-only.
+- Contract lifecycle, governance, artifacts, and audit semantics are implemented in the CLI/runtime.
+- Any future interface lives outside this repository and must treat the CLI as source of truth.
 
 ## Execution Backends (Planned)
 - OpenClaw can be used as an execution backend during `run`.
