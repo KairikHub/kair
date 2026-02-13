@@ -30,6 +30,7 @@ import { now } from "../core/time";
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, normalizePauseAt, requireArgs } from "./argv";
 import {
+  printAcceptHelp,
   printApproveHelp,
   printContractHelp,
   printGrantHelp,
@@ -1284,6 +1285,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "accept": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printAcceptHelp();
+        return;
+      }
       const { remaining, actorRaw } = extractActorFlags(rest);
       requireArgs(remaining, 1, 'accept "<contract_id>" [--actor <name>]');
       const [contractId, ...legacyParts] = remaining;

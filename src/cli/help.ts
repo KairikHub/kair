@@ -182,6 +182,21 @@ ${label("Notes:")}
 `);
 }
 
+export function printAcceptHelp() {
+  console.log(`${title("Kair Accept Command")}
+
+${label("Usage:")}
+  kair accept <contract_id> [--actor <name>]
+
+${label("Description:")}
+  Record acceptance of responsibility for evidence-backed review.
+
+${label("Notes:")}
+  A contract id is required.
+  --actor (alias: --by) records who accepted responsibility.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 
