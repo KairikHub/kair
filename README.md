@@ -3,10 +3,7 @@ AI outputs faster than humans can take responsibility for it.  Kair is here to c
 
 In our pipe dream roadmap, "kair" will be the "git" for ai work, and "Kairik" will be the github of AI. 
 
-<img alt="visualize who kair works with" src="https://github.com/user-attachments/assets/f6be94d7-c859-4533-b889-d14ac808127c" />
-
-<img alt="visualize how a kair workflow works" src="https://github.com/user-attachments/assets/889354fe-3725-49d9-b1c9-e57e39444286" />
-
+<img alt="visualize the idea of what kair is" src="https://github.com/user-attachments/assets/581800b7-27a5-44b8-b3a5-5a9698f1e3f4" />
 
 # How? 
 Kair is a CLI-first control plane for delegated cognition and AI work, built around auditable contracts and controls and evidence to let humans safely take responsibility for AI generated work.  
@@ -36,24 +33,7 @@ The current `kair --help` command groups are:
 - Review and inspection:
   - `review`, `accept`, `emit`, `status`, `contracts`
 
-## Quick Smoke Test
-Run these commands to verify the install works end-to-end:
-
-```bash
-docker exec -it kair bash
-kair --help
-kair grant list
-kair contract --id smoke_demo "Smoke test install"
-kair plan smoke_demo --interactive=false '{"version":"kair.plan.v1","title":"Docs example plan","steps":[{"id":"s1","summary":"Verify install","details":"Run kair --help and confirm core commands work."}]}'
-kair propose --last
-kair approve smoke_demo --actor tester
-kair run
-kair review
-kair status
-kair emit
-kair contracts
-kair accept smoke_demo --actor tester
-```
+<img alt="visualize how a kair workflow works" src="https://github.com/user-attachments/assets/889354fe-3725-49d9-b1c9-e57e39444286" />
 
 ## Documentation
 - Command reference: `docs/CLI_COMMANDS.md`
