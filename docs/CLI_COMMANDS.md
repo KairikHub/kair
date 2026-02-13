@@ -44,8 +44,12 @@ kair <command>
   - Same behavior as top-level `kair approve`.
 
 ### Execution and Recovery
-- `kair contract run <contract_id> [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
+- `kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
+  - Top-level shorthand for contract run.
+  - With no contract id, defaults to the most recently updated contract.
+- `kair contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]`
   - Execute the approved contract.
+  - With no contract id, defaults to the most recently updated contract.
 - `kair contract pause <contract_id> [--actor <name>]`
   - Pause a running contract.
 - `kair contract resume <contract_id> [--actor <name>]`
@@ -89,7 +93,7 @@ kair propose --id contract_demo "Contract Demo"
 kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
 kair contract request-approval contract_demo
 kair contract approve contract_demo --actor Damien
-kair contract run contract_demo
+kair run
 kair review
 kair accept contract_demo --actor Damien
 kair emit contract_demo

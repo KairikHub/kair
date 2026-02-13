@@ -168,4 +168,72 @@ describe("e2e: review surface", () => {
       tmp.cleanup();
     }
   });
+
+  test("run defaults to last and supports --last", () => {
+    const tmp = makeTempRoot();
+    const firstId = "run_first";
+    const secondId = "run_second";
+    const thirdId = "run_third";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+    };
+
+    try {
+      const firstSetup = [
+        ["contract", "create", "--id", firstId, "Run first"],
+        ["contract", "plan", firstId, "Plan first"],
+        ["contract", "request-approval", firstId],
+        ["approve", firstId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of firstSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const secondSetup = [
+        ["contract", "create", "--id", secondId, "Run second"],
+        ["contract", "plan", secondId, "Plan second"],
+        ["contract", "request-approval", secondId],
+        ["approve", secondId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of secondSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const runDefault = runCli(["run"], env);
+      expect(runDefault.status).toBe(0);
+
+      const firstAfterDefault = loadContract(tmp.dataDir, firstId);
+      const secondAfterDefault = loadContract(tmp.dataDir, secondId);
+      expect(firstAfterDefault.current_state).toBe("APPROVED");
+      expect(secondAfterDefault.current_state).toBe("COMPLETED");
+
+      const thirdSetup = [
+        ["contract", "create", "--id", thirdId, "Run third"],
+        ["contract", "plan", thirdId, "Plan third"],
+        ["contract", "request-approval", thirdId],
+        ["approve", thirdId, "--actor", "e2e-actor"],
+      ] as string[][];
+      for (const args of thirdSetup) {
+        const result = runCli(args, env);
+        expect(result.status).toBe(0);
+      }
+
+      const runLast = runCli(["contract", "run", "--last"], env);
+      expect(runLast.status).toBe(0);
+
+      const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
+      expect(thirdAfterLast.current_state).toBe("COMPLETED");
+
+      const runConflict = runCli(["run", thirdId, "--last"], env);
+      expect(runConflict.status).not.toBe(0);
+      expect(runConflict.stderr).toContain("Specify either a contract id or --last, not both.");
+    } finally {
+      tmp.cleanup();
+    }
+  });
 });

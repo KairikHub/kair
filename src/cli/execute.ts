@@ -1034,12 +1034,27 @@ export async function executeCommand(tokens: string[], options: any = {}) {
     case "run":
     case "execute": {
       const { remaining, pauseAt, pauseAuthority, pauseReason } = extractRunOptions(rest);
-      requireArgs(
-        remaining,
-        1,
-        'contract run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]'
-      );
-      const [contractId] = remaining;
+      const hasLast = remaining.includes("--last");
+      const positional = remaining.filter((token) => token !== "--last");
+      if (hasLast && positional.length > 0) {
+        fail("Specify either a contract id or --last, not both.");
+      }
+      if (positional.length > 1) {
+        const usage = isContractGroup
+          ? "contract run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]"
+          : "run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]";
+        fail(`Invalid arguments. Usage: ${usage}`);
+      }
+      let contractId = "";
+      if (positional.length === 0) {
+        const lastId = getLastContractId();
+        if (!lastId) {
+          fail("No Contracts found.");
+        }
+        contractId = lastId;
+      } else {
+        contractId = positional[0];
+      }
       const contract = getContract(contractId);
       const normalizedPauseAt = normalizePauseAt(pauseAt);
       await runContract(contract, {

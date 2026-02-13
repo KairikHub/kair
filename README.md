@@ -29,7 +29,7 @@ kair propose --id smoke_demo "Smoke test install"
 kair plan smoke_demo --interactive=false '{"version":"kair.plan.v1","title":"Docs example plan","steps":[{"id":"s1","summary":"Verify install","details":"Run kair --help and confirm core commands work."}]}'
 kair contract request-approval smoke_demo
 kair contract approve smoke_demo --actor tester
-kair contract run smoke_demo
+kair run
 kair review
 kair emit smoke_demo
 kair accept smoke_demo --actor tester

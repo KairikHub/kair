@@ -31,6 +31,7 @@ ${label("review and inspection")}
 ${label("common usage examples")}
   kair propose "<intent>" [--id <contract_id>]
   kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]
+  kair run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
   kair grant [list|<grant>|<contract_id> <grant>] [--actor <name>]
   kair review [<contract_id>] [--last]
   kair accept "<contract_id>" [--actor <name>]
@@ -51,7 +52,7 @@ ${label("Subcommands:")}
   plan "<contract_id>" "<plan>"
   request-approval "<contract_id>"
   approve [<contract_id>] [--last] [--actor <name>]
-  run "<contract_id>" [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
+  run [<contract_id>] [--last] [--pause-at <checkpoint>] [--pause-authority <name>] [--pause-reason <text>]
   resume "<contract_id>" [--actor <name>]
   pause "<contract_id>" [--actor <name>]
   rewind "<contract_id>" [--actor <name>] [<reason>]
@@ -59,6 +60,7 @@ ${label("Subcommands:")}
   list
 
 ${label("Advanced/demo:")}
+  run defaults to the most recently updated Contract when no id is provided.
   --pause-at pauses at an internal execution milestone (not user-facing yet).
 
 ${label("Alias:")}
