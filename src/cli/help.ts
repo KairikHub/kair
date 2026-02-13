@@ -116,6 +116,23 @@ ${label("Notes:")}
 `);
 }
 
+export function printPauseHelp() {
+  console.log(`${title("Kair Pause Command")}
+
+${label("Usage:")}
+  kair pause [<contract_id>] [--last] [--actor <name>]
+  kair contract pause [<contract_id>] [--last] [--actor <name>]
+
+${label("Description:")}
+  Pause execution of a RUNNING Contract.
+
+${label("Notes:")}
+  If <contract_id> is omitted, pause targets the most recently updated Contract.
+  Do not combine <contract_id> with --last.
+  --actor (alias: --by) records who paused execution.
+`);
+}
+
 export function printContractHelp() {
   console.log(`${title("Kair Contract Commands")}
 

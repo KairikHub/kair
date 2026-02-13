@@ -33,6 +33,7 @@ import {
   printApproveHelp,
   printContractHelp,
   printGrantHelp,
+  printPauseHelp,
   printPlanHelp,
   printProposeHelp,
   printRequestApprovalHelp,
@@ -1109,6 +1110,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "pause": {
+      if (rest.includes("-h") || rest.includes("--help")) {
+        printPauseHelp();
+        return;
+      }
       const { remaining, actorRaw } = extractActorFlags(rest);
       const hasLast = remaining.includes("--last");
       const positional = remaining.filter((token) => token !== "--last");
