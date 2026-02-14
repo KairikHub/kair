@@ -1209,6 +1209,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
               enabled_tools: runOutcome.enabledTools,
               logs_path: runOutcome.result.logsPath || null,
               evidence_paths: runOutcome.result.evidencePaths || [],
+              failure_reason: runOutcome.failureReason,
+              missing_evidence_paths: runOutcome.missingEvidencePaths,
+              claimed_evidence_paths: runOutcome.claimedEvidencePaths,
             },
             null,
             2
@@ -1222,12 +1225,26 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         if (runOutcome.result.logsPath) {
           console.log(`Run logs: ${runOutcome.result.logsPath}`);
         }
+        if (runOutcome.result.status !== "completed" && runOutcome.missingEvidencePaths.length > 0) {
+          const logsRef = runOutcome.result.logsPath || "run-result.json";
+          console.log(`FAILED: runner claimed missing evidence. See ${logsRef} and run-result.json`);
+        }
         if (debug) {
           const grants = Array.isArray(contract.controlsApproved) ? contract.controlsApproved : [];
           const runnerOutputs = runOutcome.result?.outputs || {};
           console.log("RUN DEBUG");
           console.log(`Approved grants: ${grants.length ? grants.join(", ") : "none"}`);
           console.log(`Enabled tools: ${runOutcome.enabledTools.length ? runOutcome.enabledTools.join(", ") : "none"}`);
+          console.log(
+            `Claimed evidence paths: ${
+              runOutcome.claimedEvidencePaths.length ? runOutcome.claimedEvidencePaths.join(", ") : "none"
+            }`
+          );
+          console.log(
+            `Missing evidence paths: ${
+              runOutcome.missingEvidencePaths.length ? runOutcome.missingEvidencePaths.join(", ") : "none"
+            }`
+          );
           console.log(`Run request path: ${runOutcome.requestPath}`);
           console.log(`Run result path: ${runOutcome.resultPath}`);
           if (runnerOutputs.commandPath) {

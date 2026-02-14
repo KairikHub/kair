@@ -127,7 +127,9 @@ function buildExecutionPrompt(
     "Follow plan steps in order and keep output deterministic.",
     "Use tools only when explicitly allowed in availableTools.",
     "If writing files, keep them under artifactsDir.",
-    "Return a concise completion summary.",
+    "Respond in payload text as strict JSON object only.",
+    'Required JSON keys: "summary" (string), "claimedEvidencePaths" (absolute string array).',
+    "Do not include markdown fences or narrative text outside the JSON object.",
     "",
     "Execution payload:",
     JSON.stringify(
@@ -222,6 +224,84 @@ function collectPayloadSummary(payloads: any[]) {
     .filter(Boolean)
     .join("\n")
     .trim();
+}
+
+function normalizeClaimedEvidencePaths(value: any) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const unique = new Set<string>();
+  const claimed: string[] = [];
+  for (const item of value) {
+    const candidate = String(item || "").trim();
+    if (!candidate || !path.isAbsolute(candidate) || unique.has(candidate)) {
+      continue;
+    }
+    unique.add(candidate);
+    claimed.push(candidate);
+  }
+  return claimed;
+}
+
+function parseJsonObjectFromText(text: string) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) {
+    return null;
+  }
+  const candidates = [trimmed];
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenceMatch && fenceMatch[1]) {
+    candidates.push(fenceMatch[1].trim());
+  }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Ignore parse errors and continue trying fallbacks.
+    }
+  }
+  return null;
+}
+
+function extractClaimedEvidencePathsFromPayload(parsed: any, payloads: any[]) {
+  const topLevelClaimed = normalizeClaimedEvidencePaths(parsed?.claimedEvidencePaths);
+  if (topLevelClaimed.length > 0) {
+    return topLevelClaimed;
+  }
+  for (const payload of payloads) {
+    if (!payload || typeof payload.text !== "string") {
+      continue;
+    }
+    const payloadJson = parseJsonObjectFromText(payload.text);
+    if (!payloadJson) {
+      continue;
+    }
+    const claimed = normalizeClaimedEvidencePaths(payloadJson.claimedEvidencePaths);
+    if (claimed.length > 0) {
+      return claimed;
+    }
+  }
+  return [];
+}
+
+function extractSummaryFromPayloadJson(payloads: any[]) {
+  for (const payload of payloads) {
+    if (!payload || typeof payload.text !== "string") {
+      continue;
+    }
+    const payloadJson = parseJsonObjectFromText(payload.text);
+    if (!payloadJson || typeof payloadJson.summary !== "string") {
+      continue;
+    }
+    const summary = payloadJson.summary.trim();
+    if (summary) {
+      return summary;
+    }
+  }
+  return "";
 }
 
 export async function runWithOpenClaw(
@@ -345,12 +425,7 @@ export async function runWithOpenClaw(
     openclawStateDir,
     openclawConfigPath,
   };
-  const evidencePaths = [
-    openclawConfigPath,
-    diagnostics.commandArtifactPath,
-    diagnostics.stdoutLogPath,
-    diagnostics.stderrLogPath,
-  ];
+  const evidencePaths: string[] = [];
 
   if (subprocess.error) {
     const code = (subprocess.error as any).code;
@@ -361,6 +436,11 @@ export async function runWithOpenClaw(
           ...outputBase,
           parserMode: "spawn_error",
           spawnError: trimSummary(subprocess.error.message || String(subprocess.error)),
+          diagnostics: {
+            commandArtifactPath: diagnostics.commandArtifactPath,
+            stdoutLogPath: diagnostics.stdoutLogPath,
+            stderrLogPath: diagnostics.stderrLogPath,
+          },
         },
         {
           logsPath: diagnostics.stderrLogPath,
@@ -375,6 +455,11 @@ export async function runWithOpenClaw(
         ...outputBase,
         parserMode: "spawn_error",
         spawnError: trimSummary(subprocess.error.message || String(subprocess.error)),
+        diagnostics: {
+          commandArtifactPath: diagnostics.commandArtifactPath,
+          stdoutLogPath: diagnostics.stdoutLogPath,
+          stderrLogPath: diagnostics.stderrLogPath,
+        },
       },
       {
         logsPath: diagnostics.stderrLogPath,
@@ -397,6 +482,11 @@ export async function runWithOpenClaw(
         exitCode,
         stdoutPreview: trimSummary(stdoutRaw),
         stderrPreview: trimSummary(stderrRaw),
+        diagnostics: {
+          commandArtifactPath: diagnostics.commandArtifactPath,
+          stdoutLogPath: diagnostics.stdoutLogPath,
+          stderrLogPath: diagnostics.stderrLogPath,
+        },
       },
       {
         logsPath: diagnostics.stderrLogPath,
@@ -416,6 +506,11 @@ export async function runWithOpenClaw(
         parserMode: "parse_error",
         stdoutPreview: trimSummary(stdoutRaw),
         stderrPreview: trimSummary(stderrRaw),
+        diagnostics: {
+          commandArtifactPath: diagnostics.commandArtifactPath,
+          stdoutLogPath: diagnostics.stdoutLogPath,
+          stderrLogPath: diagnostics.stderrLogPath,
+        },
       },
       {
         logsPath: diagnostics.stdoutLogPath,
@@ -425,6 +520,8 @@ export async function runWithOpenClaw(
   }
 
   const payloads = Array.isArray(parsed?.payloads) ? parsed.payloads : [];
+  const claimedEvidencePaths = extractClaimedEvidencePathsFromPayload(parsed, payloads);
+  const summaryFromPayloadJson = extractSummaryFromPayloadJson(payloads);
   const payloadSummary = collectPayloadSummary(payloads);
   const payloadHasError = payloads.some((item: any) => item && item.isError === true);
   const metaErrorText =
@@ -439,23 +536,37 @@ export async function runWithOpenClaw(
         ...outputBase,
         parserMode: "json",
         rawResponse: parsed,
+        claimedEvidencePaths,
+        diagnostics: {
+          commandArtifactPath: diagnostics.commandArtifactPath,
+          stdoutLogPath: diagnostics.stdoutLogPath,
+          stderrLogPath: diagnostics.stderrLogPath,
+        },
       },
       {
         logsPath: diagnostics.stderrLogPath,
-        evidencePaths,
+        evidencePaths: claimedEvidencePaths,
       }
     );
   }
 
   return {
     status: "completed",
-    summary: trimSummary(payloadSummary || "Execution completed via OpenClaw CLI runner."),
+    summary: trimSummary(
+      summaryFromPayloadJson || payloadSummary || "Execution completed via OpenClaw CLI runner."
+    ),
     outputs: {
       ...outputBase,
       parserMode: "json",
       rawResponse: parsed,
+      claimedEvidencePaths,
+      diagnostics: {
+        commandArtifactPath: diagnostics.commandArtifactPath,
+        stdoutLogPath: diagnostics.stdoutLogPath,
+        stderrLogPath: diagnostics.stderrLogPath,
+      },
     },
     logsPath: diagnostics.stdoutLogPath,
-    evidencePaths,
+    evidencePaths: claimedEvidencePaths,
   };
 }

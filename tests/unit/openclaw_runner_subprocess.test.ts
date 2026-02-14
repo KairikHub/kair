@@ -107,10 +107,18 @@ describe("openclaw runner subprocess adapter", () => {
   test("exit 0 with valid JSON stdout maps to completed result", async () => {
     const artifactsDir = makeTempDir();
     process.env.OPENCLAW_STATE_DIR = path.join(artifactsDir, "state");
+    const claimedPath = path.join(artifactsDir, "claimed.txt");
     spawnSyncMock.mockReturnValue({
       status: 0,
       stdout: JSON.stringify({
-        payloads: [{ text: "Execution done" }],
+        payloads: [
+          {
+            text: JSON.stringify({
+              summary: "Execution done",
+              claimedEvidencePaths: [claimedPath],
+            }),
+          },
+        ],
         meta: {},
       }),
       stderr: "",
@@ -128,6 +136,8 @@ describe("openclaw runner subprocess adapter", () => {
     expect(result.outputs.effectiveModel).toBe("openai/gpt-5.1");
     expect(result.outputs.openclawStateDir).toBe(path.join(artifactsDir, "state"));
     expect(result.outputs.openclawConfigPath).toBe(path.join(artifactsDir, "openclaw-config.json"));
+    expect(result.evidencePaths).toEqual([claimedPath]);
+    expect(result.outputs.claimedEvidencePaths).toEqual([claimedPath]);
     expect(fs.existsSync(path.join(artifactsDir, "openclaw-command.json"))).toBe(true);
     expect(fs.existsSync(path.join(artifactsDir, "openclaw-config.json"))).toBe(true);
 
@@ -139,6 +149,53 @@ describe("openclaw runner subprocess adapter", () => {
     expect(spawnEnv.OPENAI_API_KEY).toBe("test-kair-openai-key");
     expect(spawnEnv.OPENCLAW_CONFIG_PATH).toBe(path.join(artifactsDir, "openclaw-config.json"));
     expect(spawnEnv.OPENCLAW_STATE_DIR).toBe(path.join(artifactsDir, "state"));
+  });
+
+  test("non-JSON payload text yields empty claimed evidence paths", async () => {
+    const artifactsDir = makeTempDir();
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: JSON.stringify({
+        payloads: [{ text: "plain text summary without JSON object" }],
+        meta: {},
+      }),
+      stderr: "",
+      error: undefined,
+    });
+
+    const result = await runWithOpenClaw(makeRequest(artifactsDir));
+
+    expect(result.status).toBe("completed");
+    expect(result.evidencePaths).toEqual([]);
+    expect(result.outputs.claimedEvidencePaths).toEqual([]);
+  });
+
+  test("top-level claimedEvidencePaths takes precedence over payload text JSON", async () => {
+    const artifactsDir = makeTempDir();
+    const topLevelClaim = path.join(artifactsDir, "top-level.txt");
+    const payloadClaim = path.join(artifactsDir, "payload.txt");
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: JSON.stringify({
+        claimedEvidencePaths: [topLevelClaim],
+        payloads: [
+          {
+            text: JSON.stringify({
+              summary: "payload summary",
+              claimedEvidencePaths: [payloadClaim],
+            }),
+          },
+        ],
+        meta: {},
+      }),
+      stderr: "",
+      error: undefined,
+    });
+
+    const result = await runWithOpenClaw(makeRequest(artifactsDir));
+
+    expect(result.status).toBe("completed");
+    expect(result.evidencePaths).toEqual([topLevelClaim]);
   });
 
   test("non-zero exit returns failed summary with stderr and logs", async () => {

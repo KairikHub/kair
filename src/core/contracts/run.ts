@@ -23,6 +23,10 @@ export type RunContractOutcome = {
   resultPath: string;
   result: RunnerResult;
   enabledTools: string[];
+  runnerSummary: string;
+  failureReason: string | null;
+  missingEvidencePaths: string[];
+  claimedEvidencePaths: string[];
 };
 
 function resolveStructuredPlan(contract: any): Plan | null {
@@ -82,6 +86,39 @@ function appendRunArtifacts(contract: any, params: { requestPath: string; result
     type: "summary",
     content: params.result.summary,
   });
+}
+
+function normalizeClaimedEvidencePaths(evidencePaths: any) {
+  if (!Array.isArray(evidencePaths)) {
+    return [];
+  }
+  const unique = new Set<string>();
+  const normalized: string[] = [];
+  for (const item of evidencePaths) {
+    const candidate = String(item || "").trim();
+    if (!candidate || !path.isAbsolute(candidate) || unique.has(candidate)) {
+      continue;
+    }
+    unique.add(candidate);
+    normalized.push(candidate);
+  }
+  return normalized;
+}
+
+export function checkEvidencePathExistence(
+  evidencePaths: string[],
+  existsFn: (candidatePath: string) => boolean = (candidatePath) => fs.existsSync(candidatePath)
+) {
+  const existingPaths: string[] = [];
+  const missingPaths: string[] = [];
+  for (const evidencePath of evidencePaths) {
+    if (existsFn(evidencePath)) {
+      existingPaths.push(evidencePath);
+    } else {
+      missingPaths.push(evidencePath);
+    }
+  }
+  return { existingPaths, missingPaths };
 }
 
 export async function runContract(
@@ -144,16 +181,61 @@ export async function runContract(
     });
   }
 
+  const runnerSummary = result.summary;
+  const claimedEvidencePaths = normalizeClaimedEvidencePaths(result.evidencePaths);
+  const existence = checkEvidencePathExistence(claimedEvidencePaths);
+  let failureReason: string | null = null;
+  if (existence.missingPaths.length > 0) {
+    const logsRef = result.logsPath || "run-result.json";
+    failureReason = `Runner claimed evidence paths that do not exist: ${existence.missingPaths.join(
+      ", "
+    )}. See logs: ${logsRef}.`;
+    result = {
+      ...result,
+      status: "failed",
+      summary: failureReason,
+      evidencePaths: existence.existingPaths,
+      outputs: {
+        ...(result?.outputs && typeof result.outputs === "object" ? result.outputs : {}),
+        claimedEvidencePaths,
+        missingEvidencePaths: existence.missingPaths,
+      },
+      errors: {
+        ...(result?.errors && typeof result.errors === "object" ? result.errors : {}),
+        reason: failureReason,
+        missingEvidencePaths: existence.missingPaths,
+      },
+    };
+  } else {
+    result = {
+      ...result,
+      evidencePaths: existence.existingPaths,
+      outputs: {
+        ...(result?.outputs && typeof result.outputs === "object" ? result.outputs : {}),
+        claimedEvidencePaths,
+        missingEvidencePaths: [],
+      },
+    };
+  }
+  if (result.status !== "completed" && !failureReason) {
+    failureReason = result.summary || "Execution failed.";
+  }
+  // TODO: Future auto-rerun can inject failureReason into refine/run prompts for bounded retries.
+
   writeJson(resultPath, {
     generated_at: now(),
     result,
+    runnerSummary,
+    failureReason,
+    missingEvidencePaths: existence.missingPaths,
+    logsPath: result.logsPath || null,
   });
   appendRunArtifacts(contract, { requestPath, resultPath, result });
 
   if (result.status === "completed") {
     transition(contract, "COMPLETED", `Execution completed via OpenClaw runner. ${result.summary}`);
   } else {
-    transition(contract, "FAILED", `Execution failed via OpenClaw runner. ${result.summary}`);
+    transition(contract, "FAILED", `Execution failed via OpenClaw runner. Reason: "${failureReason}".`);
   }
 
   const enabledTools =
@@ -165,6 +247,10 @@ export async function runContract(
     resultPath,
     result,
     enabledTools,
+    runnerSummary,
+    failureReason,
+    missingEvidencePaths: existence.missingPaths,
+    claimedEvidencePaths,
   };
 }
 

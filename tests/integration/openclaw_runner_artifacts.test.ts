@@ -16,15 +16,21 @@ describe("integration: openclaw runner artifacts", () => {
     process.env = { ...originalEnv };
   });
 
-  test("runner evidence paths include openclaw-config.json", async () => {
+  test("runner evidence paths include claimed evidence paths from payload JSON", async () => {
     const root = makeTempDir();
     const artifactsDir = path.join(root, "artifacts");
     fs.mkdirSync(artifactsDir, { recursive: true });
+    const claimedPath = path.join(artifactsDir, "claimed-output.txt");
+    fs.writeFileSync(claimedPath, "claimed output", "utf8");
+    const payload = JSON.stringify({
+      summary: "integration completed",
+      claimedEvidencePaths: [claimedPath],
+    });
 
     const openclawStubPath = path.join(root, "openclaw-stub.sh");
     fs.writeFileSync(
       openclawStubPath,
-      "#!/usr/bin/env sh\nprintf '%s' '{\"payloads\":[{\"text\":\"integration completed\"}],\"meta\":{}}'\n",
+      `#!/usr/bin/env sh\nprintf '%s' '${JSON.stringify({ payloads: [{ text: payload }], meta: {} })}'\n`,
       { mode: 0o755 }
     );
 
@@ -57,6 +63,6 @@ describe("integration: openclaw runner artifacts", () => {
     const configPath = path.join(artifactsDir, "openclaw-config.json");
     expect(fs.existsSync(configPath)).toBe(true);
     expect(Array.isArray(result.evidencePaths)).toBe(true);
-    expect(result.evidencePaths).toContain(configPath);
+    expect(result.evidencePaths).toEqual([claimedPath]);
   });
 });
