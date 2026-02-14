@@ -47,16 +47,43 @@ function prepareApprovedContract(params: {
   return env;
 }
 
+function writeOpenClawStub(params: {
+  scriptPath: string;
+  payloadText: string;
+  setupCommands?: string[];
+}) {
+  const setupBlock = params.setupCommands && params.setupCommands.length > 0
+    ? `${params.setupCommands.join("\n")}\n`
+    : "";
+  const response = JSON.stringify({
+    payloads: [{ text: params.payloadText }],
+    meta: {},
+  });
+  fs.writeFileSync(
+    params.scriptPath,
+    `#!/usr/bin/env sh\nset -e\n${setupBlock}printf '%s' '${response}'\n`,
+    { mode: 0o755 }
+  );
+}
+
 describe("e2e: run force", () => {
   test("run --force allows rerun from FAILED and records history", () => {
     const tmp = makeTempRoot();
     const contractId = "run_force";
+    const claimedPath = path.join(tmp.artifactsDir, contractId, "run", "hello_world.py");
     const openclawStubPath = path.join(tmp.root, "openclaw-stub.sh");
-    fs.writeFileSync(
-      openclawStubPath,
-      "#!/usr/bin/env sh\nprintf '%s' '{\"payloads\":[{\"text\":\"forced rerun completed\"}],\"meta\":{}}'\n",
-      { mode: 0o755 }
-    );
+    writeOpenClawStub({
+      scriptPath: openclawStubPath,
+      payloadText: JSON.stringify({
+        summary: "forced rerun completed",
+        claimedEvidencePaths: [claimedPath],
+      }),
+      setupCommands: [
+        `mkdir -p \"${path.dirname(claimedPath)}\"`,
+        `printf 'print(\"hello world\")\\n' > \"${claimedPath}\"`,
+      ],
+    });
+
     try {
       const envBase = prepareApprovedContract({
         contractId,
@@ -98,25 +125,24 @@ describe("e2e: run force", () => {
 
       const runDir = path.join(tmp.artifactsDir, contractId, "run");
       expect(fs.existsSync(path.join(runDir, "openclaw-config.json"))).toBe(true);
+      expect(fs.existsSync(claimedPath)).toBe(true);
     } finally {
       tmp.cleanup();
     }
   });
 
-  test("run fails when claimed evidence paths are missing", () => {
+  test("run fails when runner claims no evidence paths", () => {
     const tmp = makeTempRoot();
-    const contractId = "run_missing_evidence";
-    const missingPath = path.join(tmp.artifactsDir, contractId, "run", "missing-file.txt");
-    const openclawStubPath = path.join(tmp.root, "openclaw-stub-missing.sh");
-    const payload = JSON.stringify({
-      summary: "claimed missing evidence",
-      claimedEvidencePaths: [missingPath],
+    const contractId = "run_no_claims";
+    const openclawStubPath = path.join(tmp.root, "openclaw-stub-no-claims.sh");
+    writeOpenClawStub({
+      scriptPath: openclawStubPath,
+      payloadText: JSON.stringify({
+        summary: "ran without claims",
+        claimedEvidencePaths: [],
+      }),
     });
-    fs.writeFileSync(
-      openclawStubPath,
-      `#!/usr/bin/env sh\nprintf '%s' '${JSON.stringify({ payloads: [{ text: payload }], meta: {} })}'\n`,
-      { mode: 0o755 }
-    );
+
     try {
       const envBase = prepareApprovedContract({
         contractId,
@@ -130,7 +156,49 @@ describe("e2e: run force", () => {
         KAIR_OPENCLAW_BIN: openclawStubPath,
       });
       expect(run.status).not.toBe(0);
-      expect(run.stdout).toContain("FAILED: runner claimed missing evidence.");
+      expect(run.stdout).toContain("FAILED: runner evidence validation failed.");
+      expect(run.stderr).toContain("Runner did not claim any evidence paths.");
+
+      const runResultPath = path.join(tmp.artifactsDir, contractId, "run", "run-result.json");
+      const parsedRunResult = JSON.parse(fs.readFileSync(runResultPath, "utf8"));
+      expect(parsedRunResult.failureReason).toContain("Runner did not claim any evidence paths.");
+      expect(parsedRunResult.claimedEvidencePaths).toEqual([]);
+      expect(parsedRunResult.missingEvidencePaths).toEqual([]);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.current_state).toBe("FAILED");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("run fails when claimed evidence paths are missing", () => {
+    const tmp = makeTempRoot();
+    const contractId = "run_missing_evidence";
+    const missingPath = path.join(tmp.artifactsDir, contractId, "run", "missing-file.txt");
+    const openclawStubPath = path.join(tmp.root, "openclaw-stub-missing.sh");
+    writeOpenClawStub({
+      scriptPath: openclawStubPath,
+      payloadText: JSON.stringify({
+        summary: "claimed missing evidence",
+        claimedEvidencePaths: [missingPath],
+      }),
+    });
+
+    try {
+      const envBase = prepareApprovedContract({
+        contractId,
+        dataDir: tmp.dataDir,
+        artifactsDir: tmp.artifactsDir,
+        actor: "e2e-actor",
+      });
+      const run = runCli(["run", contractId, "--debug"], {
+        ...envBase,
+        KAIR_OPENAI_API_KEY: "test-openai-key",
+        KAIR_OPENCLAW_BIN: openclawStubPath,
+      });
+      expect(run.status).not.toBe(0);
+      expect(run.stdout).toContain("FAILED: runner evidence validation failed.");
       expect(run.stdout).toContain("Missing evidence paths:");
       expect(run.stderr).toContain("Runner claimed evidence paths that do not exist");
 
@@ -138,6 +206,52 @@ describe("e2e: run force", () => {
       const parsedRunResult = JSON.parse(fs.readFileSync(runResultPath, "utf8"));
       expect(parsedRunResult.failureReason).toContain("Runner claimed evidence paths that do not exist");
       expect(parsedRunResult.missingEvidencePaths).toEqual([missingPath]);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.current_state).toBe("FAILED");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("run fails when claimed evidence paths are out of scope", () => {
+    const tmp = makeTempRoot();
+    const contractId = "run_out_of_scope";
+    const outOfScopePath = path.join(tmp.root, "outside.txt");
+    const openclawStubPath = path.join(tmp.root, "openclaw-stub-out-of-scope.sh");
+    writeOpenClawStub({
+      scriptPath: openclawStubPath,
+      payloadText: JSON.stringify({
+        summary: "claimed out of scope evidence",
+        claimedEvidencePaths: [outOfScopePath],
+      }),
+      setupCommands: [
+        `mkdir -p \"${path.dirname(outOfScopePath)}\"`,
+        `printf 'outside scope\n' > \"${outOfScopePath}\"`,
+      ],
+    });
+
+    try {
+      const envBase = prepareApprovedContract({
+        contractId,
+        dataDir: tmp.dataDir,
+        artifactsDir: tmp.artifactsDir,
+        actor: "e2e-actor",
+      });
+      const run = runCli(["run", contractId, "--debug"], {
+        ...envBase,
+        KAIR_OPENAI_API_KEY: "test-openai-key",
+        KAIR_OPENCLAW_BIN: openclawStubPath,
+      });
+      expect(run.status).not.toBe(0);
+      expect(run.stdout).toContain("FAILED: runner evidence validation failed.");
+      expect(run.stdout).toContain("Out-of-scope evidence paths:");
+      expect(run.stderr).toContain("Runner claimed evidence outside allowed run directory");
+
+      const runResultPath = path.join(tmp.artifactsDir, contractId, "run", "run-result.json");
+      const parsedRunResult = JSON.parse(fs.readFileSync(runResultPath, "utf8"));
+      expect(parsedRunResult.failureReason).toContain("Runner claimed evidence outside allowed run directory");
+      expect(parsedRunResult.outOfScopeClaimedEvidencePaths).toEqual([outOfScopePath]);
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract.current_state).toBe("FAILED");

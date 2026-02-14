@@ -27,6 +27,8 @@ export type RunContractOutcome = {
   failureReason: string | null;
   missingEvidencePaths: string[];
   claimedEvidencePaths: string[];
+  outOfScopeClaimedEvidencePaths: string[];
+  evidenceValidationFailed: boolean;
 };
 
 function resolveStructuredPlan(contract: any): Plan | null {
@@ -105,20 +107,36 @@ function normalizeClaimedEvidencePaths(evidencePaths: any) {
   return normalized;
 }
 
-export function checkEvidencePathExistence(
-  evidencePaths: string[],
+function isPathWithinDirectory(candidatePath: string, directoryPath: string) {
+  const resolvedCandidate = path.resolve(candidatePath);
+  const resolvedDirectory = path.resolve(directoryPath);
+  return (
+    resolvedCandidate === resolvedDirectory ||
+    resolvedCandidate.startsWith(`${resolvedDirectory}${path.sep}`)
+  );
+}
+
+export function classifyClaimedEvidencePaths(
+  claimedEvidencePaths: string[],
+  runDir: string,
   existsFn: (candidatePath: string) => boolean = (candidatePath) => fs.existsSync(candidatePath)
 ) {
-  const existingPaths: string[] = [];
+  const validExistingPaths: string[] = [];
   const missingPaths: string[] = [];
-  for (const evidencePath of evidencePaths) {
-    if (existsFn(evidencePath)) {
-      existingPaths.push(evidencePath);
+  const outOfScopePaths: string[] = [];
+  for (const evidencePath of claimedEvidencePaths) {
+    const resolvedEvidencePath = path.resolve(evidencePath);
+    if (!isPathWithinDirectory(resolvedEvidencePath, runDir)) {
+      outOfScopePaths.push(resolvedEvidencePath);
+      continue;
+    }
+    if (existsFn(resolvedEvidencePath)) {
+      validExistingPaths.push(resolvedEvidencePath);
     } else {
-      missingPaths.push(evidencePath);
+      missingPaths.push(resolvedEvidencePath);
     }
   }
-  return { existingPaths, missingPaths };
+  return { validExistingPaths, missingPaths, outOfScopePaths };
 }
 
 export async function runContract(
@@ -183,37 +201,52 @@ export async function runContract(
 
   const runnerSummary = result.summary;
   const claimedEvidencePaths = normalizeClaimedEvidencePaths(result.evidencePaths);
-  const existence = checkEvidencePathExistence(claimedEvidencePaths);
+  const evidenceClassification = classifyClaimedEvidencePaths(claimedEvidencePaths, runDir);
+  let evidenceValidationFailed = false;
   let failureReason: string | null = null;
-  if (existence.missingPaths.length > 0) {
+  if (result.status === "completed") {
     const logsRef = result.logsPath || "run-result.json";
-    failureReason = `Runner claimed evidence paths that do not exist: ${existence.missingPaths.join(
-      ", "
-    )}. See logs: ${logsRef}.`;
+    if (claimedEvidencePaths.length === 0) {
+      failureReason = `Runner did not claim any evidence paths. See logs: ${logsRef}.`;
+    } else if (evidenceClassification.outOfScopePaths.length > 0) {
+      failureReason = `Runner claimed evidence outside allowed run directory: ${evidenceClassification.outOfScopePaths.join(
+        ", "
+      )}. See logs: ${logsRef}.`;
+    } else if (evidenceClassification.missingPaths.length > 0) {
+      failureReason = `Runner claimed evidence paths that do not exist: ${evidenceClassification.missingPaths.join(
+        ", "
+      )}. See logs: ${logsRef}.`;
+    }
+  }
+  if (failureReason) {
+    evidenceValidationFailed = true;
     result = {
       ...result,
       status: "failed",
       summary: failureReason,
-      evidencePaths: existence.existingPaths,
+      evidencePaths: evidenceClassification.validExistingPaths,
       outputs: {
         ...(result?.outputs && typeof result.outputs === "object" ? result.outputs : {}),
         claimedEvidencePaths,
-        missingEvidencePaths: existence.missingPaths,
+        missingEvidencePaths: evidenceClassification.missingPaths,
+        outOfScopeClaimedEvidencePaths: evidenceClassification.outOfScopePaths,
       },
       errors: {
         ...(result?.errors && typeof result.errors === "object" ? result.errors : {}),
         reason: failureReason,
-        missingEvidencePaths: existence.missingPaths,
+        missingEvidencePaths: evidenceClassification.missingPaths,
+        outOfScopeClaimedEvidencePaths: evidenceClassification.outOfScopePaths,
       },
     };
   } else {
     result = {
       ...result,
-      evidencePaths: existence.existingPaths,
+      evidencePaths: evidenceClassification.validExistingPaths,
       outputs: {
         ...(result?.outputs && typeof result.outputs === "object" ? result.outputs : {}),
         claimedEvidencePaths,
-        missingEvidencePaths: [],
+        missingEvidencePaths: evidenceClassification.missingPaths,
+        outOfScopeClaimedEvidencePaths: evidenceClassification.outOfScopePaths,
       },
     };
   }
@@ -227,7 +260,9 @@ export async function runContract(
     result,
     runnerSummary,
     failureReason,
-    missingEvidencePaths: existence.missingPaths,
+    missingEvidencePaths: evidenceClassification.missingPaths,
+    claimedEvidencePaths,
+    outOfScopeClaimedEvidencePaths: evidenceClassification.outOfScopePaths,
     logsPath: result.logsPath || null,
   });
   appendRunArtifacts(contract, { requestPath, resultPath, result });
@@ -249,8 +284,10 @@ export async function runContract(
     enabledTools,
     runnerSummary,
     failureReason,
-    missingEvidencePaths: existence.missingPaths,
+    missingEvidencePaths: evidenceClassification.missingPaths,
     claimedEvidencePaths,
+    outOfScopeClaimedEvidencePaths: evidenceClassification.outOfScopePaths,
+    evidenceValidationFailed,
   };
 }
 

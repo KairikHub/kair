@@ -1212,6 +1212,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
               failure_reason: runOutcome.failureReason,
               missing_evidence_paths: runOutcome.missingEvidencePaths,
               claimed_evidence_paths: runOutcome.claimedEvidencePaths,
+              out_of_scope_claimed_evidence_paths: runOutcome.outOfScopeClaimedEvidencePaths,
             },
             null,
             2
@@ -1225,9 +1226,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         if (runOutcome.result.logsPath) {
           console.log(`Run logs: ${runOutcome.result.logsPath}`);
         }
-        if (runOutcome.result.status !== "completed" && runOutcome.missingEvidencePaths.length > 0) {
+        if (runOutcome.result.status !== "completed" && runOutcome.evidenceValidationFailed) {
           const logsRef = runOutcome.result.logsPath || "run-result.json";
-          console.log(`FAILED: runner claimed missing evidence. See ${logsRef} and run-result.json`);
+          console.log(`FAILED: runner evidence validation failed. See ${logsRef} and run-result.json`);
         }
         if (debug) {
           const grants = Array.isArray(contract.controlsApproved) ? contract.controlsApproved : [];
@@ -1243,6 +1244,13 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           console.log(
             `Missing evidence paths: ${
               runOutcome.missingEvidencePaths.length ? runOutcome.missingEvidencePaths.join(", ") : "none"
+            }`
+          );
+          console.log(
+            `Out-of-scope evidence paths: ${
+              runOutcome.outOfScopeClaimedEvidencePaths.length
+                ? runOutcome.outOfScopeClaimedEvidencePaths.join(", ")
+                : "none"
             }`
           );
           console.log(`Run request path: ${runOutcome.requestPath}`);

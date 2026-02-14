@@ -47,6 +47,7 @@ describe("e2e: run output", () => {
       expect(run.stdout).toContain("Run result artifact:");
       expect(run.stdout).toContain("Claimed evidence paths: none");
       expect(run.stdout).toContain("Missing evidence paths: none");
+      expect(run.stdout).toContain("Out-of-scope evidence paths: none");
       expect(run.stderr).toContain("Missing KAIR_OPENAI_API_KEY");
       expect(fs.existsSync(path.join(tmp.artifactsDir, contractId, "run", "run-request.json"))).toBe(
         true
@@ -106,6 +107,7 @@ describe("e2e: run output", () => {
       expect(parsed).toHaveProperty("failure_reason");
       expect(Array.isArray(parsed.missing_evidence_paths)).toBe(true);
       expect(Array.isArray(parsed.claimed_evidence_paths)).toBe(true);
+      expect(Array.isArray(parsed.out_of_scope_claimed_evidence_paths)).toBe(true);
       expect(run.stderr).toContain("Missing KAIR_OPENAI_API_KEY");
     } finally {
       tmp.cleanup();
