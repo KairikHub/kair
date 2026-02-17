@@ -623,10 +623,15 @@ function resolvePlanContractId(parsed: ParsedTopLevelPlanOptions) {
 }
 
 async function ensurePlanProviderSession(parsed: ParsedTopLevelPlanOptions, allowPrompt: boolean) {
+  const explicit = normalizeProviderName(parsed.providerRaw);
+  if (explicit === "mock" && (process.env.KAIR_TEST_MODE || "").trim() === "1") {
+    process.env.KAIR_LLM_PROVIDER = "mock";
+    return "mock";
+  }
   let provider = resolveProviderFromInput(parsed.providerRaw);
   if (!provider) {
     if (!allowPrompt) {
-      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER, pass --provider, or run `kair login`.");
+      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>.");
     }
     provider = await promptProviderSelection();
     process.env.KAIR_LLM_PROVIDER = provider;
@@ -646,12 +651,15 @@ async function ensureRunProviderSession(params: {
       return "";
     }
     if (!params.allowPrompt) {
-      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER, pass --provider, or run `kair login`.");
+      provider = "openai";
+    } else {
+      provider = await promptProviderSelection();
+      process.env.KAIR_LLM_PROVIDER = provider;
     }
-    provider = await promptProviderSelection();
-    process.env.KAIR_LLM_PROVIDER = provider;
   }
-  await ensureProviderSession(provider);
+  if (params.allowPrompt) {
+    await ensureProviderSession(provider);
+  }
   process.env.KAIR_LLM_PROVIDER = provider;
   return provider;
 }
@@ -1380,7 +1388,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = positional[0];
       }
       const contract = getContract(contractId);
-      const plan = resolveContractPlanForRun(contract);
+      const plan = resolveContractPlanV1(contract);
       const bypassStrictRunGate =
         (process.env.KAIR_TEST_MODE || "").trim() === "1" &&
         (process.env.KAIR_ENFORCE_APPROVAL_GATE || "").trim() !== "1";
@@ -1388,7 +1396,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         ensureRequiredRunFiles();
       }
 
-      if (!dryRun && !bypassStrictRunGate) {
+      if (!dryRun && !bypassStrictRunGate && plan) {
         try {
           validateApprovalArtifact({
             contractId: contract.id,
@@ -1415,6 +1423,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
 
       if (interactive) {
+        if (!plan) {
+          fail("Structured plan required for --interactive run; run `kair plan` first.");
+        }
         await promptRunInteractiveConfirmation(plan, options.allowPrompt === true);
       }
 
