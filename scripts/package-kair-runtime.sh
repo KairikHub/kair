@@ -69,15 +69,10 @@ LAUNCHER
   cp -R "$ROOT_DIR/src/." "$APP_DIR/src"
   cp "$ROOT_DIR/package.json" "$APP_DIR/package.json"
 
-  if [ -d "$ROOT_DIR/node_modules/tsx" ]; then
-    echo "[kair-package] copying tsx runtime dependency from host workspace"
-    mkdir -p "$APP_DIR/node_modules"
-    cp -R "$ROOT_DIR/node_modules/tsx" "$APP_DIR/node_modules/tsx"
-  else
-    echo "[kair-package] bootstrapping tsx runtime dependency via embedded npm"
-    rm -rf "$BUILD_DIR/tsx"
-    mkdir -p "$BUILD_DIR/tsx"
-    cat > "$BUILD_DIR/tsx/package.json" <<'PKG'
+  echo "[kair-package] bootstrapping tsx runtime dependency via embedded npm"
+  rm -rf "$BUILD_DIR/tsx"
+  mkdir -p "$BUILD_DIR/tsx"
+  cat > "$BUILD_DIR/tsx/package.json" <<'PKG'
 {
   "private": true,
   "dependencies": {
@@ -85,12 +80,11 @@ LAUNCHER
   }
 }
 PKG
-    PATH="$RUNTIME_DIR:$PATH" "$RUNTIME_DIR/node" "$NPM_CLI" install \
-      --prefix "$BUILD_DIR/tsx" \
-      --no-audit \
-      --no-fund >/dev/null
-    cp -R "$BUILD_DIR/tsx/node_modules" "$APP_DIR/node_modules"
-  fi
+  PATH="$RUNTIME_DIR:$PATH" "$RUNTIME_DIR/node" "$NPM_CLI" install \
+    --prefix "$BUILD_DIR/tsx" \
+    --no-audit \
+    --no-fund >/dev/null
+  cp -R "$BUILD_DIR/tsx/node_modules" "$APP_DIR/node_modules"
 
   EMBED_NODE_VERSION="$NODE_VERSION"
   BUILD_TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
