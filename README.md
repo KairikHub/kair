@@ -10,7 +10,7 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
-## Quick Install (Native)
+## Quick Install (Native Dev)
 
 ```bash
 npm install -g .
@@ -22,9 +22,19 @@ You can also run locally with:
 npm run kair -- --help
 ```
 
-## No-Install Host Run (Embedded Runtime)
+## Repo-Embedded Launcher (Host Run Without Node/npm After Bootstrap)
 
-Kair can run from a repo-embedded runtime payload with no host Node/npm install:
+Kair can run from a repo-embedded launcher at `./.kair/bin/kair`.
+The launcher requires an embedded Node runtime at `.kair/runtime/node`.
+
+Bootstrap/update the embedded payload (maintainers):
+
+```bash
+./scripts/package-kair-runtime.sh
+./scripts/verify-kair-manifest.sh
+```
+
+Then run from host:
 
 ```bash
 ./.kair/bin/kair --help
@@ -35,13 +45,6 @@ Optional alias:
 
 ```bash
 alias kair='./.kair/bin/kair'
-```
-
-Rebuild embedded runtime payload (maintainers):
-
-```bash
-./scripts/package-kair-runtime.sh
-./scripts/verify-kair-manifest.sh
 ```
 
 ## Optional Docker Runtime
@@ -60,9 +63,9 @@ The current `kair --help` command groups are:
   - `kair login` OAuth login for `openai`/`claude`
   - `kair contract` create a new Contract in `DRAFT`
   - `kair plan` generate/refine structured `kair.plan.v1`
-  - `kair propose` submit a planned Contract for approval
+  - `kair propose` submit/share a planned Contract
   - `kair approve` approve a Contract version
-  - `kair run` execute a Contract gated by approval artifact
+  - `kair run` execute a Contract via native runner
 - Governance and controls:
   - `kair grant`, `pause`, `resume`, `rewind`
 - Review and inspection:
@@ -86,6 +89,7 @@ Run prerequisites:
 - `PLAN.md`
 - `RULES.md` (may be empty)
 - Approval artifact `.kair/approvals/<plan_hash>.json` unless `--dry-run`
+- If run from a git repo, Kair prompts for `git pull` unless `--pull` is passed
 
 Tool grants (still run-time gated):
 
@@ -99,9 +103,8 @@ Example flow:
 kair contract "Write a hello file under artifacts"
 kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'
 kair propose --last
-kair approve --last --actor <name>
 kair grant --last local:write --actor <name>
-kair run --last --with=git --debug
+kair run --last --dry-run --debug
 ```
 
 Manual test checklist:
@@ -112,9 +115,8 @@ Manual test checklist:
    - `kair contract "Write hello evidence"`
    - `kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'`
    - `kair propose --last`
-   - `kair approve --last --actor <name>`
    - `kair grant --last local:write --actor <name>`
-   - `kair run --last --debug`
+   - `kair run --last --dry-run --debug`
 3. Verify expected evidence files:
    - `artifacts/<contract_id>/run/run-request.json`
    - `artifacts/<contract_id>/run/run-result.json`
