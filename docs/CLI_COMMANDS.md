@@ -30,6 +30,7 @@ kair <command>
 - `kair login --provider <openai|claude>`
   - Browser OAuth login with localhost callback.
   - Stores tokens in keychain (fallback file in test/dev environments).
+  - If OAuth client config is missing, opens provider API-key page and prompts for key paste.
 - `kair contract "<intent>" [--id <contract_id>] [--with=git]`
   - Create a contract in `DRAFT`.
   - If `--id` is omitted, kair generates an id from intent.

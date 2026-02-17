@@ -1164,7 +1164,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           fail("Missing provider. Pass --provider <openai|claude> or set KAIR_LLM_PROVIDER.");
         }
       }
-      provider = await loginProvider(provider);
+      provider = await loginProvider(provider, {
+        allowInteractiveAuth: options.allowPrompt === true,
+      });
       console.log(`OAuth login complete for provider: ${provider}`);
       break;
     }

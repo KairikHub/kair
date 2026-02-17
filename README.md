@@ -122,6 +122,7 @@ The current `kair --help` command groups are:
 Auth:
 - Preferred: `kair login --provider openai` or `kair login --provider claude`
 - Fallback: env vars (`KAIR_OPENAI_API_KEY`, `KAIR_CLAUDE_API_KEY`)
+- If OAuth client config is missing, `kair login` opens provider API-key page and prompts to paste key.
 
 Optional selection:
 

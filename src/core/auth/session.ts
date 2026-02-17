@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline/promises";
+import { spawn } from "node:child_process";
 
 import { getProviderToken, setProviderToken } from "./keychain";
 import { runBrowserOAuth } from "./oauth";
@@ -49,7 +50,53 @@ function applyProviderTokenToEnv(provider: SupportedProvider, token: string) {
   process.env.KAIR_CLAUDE_API_KEY = token;
 }
 
-export async function ensureProviderSession(provider: SupportedProvider) {
+function openBrowser(url: string) {
+  const platform = process.platform;
+  if (platform === "darwin") {
+    spawn("open", [url], { stdio: "ignore", detached: true }).unref();
+    return;
+  }
+  if (platform === "win32") {
+    spawn("cmd", ["/c", "start", "", url], { stdio: "ignore", detached: true }).unref();
+    return;
+  }
+  spawn("xdg-open", [url], { stdio: "ignore", detached: true }).unref();
+}
+
+function providerApiKeysUrl(provider: SupportedProvider) {
+  if (provider === "openai") {
+    return "https://platform.openai.com/api-keys";
+  }
+  return "https://console.anthropic.com/settings/keys";
+}
+
+async function promptForApiKey(provider: SupportedProvider) {
+  const url = providerApiKeysUrl(provider);
+  console.log(`OAuth client config not found. Opening ${provider} API key page: ${url}`);
+  openBrowser(url);
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    while (true) {
+      const value = (await rl.question(`Paste your ${provider} API key (or type "cancel"): `)).trim();
+      if (value.toLowerCase() === "cancel") {
+        throw new Error("Login cancelled.");
+      }
+      if (value) {
+        return value;
+      }
+      console.log("API key cannot be empty.");
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+export async function ensureProviderSession(
+  provider: SupportedProvider,
+  options: { allowInteractiveAuth?: boolean } = {}
+) {
+  const allowInteractiveAuth = options.allowInteractiveAuth !== false;
   const envToken =
     provider === "openai"
       ? String(process.env.KAIR_OPENAI_API_KEY || "").trim()
@@ -64,18 +111,33 @@ export async function ensureProviderSession(provider: SupportedProvider) {
     return savedToken;
   }
 
-  const token = await runBrowserOAuth(provider);
+  let token = "";
+  try {
+    token = await runBrowserOAuth(provider);
+  } catch (error: any) {
+    const message = String(error?.message || error || "");
+    const missingOAuthClientId = /Missing KAIR_.*_OAUTH_CLIENT_ID/.test(message);
+    if (!missingOAuthClientId) {
+      throw error;
+    }
+    if (!allowInteractiveAuth || !process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error(
+        `${message} Set API key env var or run login in an interactive terminal to paste key.`
+      );
+    }
+    token = await promptForApiKey(provider);
+  }
   await setProviderToken(provider, token);
   applyProviderTokenToEnv(provider, token);
   return token;
 }
 
-export async function loginProvider(providerRaw: string) {
+export async function loginProvider(providerRaw: string, options: { allowInteractiveAuth?: boolean } = {}) {
   const provider = toSupportedProvider(providerRaw);
   if (!provider) {
     throw new Error('Unsupported provider. Use "openai" or "claude".');
   }
-  await ensureProviderSession(provider);
+  await ensureProviderSession(provider, options);
   process.env.KAIR_LLM_PROVIDER = provider;
   return provider;
 }

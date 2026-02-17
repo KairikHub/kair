@@ -132,6 +132,7 @@ ${label("Description:")}
 
 ${label("Notes:")}
   If --provider is omitted, uses KAIR_LLM_PROVIDER if set, otherwise prompts in interactive mode.
+  If OAuth client config is unavailable, login falls back to browser-opened API key setup + paste.
 `);
 }
 
