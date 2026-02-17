@@ -22,6 +22,7 @@ Then run:
 
 ```bash
 kair --help
+# fallback: ~/bin/kair --help
 # or: ~/.kair/bin/kair --help
 ```
 
@@ -29,7 +30,8 @@ Installer behavior:
 - downloads the current `.kair` payload
 - downloads embedded Node runtime for macOS
 - installs runtime JS dependencies
-- installs shell alias (`kair`) by default
+- installs `~/bin/kair` shim for immediate use when `~/bin` is in `PATH`
+- installs persistent shell alias (`kair`) by default
 
 Installer options:
 
@@ -37,6 +39,7 @@ Installer options:
 curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh -o /tmp/kair-install.sh
 KAIR_INSTALL_ALIAS=0 sh /tmp/kair-install.sh
 KAIR_INSTALL_DIR="$HOME/.kair" sh /tmp/kair-install.sh
+KAIR_SHIM_DIR="$HOME/bin" sh /tmp/kair-install.sh
 ```
 
 ## Repo-Embedded Launcher (When Working Inside This Repo)

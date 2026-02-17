@@ -15,7 +15,7 @@ kair <command>
 
 - No-clone installer (macOS host, no Node/npm):
   - `curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh`
-  - then use `kair <command>` (or `~/.kair/bin/kair <command>`)
+  - then use `kair <command>` (or `~/bin/kair <command>` or `~/.kair/bin/kair <command>`)
 - Embedded runtime (no host Node/npm required):
   - `./.kair/bin/kair <command>`
 - Local dev script:

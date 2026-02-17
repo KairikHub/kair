@@ -19,6 +19,7 @@ if ! command -v tar >/dev/null 2>&1; then
 fi
 
 INSTALL_DIR="${KAIR_INSTALL_DIR:-$HOME/.kair}"
+SHIM_DIR="${KAIR_SHIM_DIR:-$HOME/bin}"
 REPO_ARCHIVE_URL="${KAIR_REPO_ARCHIVE_URL:-https://codeload.github.com/KairikHub/kair/tar.gz/refs/heads/main}"
 NODE_VERSION="${KAIR_EMBED_NODE_VERSION:-v22.13.1}"
 
@@ -121,6 +122,47 @@ PATH="$INSTALL_DIR/runtime:$PATH" "$INSTALL_DIR/runtime/node" "$NPM_CLI" install
 rm -rf "$INSTALL_DIR/app/node_modules"
 cp -R "$BUILD_DIR/node_modules" "$INSTALL_DIR/app/node_modules"
 
+SHIM_PATH="$SHIM_DIR/kair"
+SHIM_CREATED=0
+SHIM_PATH_IN_ENV=0
+IMMEDIATE_OK=0
+
+install_shim() {
+  if ! mkdir -p "$SHIM_DIR" 2>/dev/null; then
+    printf '[kair-install] warning: cannot create shim directory %s; skipping shim install\n' "$SHIM_DIR"
+    return
+  fi
+  cat > "$SHIM_PATH" <<SHIM
+#!/usr/bin/env sh
+exec "$INSTALL_DIR/bin/kair" "\$@"
+SHIM
+  chmod +x "$SHIM_PATH"
+  SHIM_CREATED=1
+  printf '[kair-install] shim installed: %s\n' "$SHIM_PATH"
+}
+
+path_has_dir() {
+  case ":$PATH:" in
+    *":$1:"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+install_shim
+
+if path_has_dir "$SHIM_DIR"; then
+  SHIM_PATH_IN_ENV=1
+  hash -r 2>/dev/null || true
+  if kair --help >/dev/null 2>&1; then
+    IMMEDIATE_OK=1
+    printf '[kair-install] kair available in current shell session.\n'
+  else
+    printf '[kair-install] warning: %s is in PATH but kair is not immediately resolvable in this shell.\n' "$SHIM_DIR"
+  fi
+else
+  printf '[kair-install] current PATH does not include %s.\n' "$SHIM_DIR"
+fi
+
 install_alias() {
   if [ -n "${CI:-}" ]; then
     printf '[kair-install] CI detected; skipping alias setup\n'
@@ -150,8 +192,13 @@ install_alias() {
 
   touch "$RC_FILE"
   if grep -F "$ALIAS_START" "$RC_FILE" >/dev/null 2>&1; then
-    printf '[kair-install] alias already configured in %s\n' "$RC_FILE"
-    return
+    TMP_RC="$TMP_DIR/rc.updated"
+    awk -v start="$ALIAS_START" -v end="$ALIAS_END" '
+      $0 == start { inblock=1; next }
+      $0 == end { inblock=0; next }
+      !inblock { print }
+    ' "$RC_FILE" > "$TMP_RC"
+    mv "$TMP_RC" "$RC_FILE"
   fi
 
   {
@@ -160,12 +207,21 @@ install_alias() {
     printf '%s\n' "$ALIAS_END"
   } >> "$RC_FILE"
 
-  printf '[kair-install] alias added to %s\n' "$RC_FILE"
-  printf '[kair-install] open a new shell or run: source %s\n' "$RC_FILE"
+  printf '[kair-install] persistent alias configured in %s\n' "$RC_FILE"
 }
 
 install_alias
 
 "$INSTALL_DIR/bin/kair" --help >/dev/null
 printf '[kair-install] install complete\n'
-printf '[kair-install] run: %s/bin/kair --help\n' "$INSTALL_DIR"
+if [ "$IMMEDIATE_OK" -eq 1 ]; then
+  printf '[kair-install] run now: kair --help\n'
+fi
+if [ "$SHIM_CREATED" -eq 1 ]; then
+  printf '[kair-install] run via shim: %s --help\n' "$SHIM_PATH"
+  if [ "$SHIM_PATH_IN_ENV" -eq 0 ]; then
+    printf '[kair-install] add shim dir to PATH later: export PATH="%s:$PATH"\n' "$SHIM_DIR"
+  fi
+fi
+printf '[kair-install] run direct: %s/bin/kair --help\n' "$INSTALL_DIR"
+printf '[kair-install] note: canonical help command is "kair --help" (not "kair help").\n'
