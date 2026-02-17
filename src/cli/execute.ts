@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 
 import { resolveActor } from "../core/actor";
@@ -65,6 +66,7 @@ import {
   printRewindHelp,
   printResumeHelp,
   printRunHelp,
+  printSelfUpdateHelp,
   printStatusHelp,
   printTopHelp,
 } from "./help";
@@ -681,6 +683,22 @@ function ensureRequiredRunFiles() {
   }
 }
 
+function runSelfUpdateInstaller() {
+  const updateCommand =
+    (process.env.KAIR_SELF_UPDATE_CMD || "").trim() ||
+    "curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh";
+  const result = spawnSync("sh", ["-c", updateCommand], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (result.error) {
+    fail(`self-update failed to start: ${result.error.message}`);
+  }
+  if ((result.status ?? 1) !== 0) {
+    fail(`self-update failed (exit code ${result.status ?? 1}).`);
+  }
+}
+
 async function promptRunPull(allowPrompt: boolean) {
   if (!allowPrompt) {
     return false;
@@ -1107,6 +1125,19 @@ export async function executeCommand(tokens: string[], options: any = {}) {
   }
 
   switch (command) {
+    case "self-update": {
+      if (hasHelpFlag(rest)) {
+        printSelfUpdateHelp();
+        return;
+      }
+      if (rest.length > 0) {
+        fail("Invalid arguments. Usage: self-update");
+      }
+      console.log("Running self-update...");
+      runSelfUpdateInstaller();
+      console.log("Self-update complete.");
+      break;
+    }
     case "login": {
       if (hasHelpFlag(rest)) {
         printLoginHelp();

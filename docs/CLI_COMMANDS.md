@@ -102,6 +102,12 @@ kair <command>
 - `kair contracts`
   - List known contract IDs.
 
+### Maintenance
+- `kair self-update`
+  - Re-runs the hosted installer to refresh local kair runtime/launcher.
+  - Equivalent install source: `https://raw.githubusercontent.com/KairikHub/kair/main/install.sh`.
+  - `KAIR_SELF_UPDATE_CMD` can override command execution for advanced/test usage.
+
 ## Review Output (What It Includes)
 `kair review` and `kair review <id>` include:
 - Contract ID, state, active version

@@ -33,6 +33,12 @@ kair contracts
 
 Canonical help command is `kair --help` (not `kair help`).
 
+### 4) Update Existing Install
+
+```bash
+kair self-update
+```
+
 ## Installer Details
 
 Installer behavior:
@@ -49,6 +55,12 @@ curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh -o /
 KAIR_INSTALL_ALIAS=0 sh /tmp/kair-install.sh
 KAIR_INSTALL_DIR="$HOME/.kair" sh /tmp/kair-install.sh
 KAIR_SHIM_DIR="$HOME/bin" sh /tmp/kair-install.sh
+```
+
+From an existing install, you can also update directly with:
+
+```bash
+kair self-update
 ```
 
 Uninstaller options:
