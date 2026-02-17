@@ -10,37 +10,43 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
-## Install Test (No Host Node/npm)
+## Install (No Clone, No Host Node/npm)
 
-Use the repo-embedded launcher path:
+Install directly:
 
 ```bash
-./.kair/bin/kair --help
+curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh
 ```
 
-If `.kair/runtime/node` is not present yet, bootstrap it once:
+Then run:
+
+```bash
+kair --help
+# or: ~/.kair/bin/kair --help
+```
+
+Installer behavior:
+- downloads the current `.kair` payload
+- downloads embedded Node runtime for macOS
+- installs runtime JS dependencies
+- installs shell alias (`kair`) by default
+
+Installer options:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh -o /tmp/kair-install.sh
+KAIR_INSTALL_ALIAS=0 sh /tmp/kair-install.sh
+KAIR_INSTALL_DIR="$HOME/.kair" sh /tmp/kair-install.sh
+```
+
+## Repo-Embedded Launcher (When Working Inside This Repo)
+
+If you are working from a repo checkout:
 
 ```bash
 ./scripts/package-kair-runtime.sh
 ./scripts/verify-kair-manifest.sh
 ./.kair/bin/kair --help
-```
-
-`package-kair-runtime.sh` also installs a shell alias:
-
-```bash
-alias kair='/absolute/path/to/repo/.kair/bin/kair'
-```
-
-The script writes this to your shell rc file (`~/.zshrc`, `~/.bashrc`, or `~/.profile`), skips alias install in CI, and supports opt-out with:
-
-```bash
-KAIR_INSTALL_ALIAS=0 ./scripts/package-kair-runtime.sh
-```
-
-Smoke test from any directory inside the repo:
-
-```bash
 ./scripts/smoke-kair-embedded.sh
 ```
 
