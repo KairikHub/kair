@@ -7,11 +7,13 @@
   },
   "scripts": {
     "kair": "tsx src/kair.ts",
-    "test": "jest"
+    "test": "jest",
+    "kair:embed": "./scripts/package-kair-runtime.sh",
+    "kair:embed:verify": "./scripts/package-kair-runtime.sh --verify && ./scripts/verify-kair-manifest.sh",
+    "kair:embed:smoke": "./scripts/smoke-kair-embedded.sh"
   },
   "dependencies": {
     "keytar": "^7.9.0",
-    "openclaw": "2026.2.12",
     "tsx": "latest"
   },
   "devDependencies": {

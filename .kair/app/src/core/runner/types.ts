@@ -13,8 +13,8 @@ export type RunnerResult = {
   status: "completed" | "failed";
   summary: string;
   outputs: any;
+  backend?: "native";
   logsPath?: string;
   evidencePaths?: string[];
   errors?: any;
 };
-

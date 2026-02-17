@@ -23,7 +23,7 @@ These surfaces are implementation details or exploratory capabilities. There are
 - `kair plan` legacy text-plan path (`kair plan <contract_id> "<plan>"`)
 - `kair emit`
   - Experimental artifact/emission helper; semantics and output may change.
-- Any OpenClaw-related behavior
+- Any native runner-related behavior
 - Evidence file formats (schemas may change)
 - Any command or output surface not listed in **Stable**
 

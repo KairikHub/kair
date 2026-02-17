@@ -12,7 +12,7 @@ export type EvidenceType =
   | "test_output"
   | "summary";
 
-export type EvidenceSource = "codex" | "openclaw" | "human" | "mock";
+export type EvidenceSource = "codex" | "native" | "human" | "mock";
 
 export type EvidenceItem = {
   type: EvidenceType;

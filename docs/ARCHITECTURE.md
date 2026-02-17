@@ -74,7 +74,7 @@ Grant List Output (current static set):
 - Canonical files:
   - `run-request.json`
   - `run-result.json`
-- Additional pointers may include OpenClaw session logs and tool-produced evidence file paths.
+- Additional pointers may include native runner session logs and tool-produced evidence file paths.
 
 ## DPC (Decision-Preserving Compression)
 - DPC is a compact, structured decision-state artifact used to preserve planning/refinement-critical context in a portable form.
@@ -96,5 +96,5 @@ Grant List Output (current static set):
 - Any future interface lives outside this repository and must treat the CLI as source of truth.
 
 ## Execution Backend (v0)
-- `kair run` delegates execution to the OpenClaw npm runner adapter.
-- Kair remains the authority layer; OpenClaw remains an implementation detail.
+- `kair run` delegates execution to the native runner npm runner adapter.
+- Kair remains the authority layer; native runner remains an implementation detail.

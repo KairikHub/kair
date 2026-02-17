@@ -83,14 +83,14 @@ Kair’s distinct position is that governance is the product, not a plugin:
 
 ## Adjacent but Not Competing
 
-### OpenClaw
+### native runner
 - **Short description:** Personal AI assistant runtime and gateway spanning channels, tools, and sessions.
 - **Core capabilities:** Multi-channel assistant runtime; tooling and automation surface; local-first gateway model.
 - **Weaknesses relative to Kair:**
-  - OpenClaw is an execution/runtime substrate, not a governance authority plane.
+  - native runner is an execution/runtime substrate, not a governance authority plane.
   - Does not define Kair-style contract approvals and rewind-as-supersession governance semantics.
   - Skill/tool enablement does not inherently encode contractual responsibility boundaries.
-- **Why Kair’s approach remains defensible:** Kair treats OpenClaw as an execution backend while retaining governance ownership.
+- **Why Kair’s approach remains defensible:** Kair treats native runner as an execution backend while retaining governance ownership.
 
 ### Langfuse (and similar LLM observability stacks)
 - **Short description:** LLM engineering observability and evaluation platform.
@@ -110,8 +110,8 @@ Kair’s distinct position is that governance is the product, not a plugin:
   - Audit trails are usually session-level, not contract-version-level with explicit actor responsibility.
 - **Why Kair’s approach remains defensible:** Kair can serve as the authority layer around these agents, turning ad-hoc actions into governed contracts.
 
-### OpenClaw Security Roadmap Signals (Discussion #10317, PR #9271)
-- **Short description:** Emerging OpenClaw security patterns that are more integration opportunities and baseline expectations than direct governance competition today.
+### native runner Security Roadmap Signals (Discussion #10317, PR #9271)
+- **Short description:** Emerging native runner security patterns that are more integration opportunities and baseline expectations than direct governance competition today.
 - **Core capabilities signaled:**
   - Discussion `#10317`: proposes `tirith` pre-exec command validation (`allow/warn/block`) before bash tool execution, including detection for pipe-to-shell patterns, homograph/IDN abuse, ANSI injection, and unsafe transport.
   - PR `#9271` (open): proposes zero-trust secure gateway mode (`--secure`) with host-side secrets proxy, sanitized config placeholders, domain allowlist enforcement, and isolated secure-mode sessions.
@@ -123,7 +123,7 @@ Kair’s distinct position is that governance is the product, not a plugin:
 
 ## Knapsack Desktop (knap-ai)
 
-- **Short description:** Tauri desktop wrapper around OpenClaw focused on secure local operation and productivity workflows.
+- **Short description:** Tauri desktop wrapper around native runner focused on secure local operation and productivity workflows.
 - **Core capabilities:**
   - Localhost-only defaults and hardened local secret handling.
   - Managed runtime lifecycle (service management, health checks, restart behavior).
@@ -135,7 +135,7 @@ Kair’s distinct position is that governance is the product, not a plugin:
   - Auditability appears operational (service/usage) rather than contract-centric (who approved what authority boundary and when it was rewound).
 - **Why Kair’s approach remains defensible:**
   - Kair’s product center is governance integrity, not only safe runtime packaging.
-  - Kair can interoperate with OpenClaw-like runtimes while retaining explicit Contracts, Controls, actor attribution, immutable versions, and rewind lineage.
+  - Kair can interoperate with native runner-like runtimes while retaining explicit Contracts, Controls, actor attribution, immutable versions, and rewind lineage.
   - If Knapsack extends governance over time, Kair still differentiates via its explicit mental model: authority contracts first, runtime second.
 
 ## Opportunity Gaps for Kair
@@ -144,7 +144,7 @@ Kair’s distinct position is that governance is the product, not a plugin:
 2. **Richer approval topologies:** Introduce n-of-m and role-scoped approvals to compete with enterprise workflow expectations while preserving actor attribution.
 3. **Governance analytics layer:** Add first-class governance dashboards (control usage drift, approval latency, rewind frequency, blast-radius hotspots).
 4. **Portable evidence bundles:** Export tamper-evident contract timelines for compliance and incident response.
-5. **Runtime-neutral adapters:** Expand adapters (OpenClaw, Agents SDK runtimes, LangGraph) while keeping identical governance semantics across backends.
+5. **Runtime-neutral adapters:** Expand adapters (native runner, Agents SDK runtimes, LangGraph) while keeping identical governance semantics across backends.
 6. **Policy-aware rewind simulation:** Provide “pre-rewind impact previews” to show what authority and artifact lineage will change before supersession.
 7. **Pre-exec risk scoring control:** Add an optional command-risk check control (tirith-style) in the run path, with configurable fail-open/fail-closed semantics.
 8. **Zero-trust executor mode:** Introduce a secure execution mode with host-side secret injection proxies and sanitized runtime mounts for backend isolation.
@@ -185,5 +185,3 @@ A realistic framing is that GitHub may implement substantial overlap, and in som
 - Prefect: https://github.com/PrefectHQ/prefect
 - Open Policy Agent: https://github.com/open-policy-agent/opa
 - Langfuse: https://github.com/langfuse/langfuse
-- OpenClaw discussion (tirith): https://github.com/openclaw/openclaw/discussions/10317
-- OpenClaw PR (zero-trust secure gateway): https://github.com/openclaw/openclaw/pull/9271

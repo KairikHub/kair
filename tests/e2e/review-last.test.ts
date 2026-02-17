@@ -421,7 +421,7 @@ describe("e2e: review surface", () => {
 
       const resumeDefault = runCli(["resume"], env);
       expect(resumeDefault.status).not.toBe(0);
-      expect(resumeDefault.stderr).toContain("Resume is not supported for OpenClaw runner yet.");
+      expect(resumeDefault.stderr).toContain("Resume is not supported for the native runner yet.");
 
       const firstAfterDefault = loadContract(tmp.dataDir, firstId);
       const secondAfterDefault = loadContract(tmp.dataDir, secondId);
@@ -441,7 +441,7 @@ describe("e2e: review surface", () => {
 
       const resumeLast = runCli(["resume", "--last"], env);
       expect(resumeLast.status).not.toBe(0);
-      expect(resumeLast.stderr).toContain("Resume is not supported for OpenClaw runner yet.");
+      expect(resumeLast.stderr).toContain("Resume is not supported for the native runner yet.");
 
       const thirdAfterLast = loadContract(tmp.dataDir, thirdId);
       expect(thirdAfterLast.current_state).toBe("APPROVED");

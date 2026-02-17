@@ -7,7 +7,7 @@ import { now } from "../time";
 import { fail } from "../errors";
 import { enforceControls } from "./controls";
 import { recordHistory, transition } from "./history";
-import { runWithOpenClaw } from "../runner/openclaw_runner";
+import { runWithNativeRunner } from "../runner/native_runner";
 import type { ExecutionRequest, RunnerResult } from "../runner/types";
 import { appendStreamEvent } from "../streaming/events";
 
@@ -210,7 +210,7 @@ export async function runContract(
       evidencePaths: [],
     };
   } else {
-    result = await runWithOpenClaw(executionRequest, {
+    result = await runWithNativeRunner(executionRequest, {
       provider: options.provider,
       model: options.model,
     });
@@ -285,7 +285,7 @@ export async function runContract(
   appendRunArtifacts(contract, { requestPath, resultPath, result });
 
   if (result.status === "completed") {
-    transition(contract, "COMPLETED", `Execution completed via OpenClaw runner. ${result.summary}`);
+    transition(contract, "COMPLETED", `Execution completed via native runner. ${result.summary}`);
     appendStreamEvent({
       contractId: contract.id,
       phase: "run",
@@ -296,7 +296,7 @@ export async function runContract(
       },
     });
   } else {
-    transition(contract, "FAILED", `Execution failed via OpenClaw runner. Reason: "${failureReason}".`);
+    transition(contract, "FAILED", `Execution failed via native runner. Reason: "${failureReason}".`);
     appendStreamEvent({
       contractId: contract.id,
       phase: "run",
@@ -325,5 +325,5 @@ export async function runContract(
 }
 
 export async function resumeContract(_contract: any) {
-  throw new Error("Resume is not supported for OpenClaw runner yet.");
+  throw new Error("Resume is not supported for the native runner yet.");
 }

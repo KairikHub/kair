@@ -4,7 +4,7 @@ import * as path from "node:path";
 const SERVICE_NAME = "kair";
 
 function getFallbackPath() {
-  return path.join(process.cwd(), ".openclaw-workspace", "auth-fallback.json");
+  return path.join(process.cwd(), ".kair", "auth-fallback.json");
 }
 
 async function loadKeytar() {

@@ -59,7 +59,7 @@ kair <command>
 
 ### Execution and Recovery
 - `kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--with=git] [--pull] [--interactive] [--dry-run] [--debug] [--json]`
-  - Execute the approved contract via the OpenClaw runner.
+  - Execute the approved contract via the native runner.
   - With no contract id, defaults to the most recently updated contract.
   - Requires `PLAN.md`, `RULES.md`, and matching approval artifact `.kair/approvals/<plan_hash>.json` unless `--dry-run`.
   - `--with=git` verifies git repo and enables pull prompt behavior.
@@ -74,7 +74,7 @@ kair <command>
   - Pause a running contract.
   - With no args, defaults to the most recently updated contract.
 - `kair resume [<contract_id>] [--last] [--actor <name>]`
-  - Resume from pause (not currently supported by the OpenClaw runner path).
+  - Resume from pause (not currently supported by the native runner path).
   - With no args, defaults to the most recently updated contract.
 - `kair rewind [<contract_id>] [--last] [--actor <name>] [<reason>]`
   - Append a rewind/supersession event.

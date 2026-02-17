@@ -84,8 +84,8 @@ describe("e2e: plan dpc persistence", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
-            send: "a\n",
+            whenStdoutIncludes: "Plan options [c]ommit [e]dit [p]rompt again: ",
+            send: "c\n",
           },
         ]
       );
@@ -106,16 +106,16 @@ describe("e2e: plan dpc persistence", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
-            send: "r\n",
+            whenStdoutIncludes: "Plan options [c]ommit [e]dit [p]rompt again: ",
+            send: "e\n",
           },
           {
-            whenStdoutIncludes: "Explain changes: ",
+            whenStdoutIncludes: "Describe manual edits for next refine: ",
             send: "rename step A title\n",
           },
           {
             whenStdoutIncludes: "Renamed step A title",
-            send: "a\n",
+            send: "c\n",
           },
         ]
       );

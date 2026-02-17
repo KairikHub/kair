@@ -102,7 +102,7 @@ ${label("Usage:")}
   kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--with=git] [--pull] [--interactive] [--dry-run] [--force] [--debug] [--json]
 
 ${label("Description:")}
-  Execute an approved Contract via the OpenClaw runner.
+  Execute an approved Contract via the native Kair runner.
 
 ${label("Notes:")}
   If <contract_id> is omitted, run targets the most recently updated Contract.
@@ -158,7 +158,7 @@ ${label("Notes:")}
   If <contract_id> is omitted, resume targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
   --actor (alias: --by) records who resumed execution.
-  Resume is not yet supported by the OpenClaw runner path.
+  Resume is not yet supported by the native runner path.
 `);
 }
 

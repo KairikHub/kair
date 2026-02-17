@@ -623,15 +623,44 @@ function resolvePlanContractId(parsed: ParsedTopLevelPlanOptions) {
 }
 
 async function ensurePlanProviderSession(parsed: ParsedTopLevelPlanOptions, allowPrompt: boolean) {
+  const explicit = normalizeProviderName(parsed.providerRaw);
+  if (explicit === "mock" && (process.env.KAIR_TEST_MODE || "").trim() === "1") {
+    process.env.KAIR_LLM_PROVIDER = "mock";
+    return "mock";
+  }
   let provider = resolveProviderFromInput(parsed.providerRaw);
   if (!provider) {
     if (!allowPrompt) {
-      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER, pass --provider, or run `kair login`.");
+      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>.");
     }
     provider = await promptProviderSelection();
     process.env.KAIR_LLM_PROVIDER = provider;
   }
   await ensureProviderSession(provider);
+  return provider;
+}
+
+async function ensureRunProviderSession(params: {
+  providerRaw: string;
+  allowPrompt: boolean;
+  required: boolean;
+}) {
+  let provider = resolveProviderFromInput(params.providerRaw);
+  if (!provider) {
+    if (!params.required) {
+      return "";
+    }
+    if (!params.allowPrompt) {
+      provider = "openai";
+    } else {
+      provider = await promptProviderSelection();
+      process.env.KAIR_LLM_PROVIDER = provider;
+    }
+  }
+  if (params.allowPrompt) {
+    await ensureProviderSession(provider);
+  }
+  process.env.KAIR_LLM_PROVIDER = provider;
   return provider;
 }
 
@@ -1346,7 +1375,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         fail("Missing value for --model.");
       }
       if (pauseAt || pauseAuthority || pauseReason) {
-        fail("Run checkpoint pause options are not supported with the OpenClaw runner.");
+        fail("Run checkpoint pause options are not supported by the native runner.");
       }
       let contractId = "";
       if (positional.length === 0) {
@@ -1359,7 +1388,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         contractId = positional[0];
       }
       const contract = getContract(contractId);
-      const plan = resolveContractPlanForRun(contract);
+      const plan = resolveContractPlanV1(contract);
       const bypassStrictRunGate =
         (process.env.KAIR_TEST_MODE || "").trim() === "1" &&
         (process.env.KAIR_ENFORCE_APPROVAL_GATE || "").trim() !== "1";
@@ -1367,7 +1396,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         ensureRequiredRunFiles();
       }
 
-      if (!dryRun && !bypassStrictRunGate) {
+      if (!dryRun && !bypassStrictRunGate && plan) {
         try {
           validateApprovalArtifact({
             contractId: contract.id,
@@ -1394,12 +1423,21 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
 
       if (interactive) {
+        if (!plan) {
+          fail("Structured plan required for --interactive run; run `kair plan` first.");
+        }
         await promptRunInteractiveConfirmation(plan, options.allowPrompt === true);
       }
 
+      const effectiveProviderRaw = await ensureRunProviderSession({
+        providerRaw,
+        allowPrompt: options.allowPrompt === true,
+        required: !dryRun,
+      });
+
       const runActor = resolveActor("");
       if (!jsonOutput) {
-        console.log("Delegating execution to OpenClaw runner...");
+        console.log("Delegating execution to native Kair runner...");
       }
       appendStreamEvent({
         contractId: contract.id,
@@ -1416,7 +1454,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       let runOutcome;
       try {
         runOutcome = await runContract(contract, {
-          provider: providerRaw || undefined,
+          provider: effectiveProviderRaw || providerRaw || undefined,
           model: modelRaw || undefined,
           force,
           actor: runActor,
@@ -1492,28 +1530,28 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           console.log(`Run request path: ${runOutcome.requestPath}`);
           console.log(`Run result path: ${runOutcome.resultPath}`);
           if (runnerOutputs.commandPath) {
-            console.log(`OpenClaw command: ${runnerOutputs.commandPath}`);
+            console.log(`Runner command: ${runnerOutputs.commandPath}`);
           }
           if (runnerOutputs.effectiveProvider) {
-            console.log(`OpenClaw provider: ${runnerOutputs.effectiveProvider}`);
+            console.log(`Runner provider: ${runnerOutputs.effectiveProvider}`);
           }
           if (runnerOutputs.effectiveModel) {
-            console.log(`OpenClaw model: ${runnerOutputs.effectiveModel}`);
+            console.log(`Runner model: ${runnerOutputs.effectiveModel}`);
           }
-          if (runnerOutputs.openclawStateDir) {
-            console.log(`OpenClaw state dir: ${runnerOutputs.openclawStateDir}`);
+          if (runnerOutputs.stateDir) {
+            console.log(`Runner state dir: ${runnerOutputs.stateDir}`);
           }
-          if (runnerOutputs.openclawConfigPath) {
-            console.log(`OpenClaw config path: ${runnerOutputs.openclawConfigPath}`);
+          if (runnerOutputs.configPath) {
+            console.log(`Runner config path: ${runnerOutputs.configPath}`);
           }
           if (runnerOutputs.stdoutLogPath) {
-            console.log(`OpenClaw stdout log: ${runnerOutputs.stdoutLogPath}`);
+            console.log(`Runner stdout log: ${runnerOutputs.stdoutLogPath}`);
           }
           if (runnerOutputs.stderrLogPath) {
-            console.log(`OpenClaw stderr log: ${runnerOutputs.stderrLogPath}`);
+            console.log(`Runner stderr log: ${runnerOutputs.stderrLogPath}`);
           }
           if (runnerOutputs.parserMode) {
-            console.log(`OpenClaw parser mode: ${runnerOutputs.parserMode}`);
+            console.log(`Runner parser mode: ${runnerOutputs.parserMode}`);
           }
         }
       }

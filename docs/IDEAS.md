@@ -78,7 +78,7 @@ topic: Narrow runner contract where approved governance state is input and emitt
 A:  # Facts / Assumptions
   - CLI is the source of truth for approval and authority transitions.
   - Execution-related commands are explicitly experimental.
-  - OpenClaw is treated as an execution backend, not the governance layer.
+  - native runner is treated as an execution backend, not the governance layer.
   - Multi-runner support needs a boundary that does not leak governance state mutation.
 
 C:  # Constraints

@@ -51,7 +51,7 @@ docker compose up -d --build
 ```
 
 This prepares the CLI container runtime.
-OpenClaw is installed from npm during image build; no git submodule setup is required.
+Kair dependencies are installed from npm during image build.
 
 ## CLI Command Surface
 The current `kair --help` command groups are:
@@ -68,8 +68,8 @@ The current `kair --help` command groups are:
 - Review and inspection:
   - `kair review`, `accept`, `emit`, `status`, `contracts`
 
-## OpenClaw Runner (`kair run`)
-`kair run` delegates execution to the OpenClaw runner adapter and always writes:
+## Native Runner (`kair run`)
+`kair run` delegates execution to the native Kair runner and always writes:
 
 - `artifacts/<contract_id>/run/run-request.json`
 - `artifacts/<contract_id>/run/run-result.json`

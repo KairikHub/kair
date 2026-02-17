@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Current Focus
-- OpenClaw-first execution backend interface and adapter hardening.
+- native runner-first execution backend interface and adapter hardening.
 - CLI-only governance workflow quality and reliability.
 
 ## Demo Definition of Done
@@ -20,9 +20,9 @@ All steps must preserve append-only history and auditability in a Docker-first f
 - Kair remains CLI-first and CLI-only in this repository.
 - External interfaces (if built later) live outside this repo and consume CLI/runtime boundaries.
 
-### OpenClaw Integration
+### native runner Integration
 - Kair is the governance/authority layer.
-- OpenClaw is an execution backend.
+- native runner is an execution backend.
 - Invocation happens during `run` under approved contracts.
 - Output is captured as Kair artifacts and audit history entries.
 
@@ -34,6 +34,6 @@ All steps must preserve append-only history and auditability in a Docker-first f
 
 ## Next
 - Improve audit/readability surfaces in CLI outputs.
-- Harden OpenClaw backend mapping and execution artifact fidelity.
+- Harden native runner backend mapping and execution artifact fidelity.
 - Expand deterministic test coverage for approval/run/rewind paths.
 - Continue tightening local-first, Docker-first developer workflow.

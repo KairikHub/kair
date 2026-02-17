@@ -5,7 +5,7 @@ import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
 
 describe("e2e: run output", () => {
-  test("run --debug prints runner details and artifact paths", () => {
+  test("run --debug prints native runner details and artifact paths", () => {
     const tmp = makeTempRoot();
     const contractId = "run_debug";
     const planJson = JSON.stringify({
@@ -24,7 +24,7 @@ describe("e2e: run output", () => {
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
       KAIR_ACTOR: "e2e-actor",
       KAIR_TEST_MODE: "1",
-      KAIR_OPENAI_API_KEY: "",
+      KAIR_OPENAI_API_KEY: "test-openai-key",
     };
 
     try {
@@ -40,15 +40,12 @@ describe("e2e: run output", () => {
       }
 
       const run = runCli(["run", contractId, "--debug"], env);
-      expect(run.status).not.toBe(0);
-      expect(run.stdout).toContain("Delegating execution to OpenClaw runner...");
+      expect(run.status).toBe(0);
+      expect(run.stdout).toContain("Delegating execution to native Kair runner...");
       expect(run.stdout).toContain("RUN DEBUG");
       expect(run.stdout).toContain("Run request artifact:");
       expect(run.stdout).toContain("Run result artifact:");
-      expect(run.stdout).toContain("Claimed evidence paths: none");
-      expect(run.stdout).toContain("Missing evidence paths: none");
-      expect(run.stdout).toContain("Out-of-scope evidence paths: none");
-      expect(run.stderr).toContain("Missing KAIR_OPENAI_API_KEY");
+      expect(run.stdout).toContain("Run status: completed");
       expect(fs.existsSync(path.join(tmp.artifactsDir, contractId, "run", "run-request.json"))).toBe(
         true
       );
@@ -79,7 +76,7 @@ describe("e2e: run output", () => {
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
       KAIR_ACTOR: "e2e-actor",
       KAIR_TEST_MODE: "1",
-      KAIR_OPENAI_API_KEY: "",
+      KAIR_OPENAI_API_KEY: "test-openai-key",
     };
 
     try {
@@ -95,20 +92,19 @@ describe("e2e: run output", () => {
       }
 
       const run = runCli(["run", contractId, "--json", "--debug"], env);
-      expect(run.status).not.toBe(0);
+      expect(run.status).toBe(0);
       expect(run.stdout).not.toContain("Delegating execution");
       expect(run.stdout).not.toContain("RUN DEBUG");
       const parsed = JSON.parse(run.stdout);
       expect(parsed.contract_id).toBe(contractId);
-      expect(parsed.status).toBe("failed");
+      expect(parsed.status).toBe("completed");
       expect(typeof parsed.summary).toBe("string");
       expect(typeof parsed.request_path).toBe("string");
       expect(typeof parsed.result_path).toBe("string");
-      expect(parsed).toHaveProperty("failure_reason");
+      expect(Array.isArray(parsed.evidence_paths)).toBe(true);
       expect(Array.isArray(parsed.missing_evidence_paths)).toBe(true);
       expect(Array.isArray(parsed.claimed_evidence_paths)).toBe(true);
       expect(Array.isArray(parsed.out_of_scope_claimed_evidence_paths)).toBe(true);
-      expect(run.stderr).toContain("Missing KAIR_OPENAI_API_KEY");
     } finally {
       tmp.cleanup();
     }
@@ -126,7 +122,7 @@ describe("e2e: run output", () => {
       const result = runCli(["run", "--pause-at", "checkpoint_1"], env);
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(
-        "Run checkpoint pause options are not supported with the OpenClaw runner."
+        "Run checkpoint pause options are not supported by the native runner."
       );
     } finally {
       tmp.cleanup();
