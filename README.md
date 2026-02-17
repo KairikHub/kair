@@ -22,6 +22,8 @@ curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/uninstall.sh | sh
+# optional current-shell cleanup:
+unalias kair 2>/dev/null; hash -r
 ```
 
 ### 3) Quick Smoke Test

@@ -7,6 +7,8 @@ SHIM_PATH="$SHIM_DIR/kair"
 
 ALIAS_START="# >>> kair alias >>>"
 ALIAS_END="# <<< kair alias <<<"
+EMBED_ALIAS_START="# >>> kair embedded alias >>>"
+EMBED_ALIAS_END="# <<< kair embedded alias <<<"
 
 TMP_DIR="$(mktemp -d)"
 cleanup() {
@@ -14,23 +16,50 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-remove_alias_block() {
+remove_alias_block_range() {
   RC_FILE="$1"
+  START_MARKER="$2"
+  END_MARKER="$3"
   if [ ! -f "$RC_FILE" ]; then
     return
   fi
-  if ! grep -F "$ALIAS_START" "$RC_FILE" >/dev/null 2>&1; then
+  if ! grep -F "$START_MARKER" "$RC_FILE" >/dev/null 2>&1; then
     return
   fi
 
-  TMP_RC="$TMP_DIR/$(basename "$RC_FILE").updated"
-  awk -v start="$ALIAS_START" -v end="$ALIAS_END" '
+  TMP_RC="$TMP_DIR/$(basename "$RC_FILE").updated.$(date +%s%N)"
+  awk -v start="$START_MARKER" -v end="$END_MARKER" '
     $0 == start { inblock=1; next }
     $0 == end { inblock=0; next }
     !inblock { print }
   ' "$RC_FILE" > "$TMP_RC"
   mv "$TMP_RC" "$RC_FILE"
-  printf '[kair-uninstall] removed alias block from %s\n' "$RC_FILE"
+  printf '[kair-uninstall] removed alias block (%s) from %s\n' "$START_MARKER" "$RC_FILE"
+}
+
+remove_direct_alias_lines() {
+  RC_FILE="$1"
+  if [ ! -f "$RC_FILE" ]; then
+    return
+  fi
+  TMP_RC="$TMP_DIR/$(basename "$RC_FILE").direct.$(date +%s%N)"
+  awk '
+    /^alias[[:space:]]+kair=/ { next }
+    { print }
+  ' "$RC_FILE" > "$TMP_RC"
+  if ! cmp -s "$RC_FILE" "$TMP_RC"; then
+    mv "$TMP_RC" "$RC_FILE"
+    printf '[kair-uninstall] removed direct kair alias line(s) from %s\n' "$RC_FILE"
+  else
+    rm -f "$TMP_RC"
+  fi
+}
+
+cleanup_rc_file() {
+  RC_FILE="$1"
+  remove_alias_block_range "$RC_FILE" "$ALIAS_START" "$ALIAS_END"
+  remove_alias_block_range "$RC_FILE" "$EMBED_ALIAS_START" "$EMBED_ALIAS_END"
+  remove_direct_alias_lines "$RC_FILE"
 }
 
 if [ -e "$INSTALL_DIR" ]; then
@@ -51,9 +80,9 @@ if [ -d "$SHIM_DIR" ] && [ -z "$(ls -A "$SHIM_DIR" 2>/dev/null)" ]; then
   rmdir "$SHIM_DIR" >/dev/null 2>&1 || true
 fi
 
-remove_alias_block "$HOME/.zshrc"
-remove_alias_block "$HOME/.bashrc"
-remove_alias_block "$HOME/.profile"
+cleanup_rc_file "$HOME/.zshrc"
+cleanup_rc_file "$HOME/.bashrc"
+cleanup_rc_file "$HOME/.profile"
 
 printf '[kair-uninstall] uninstall complete\n'
-printf '[kair-uninstall] if your shell cached command paths, run: hash -r\n'
+printf '[kair-uninstall] current shell may still have alias/hash cached; run: unalias kair 2>/dev/null; hash -r\n'
