@@ -9,8 +9,9 @@ describe("providers registry", () => {
     expect(normalizeProviderName(undefined)).toBe("");
   });
 
-  test("listProviders includes openai", () => {
+  test("listProviders includes openai and claude", () => {
     expect(listProviders()).toContain("openai");
+    expect(listProviders()).toContain("claude");
   });
 
   test("listProviders includes mock only in test mode", () => {
@@ -33,6 +34,12 @@ describe("providers registry", () => {
   test("getProvider('openai') works", () => {
     const provider = getProvider("openai");
     expect(provider.name).toBe("openai");
+    expect(typeof provider.planJson).toBe("function");
+  });
+
+  test("getProvider('claude') works", () => {
+    const provider = getProvider("claude");
+    expect(provider.name).toBe("claude");
     expect(typeof provider.planJson).toBe("function");
   });
 

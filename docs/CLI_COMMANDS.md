@@ -11,14 +11,29 @@ docker exec -it kair bash
 kair <command>
 ```
 
+## Execution Paths
+
+- Embedded runtime (no host Node/npm required):
+  - `./.kair/bin/kair <command>`
+- Local dev script:
+  - `npm run kair -- <command>`
+- Docker fallback:
+  - `docker compose up -d --build`
+  - `docker exec -it kair kair <command>`
+
 ## Command Groups
 
 ### Contract Creation and Planning
-- `kair contract "<intent>" [--id <contract_id>]`
+- `kair login --provider <openai|claude>`
+  - Browser OAuth login with localhost callback.
+  - Stores tokens in keychain (fallback file in test/dev environments).
+- `kair contract "<intent>" [--id <contract_id>] [--with=git]`
   - Create a contract in `DRAFT`.
   - If `--id` is omitted, kair generates an id from intent.
+  - `--with=git` creates/switches branch `kair-contract/<contract_id>` and logs git receipts.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - Writes `PLAN.md` when persisted.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.
   - `--interactive=false` accepts JSON from positional argument or stdin.
@@ -37,15 +52,22 @@ kair <command>
 - `kair propose [<contract_id>] [--last]`
   - Move a planned contract into approval request state.
   - With no args, defaults to the most recently updated contract.
+  - If in a git repo, pushes `kair-contract/<contract_id>` to origin.
 - `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
   - With no args, defaults to the most recently updated contract.
 
 ### Execution and Recovery
-- `kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--debug] [--json]`
+- `kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--with=git] [--pull] [--interactive] [--dry-run] [--debug] [--json]`
   - Execute the approved contract via the OpenClaw runner.
   - With no contract id, defaults to the most recently updated contract.
+  - Requires `PLAN.md`, `RULES.md`, and matching approval artifact `.kair/approvals/<plan_hash>.json` unless `--dry-run`.
+  - `--with=git` verifies git repo and enables pull prompt behavior.
+  - `--pull` auto-runs git pull before execution.
+  - `--interactive` prompts per plan step before execution.
+  - `--dry-run` skips approval gate and runner execution.
   - Always writes `artifacts/<contract_id>/run/run-request.json` and `artifacts/<contract_id>/run/run-result.json`.
+  - Writes streaming events to `artifacts/<contract_id>/run/stream.jsonl`.
   - `--debug` prints enabled tool grants and run artifact paths.
   - `--json` prints machine-readable output only.
 - `kair pause [<contract_id>] [--last] [--actor <name>]`

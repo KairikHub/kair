@@ -1,0 +1,23 @@
+{
+  "name": "kair",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "kair": "./bin/kair.cjs"
+  },
+  "scripts": {
+    "kair": "tsx src/kair.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "keytar": "^7.9.0",
+    "openclaw": "2026.2.12",
+    "tsx": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-util": "^29.7.0",
+    "ts-jest": "^29.4.6"
+  }
+}

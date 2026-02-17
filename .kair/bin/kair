@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+set -e
+
+ROOT_DIR="$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)"
+OS_NAME="$(uname -s)"
+
+if [ "$OS_NAME" != "Darwin" ]; then
+  echo "kair embedded runtime currently supports macOS only (detected: $OS_NAME)." >&2
+  exit 1
+fi
+
+NODE_BIN="$ROOT_DIR/.kair/runtime/node"
+APP_ENTRY="$ROOT_DIR/.kair/app/bin/kair.cjs"
+
+if [ ! -x "$NODE_BIN" ]; then
+  echo "Missing embedded runtime: $NODE_BIN" >&2
+  echo "Run: ./scripts/package-kair-runtime.sh" >&2
+  exit 1
+fi
+
+if [ ! -f "$APP_ENTRY" ]; then
+  echo "Missing embedded app entry: $APP_ENTRY" >&2
+  echo "Run: ./scripts/package-kair-runtime.sh" >&2
+  exit 1
+fi
+
+exec "$NODE_BIN" "$APP_ENTRY" "$@"

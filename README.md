@@ -10,7 +10,41 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
-## Quick Install (Docker Only)
+## Quick Install (Native)
+
+```bash
+npm install -g .
+```
+
+You can also run locally with:
+
+```bash
+npm run kair -- --help
+```
+
+## No-Install Host Run (Embedded Runtime)
+
+Kair can run from a repo-embedded runtime payload with no host Node/npm install:
+
+```bash
+./.kair/bin/kair --help
+./.kair/bin/kair contract "Embedded runtime flow"
+```
+
+Optional alias:
+
+```bash
+alias kair='./.kair/bin/kair'
+```
+
+Rebuild embedded runtime payload (maintainers):
+
+```bash
+./scripts/package-kair-runtime.sh
+./scripts/verify-kair-manifest.sh
+```
+
+## Optional Docker Runtime
 
 ```bash
 docker compose up -d --build
@@ -23,11 +57,12 @@ OpenClaw is installed from npm during image build; no git submodule setup is req
 The current `kair --help` command groups are:
 
 - Start a workflow:
+  - `kair login` OAuth login for `openai`/`claude`
   - `kair contract` create a new Contract in `DRAFT`
   - `kair plan` generate/refine structured `kair.plan.v1`
   - `kair propose` submit a planned Contract for approval
   - `kair approve` approve a Contract version
-  - `kair run` execute an approved Contract
+  - `kair run` execute a Contract gated by approval artifact
 - Governance and controls:
   - `kair grant`, `pause`, `resume`, `rewind`
 - Review and inspection:
@@ -39,17 +74,20 @@ The current `kair --help` command groups are:
 - `artifacts/<contract_id>/run/run-request.json`
 - `artifacts/<contract_id>/run/run-result.json`
 
-Required environment:
-
-```bash
-export KAIR_OPENAI_API_KEY=your_key_here
-```
+Auth:
+- Preferred: `kair login --provider openai` or `kair login --provider claude`
+- Fallback: env vars (`KAIR_OPENAI_API_KEY`, `KAIR_CLAUDE_API_KEY`)
 
 Optional selection:
 
 - `kair run <id> --provider <name> --model <name>`
 
-Tool grants (run-time gated):
+Run prerequisites:
+- `PLAN.md`
+- `RULES.md` (may be empty)
+- Approval artifact `.kair/approvals/<plan_hash>.json` unless `--dry-run`
+
+Tool grants (still run-time gated):
 
 - `local:read` enables `fs_read`
 - `local:write` enables `fs_write`
@@ -63,7 +101,7 @@ kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write h
 kair propose --last
 kair approve --last --actor <name>
 kair grant --last local:write --actor <name>
-kair run --last --debug
+kair run --last --with=git --debug
 ```
 
 Manual test checklist:

@@ -1,0 +1,21 @@
+name: kair-embedded-runtime-smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build embedded runtime package
+        run: ./scripts/package-kair-runtime.sh
+
+      - name: Launcher smoke
+        run: ./scripts/smoke-kair-embedded.sh
+
+      - name: Verify manifest
+        run: ./scripts/verify-kair-manifest.sh

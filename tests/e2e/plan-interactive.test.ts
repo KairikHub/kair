@@ -100,14 +100,14 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
-            send: "a\n",
+            whenStdoutIncludes: "Plan options [c]ommit [e]dit [p]rompt again: ",
+            send: "c\n",
           },
         ]
       );
       expect(plan.status).toBe(0);
       expect(plan.stdout).toContain("Preview current plan");
-      expect(plan.stdout).toContain("Plan options [a]ccept [r]efine [c]ancel: ");
+      expect(plan.stdout).toContain("Plan options [c]ommit [e]dit [p]rompt again: ");
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
@@ -152,16 +152,16 @@ describe("e2e: interactive plan", () => {
             send: "r\n",
           },
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
-            send: "r\n",
+            whenStdoutIncludes: "Plan options [c]ommit [e]dit [p]rompt again: ",
+            send: "e\n",
           },
           {
-            whenStdoutIncludes: "Explain changes: ",
+            whenStdoutIncludes: "Describe manual edits for next refine: ",
             send: "Add safety gate\n",
           },
           {
             whenStdoutIncludes: "add-safety-gate",
-            send: "a\n",
+            send: "c\n",
           },
         ]
       );
@@ -265,26 +265,26 @@ describe("e2e: interactive plan", () => {
         env,
         [
           {
-            whenStdoutIncludes: "Plan options [a]ccept [r]efine [c]ancel: ",
-            send: "r\n",
+            whenStdoutIncludes: "Plan options [c]ommit [e]dit [p]rompt again: ",
+            send: "e\n",
           },
           {
-            whenStdoutIncludes: "Explain changes: ",
+            whenStdoutIncludes: "Describe manual edits for next refine: ",
             send: "rename step A title\n",
           },
           {
             whenStdoutIncludes: "Renamed step A title",
-            send: "a\n",
+            send: "c\n",
           },
         ]
       );
       expect(plan.status).toBe(0);
       expect(plan.stdout).toContain("Preview current plan");
-      expect(plan.stdout).toContain("Plan options [a]ccept [r]efine [c]ancel: ");
-      expect(plan.stdout).toContain("Explain changes: ");
+      expect(plan.stdout).toContain("Plan options [c]ommit [e]dit [p]rompt again: ");
+      expect(plan.stdout).toContain("Describe manual edits for next refine: ");
       expect((plan.stdout.match(/Preview current plan/g) || []).length).toBeGreaterThanOrEqual(2);
       expect(
-        (plan.stdout.match(/Plan options \[a\]ccept \[r\]efine \[c\]ancel: /g) || []).length
+        (plan.stdout.match(/Plan options \[c\]ommit \[e\]dit \[p\]rompt again: /g) || []).length
       ).toBeGreaterThanOrEqual(2);
 
       const after = readContractFromStore(tmp.dataDir, contractId);
