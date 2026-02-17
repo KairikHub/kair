@@ -28,6 +28,9 @@ ${label("review and inspection")}
   status                  Show full Contract status.
   contracts               List known Contracts.
 
+${label("maintenance")}
+  self-update             Update local kair install using hosted installer.
+
 See "kair contract --help" for contract creation usage.
 See "kair grant --help" for grant usage.`);
 }
@@ -126,6 +129,21 @@ ${label("Usage:")}
 
 ${label("Description:")}
   Start OAuth browser login and securely store provider token in OS keychain.
+`);
+}
+
+export function printSelfUpdateHelp() {
+  console.log(`${title("Kair Self-Update Command")}
+
+${label("Usage:")}
+  kair self-update
+
+${label("Description:")}
+  Re-run the hosted installer to update local kair runtime and launcher.
+
+${label("Notes:")}
+  Uses install script from https://raw.githubusercontent.com/KairikHub/kair/main/install.sh
+  Override command for advanced/test usage with KAIR_SELF_UPDATE_CMD.
 `);
 }
 
