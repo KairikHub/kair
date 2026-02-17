@@ -1156,10 +1156,15 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           continue;
         }
       }
-      if (!providerRaw) {
-        fail("Missing --provider. Usage: kair login --provider <openai|claude>");
+      let provider = resolveProviderFromInput(providerRaw);
+      if (!provider) {
+        if (options.allowPrompt === true) {
+          provider = await promptProviderSelection();
+        } else {
+          fail("Missing provider. Pass --provider <openai|claude> or set KAIR_LLM_PROVIDER.");
+        }
       }
-      const provider = await loginProvider(providerRaw);
+      provider = await loginProvider(provider);
       console.log(`OAuth login complete for provider: ${provider}`);
       break;
     }

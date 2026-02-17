@@ -76,9 +76,9 @@
     {"path": ".kair/app/package.json", "sha256": "b61050974adc50064720ae3d3f6a0c90809977e20c8f87bf1428d950c75522e4", "size": 602},
     {"path": ".kair/app/src/cli/argv.ts", "sha256": "e2d35ebce59b08576fa4bc9ac04c3efa083c6e5250c03a8ac04095b8e96157c4", "size": 3527},
     {"path": ".kair/app/src/cli/errors.ts", "sha256": "524765ba7a3f71a7f14bb483d0d409f9a2626a10df1dfbee8976c88aded27d81", "size": 387},
-    {"path": ".kair/app/src/cli/execute.ts", "sha256": "cc90c7fd929d6c7f7e88a080aedd08f56f7dfb10687fed010cfa9bef736fa21f", "size": 60006},
+    {"path": ".kair/app/src/cli/execute.ts", "sha256": "8dff507c1f0624c569e8c25e7ddf362cb3db786cb4742bb65f5efb3d49c01b77", "size": 60192},
     {"path": ".kair/app/src/cli/format.ts", "sha256": "b86b467bcec4cf8851e3468125ccba16b997614c1f5fef8223fcc1bd6c8a8d67", "size": 1427},
-    {"path": ".kair/app/src/cli/help.ts", "sha256": "ed31ba5040f8c30f8f46be6e75ff514c2f7ddaaf05f263da5f6687190cd66da1", "size": 8795},
+    {"path": ".kair/app/src/cli/help.ts", "sha256": "07ee6c587e3321ee97625b9b49687f0283a16cb3cb8f0726cd532c8dd29a2c30", "size": 8915},
     {"path": ".kair/app/src/cli/list.ts", "sha256": "77bf18f0b039920dd05e717cbd30162c04e11d8395dabb094ba1ed968ef7cedb", "size": 629},
     {"path": ".kair/app/src/cli/main.ts", "sha256": "f74307d281d762f1bf5a0729f16a4b8c2f39961b3348186cfac5f2a8e613b9bd", "size": 1040},
     {"path": ".kair/app/src/cli/prompt.ts", "sha256": "914527805bad115c55b8fd21f36a9ab8d9861833f285bdd0c796d8e66a823b84", "size": 1293},
@@ -133,6 +133,6 @@
     {"path": ".kair/app/src/kair.ts", "sha256": "b41b65a0366849aeb39300f24543b21c437288a2e149296b60c924d96ebb8cd2", "size": 158},
     {"path": ".kair/bin/kair", "sha256": "48dd48ae043b2440d4bba4d113e93bef72eb2fa0819f1cd64191c475b6bd109e", "size": 657},
     {"path": ".kair/runtime/node", "sha256": "dd6f3352057e904b0b32b7e74829b82acb33958f20c8feab6c0f781f7d042ebd", "size": 113991760},
-    {"path": ".kair/VERSION", "sha256": "b29358349d46c20f83d5bb7ffe7e1d3f5dbabd57a8d2a2527333ecbf861d940d", "size": 78}
+    {"path": ".kair/VERSION", "sha256": "6c2d290aaeecc3457777b4fec0c21b1a0fd7d6369847e98ccfe67c1a70d9e322", "size": 78}
   ]
 }

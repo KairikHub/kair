@@ -125,10 +125,13 @@ export function printLoginHelp() {
   console.log(`${title("Kair Login Command")}
 
 ${label("Usage:")}
-  kair login --provider <openai|claude>
+  kair login [--provider <openai|claude>]
 
 ${label("Description:")}
   Start OAuth browser login and securely store provider token in OS keychain.
+
+${label("Notes:")}
+  If --provider is omitted, uses KAIR_LLM_PROVIDER if set, otherwise prompts in interactive mode.
 `);
 }
 
