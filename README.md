@@ -10,41 +10,39 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
-## Quick Install (Native Dev)
+## Install Test (No Host Node/npm)
+
+Use the repo-embedded launcher path:
 
 ```bash
-npm install -g .
+./.kair/bin/kair --help
 ```
 
-You can also run locally with:
-
-```bash
-npm run kair -- --help
-```
-
-## Repo-Embedded Launcher (Host Run Without Node/npm After Bootstrap)
-
-Kair can run from a repo-embedded launcher at `./.kair/bin/kair`.
-The launcher requires an embedded Node runtime at `.kair/runtime/node`.
-
-Bootstrap/update the embedded payload (maintainers):
+If `.kair/runtime/node` is not present yet, bootstrap it once:
 
 ```bash
 ./scripts/package-kair-runtime.sh
 ./scripts/verify-kair-manifest.sh
+./.kair/bin/kair --help
 ```
 
-Then run from host:
+Smoke test from any directory inside the repo:
 
 ```bash
-./.kair/bin/kair --help
-./.kair/bin/kair contract "Embedded runtime flow"
+./scripts/smoke-kair-embedded.sh
 ```
 
 Optional alias:
 
 ```bash
 alias kair='./.kair/bin/kair'
+```
+
+## Contributor Dev Paths (Requires Node/npm)
+
+```bash
+npm install -g .
+npm run kair -- --help
 ```
 
 ## Optional Docker Runtime
@@ -100,11 +98,11 @@ Tool grants (still run-time gated):
 Example flow:
 
 ```bash
-kair contract "Write a hello file under artifacts"
-kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'
-kair propose --last
-kair grant --last local:write --actor <name>
-kair run --last --dry-run --debug
+./.kair/bin/kair contract "Write a hello file under artifacts"
+./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'
+./.kair/bin/kair propose --last
+./.kair/bin/kair grant --last local:write --actor <name>
+./.kair/bin/kair run --last --dry-run --debug
 ```
 
 Manual test checklist:
@@ -112,11 +110,11 @@ Manual test checklist:
 1. Set env vars:
    - `KAIR_OPENAI_API_KEY=<your key>`
 2. Run:
-   - `kair contract "Write hello evidence"`
-   - `kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'`
-   - `kair propose --last`
-   - `kair grant --last local:write --actor <name>`
-   - `kair run --last --dry-run --debug`
+   - `./.kair/bin/kair contract "Write hello evidence"`
+   - `./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under artifacts/<contract_id>/run/."}]}'`
+   - `./.kair/bin/kair propose --last`
+   - `./.kair/bin/kair grant --last local:write --actor <name>`
+   - `./.kair/bin/kair run --last --dry-run --debug`
 3. Verify expected evidence files:
    - `artifacts/<contract_id>/run/run-request.json`
    - `artifacts/<contract_id>/run/run-result.json`
