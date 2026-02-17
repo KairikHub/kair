@@ -13,6 +13,59 @@ if [ "${1:-}" = "--verify" ]; then
   VERIFY_ONLY=1
 fi
 
+install_shell_alias() {
+  if [ "$VERIFY_ONLY" -eq 1 ]; then
+    return
+  fi
+  if [ -n "${CI:-}" ]; then
+    echo "[kair-package] CI detected; skipping shell alias install"
+    return
+  fi
+  if [ "${KAIR_INSTALL_ALIAS:-1}" = "0" ]; then
+    echo "[kair-package] KAIR_INSTALL_ALIAS=0; skipping shell alias install"
+    return
+  fi
+  if [ ! -d "${HOME:-}" ]; then
+    echo "[kair-package] HOME is not set to a writable directory; skipping alias install"
+    return
+  fi
+
+  SHELL_NAME="$(basename "${SHELL:-}")"
+  case "$SHELL_NAME" in
+    zsh)
+      RC_FILE="$HOME/.zshrc"
+      ;;
+    bash)
+      RC_FILE="$HOME/.bashrc"
+      ;;
+    *)
+      RC_FILE="$HOME/.profile"
+      ;;
+  esac
+
+  ALIAS_START="# >>> kair embedded alias >>>"
+  ALIAS_LINE="alias kair='$ROOT_DIR/.kair/bin/kair'"
+  ALIAS_END="# <<< kair embedded alias <<<"
+
+  mkdir -p "$(dirname "$RC_FILE")"
+  touch "$RC_FILE"
+
+  if grep -F "$ALIAS_START" "$RC_FILE" >/dev/null 2>&1; then
+    echo "[kair-package] shell alias already configured in $RC_FILE"
+    return
+  fi
+
+  {
+    echo ""
+    echo "$ALIAS_START"
+    echo "$ALIAS_LINE"
+    echo "$ALIAS_END"
+  } >> "$RC_FILE"
+
+  echo "[kair-package] installed shell alias in $RC_FILE"
+  echo "[kair-package] open a new shell or run: source $RC_FILE"
+}
+
 if [ "$VERIFY_ONLY" -eq 0 ]; then
   rm -rf "$APP_DIR" "$RUNTIME_DIR" "$TMP_DIR"
   mkdir -p "$APP_DIR/bin" "$APP_DIR/src" "$RUNTIME_DIR" "$TMP_DIR" "$BUILD_DIR"
@@ -142,5 +195,6 @@ if [ "$VERIFY_ONLY" -eq 1 ]; then
   fi
 else
   echo "[kair-package] package complete"
+  install_shell_alias
   echo "[kair-package] run smoke test: ./.kair/bin/kair --help"
 fi

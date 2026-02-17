@@ -26,16 +26,22 @@ If `.kair/runtime/node` is not present yet, bootstrap it once:
 ./.kair/bin/kair --help
 ```
 
+`package-kair-runtime.sh` also installs a shell alias:
+
+```bash
+alias kair='/absolute/path/to/repo/.kair/bin/kair'
+```
+
+The script writes this to your shell rc file (`~/.zshrc`, `~/.bashrc`, or `~/.profile`), skips alias install in CI, and supports opt-out with:
+
+```bash
+KAIR_INSTALL_ALIAS=0 ./scripts/package-kair-runtime.sh
+```
+
 Smoke test from any directory inside the repo:
 
 ```bash
 ./scripts/smoke-kair-embedded.sh
-```
-
-Optional alias:
-
-```bash
-alias kair='./.kair/bin/kair'
 ```
 
 ## Contributor Dev Paths (Requires Node/npm)
