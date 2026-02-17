@@ -10,21 +10,30 @@ Kair is a CLI-first control plane for delegated cognition and AI work, built aro
 
 `kair` is the open protocol CLI. Kairik is the company that builds on it.
 
-## Install (No Clone, No Host Node/npm)
+## Quickstart
 
-Install directly:
+### 1) Install (No Clone, No Host Node/npm)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh
 ```
 
-Then run:
+### 2) Uninstall (Clean Remove: Runtime + Shim + Aliases)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/uninstall.sh | sh
+```
+
+### 3) Quick Smoke Test
 
 ```bash
 kair --help
-# fallback: ~/bin/kair --help
-# or: ~/.kair/bin/kair --help
+kair contracts
 ```
+
+Canonical help command is `kair --help` (not `kair help`).
+
+## Installer Details
 
 Installer behavior:
 - downloads the current `.kair` payload
@@ -40,6 +49,14 @@ curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh -o /
 KAIR_INSTALL_ALIAS=0 sh /tmp/kair-install.sh
 KAIR_INSTALL_DIR="$HOME/.kair" sh /tmp/kair-install.sh
 KAIR_SHIM_DIR="$HOME/bin" sh /tmp/kair-install.sh
+```
+
+Uninstaller options:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/uninstall.sh -o /tmp/kair-uninstall.sh
+KAIR_INSTALL_DIR="$HOME/.kair" sh /tmp/kair-uninstall.sh
+KAIR_SHIM_DIR="$HOME/bin" sh /tmp/kair-uninstall.sh
 ```
 
 ## Repo-Embedded Launcher (When Working Inside This Repo)
