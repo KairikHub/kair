@@ -37,7 +37,7 @@ kair <command>
   - `--with=git` creates/switches branch `kair-contract/<contract_id>` and logs git receipts.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
-  - Writes `PLAN.md` when persisted.
+  - Writes `.kair/contracts/<contract_id>/plan/PLAN.md` and `.kair/contracts/<contract_id>/plan/plan_v1.json` when persisted.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.
   - `--interactive=false` accepts JSON from positional argument or stdin.
@@ -65,13 +65,13 @@ kair <command>
 - `kair run [<contract_id>] [--last] [--provider <name>] [--model <name>] [--with=git] [--pull] [--interactive] [--dry-run] [--debug] [--json]`
   - Execute the approved contract via the native runner.
   - With no contract id, defaults to the most recently updated contract.
-  - Requires `PLAN.md`, `RULES.md`, and matching approval artifact `.kair/approvals/<plan_hash>.json` unless `--dry-run`.
+  - Requires `.kair/contracts/<id>/plan/plan_v1.json`, `.kair/contracts/<id>/plan/RULES.md`, and matching approval artifact `.kair/contracts/<id>/approvals/<plan_hash>.json` unless `--dry-run`.
   - `--with=git` verifies git repo and enables pull prompt behavior.
   - `--pull` auto-runs git pull before execution.
   - `--interactive` prompts per plan step before execution.
   - `--dry-run` skips approval gate and runner execution.
-  - Always writes `artifacts/<contract_id>/run/run-request.json` and `artifacts/<contract_id>/run/run-result.json`.
-  - Writes streaming events to `artifacts/<contract_id>/run/stream.jsonl`.
+  - Always writes `.kair/contracts/<contract_id>/artifacts/run/run-request.json` and `.kair/contracts/<contract_id>/artifacts/run/run-result.json`.
+  - Writes streaming events to `.kair/contracts/<contract_id>/artifacts/run/stream.jsonl`.
   - `--debug` prints enabled tool grants and run artifact paths.
   - `--json` prints machine-readable output only.
 - `kair pause [<contract_id>] [--last] [--actor <name>]`
@@ -92,7 +92,7 @@ kair <command>
   - Record explicit acceptance-of-responsibility as an append-only history event (audit trail).
   - Keeps lifecycle state unchanged; this is a governance acknowledgment step after reviewing evidence.
 - `kair emit [<contract_id>] [--last]`
-  - List evidence checklist from `artifacts/<contract_id>/evidence/index.json`.
+  - List evidence checklist from `.kair/contracts/<contract_id>/artifacts/evidence/index.json`.
   - With no args, defaults to the most recently updated contract.
   - `--last` targets the most recently updated contract.
 

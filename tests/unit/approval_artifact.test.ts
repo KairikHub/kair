@@ -17,6 +17,8 @@ describe("approval artifacts", () => {
 
   test("write + validate approval artifact", () => {
     const cwd = fs.mkdtempSync(path.join(process.cwd(), "tmp-approval-"));
+    const previousDataDir = process.env.KAIR_DATA_DIR;
+    process.env.KAIR_DATA_DIR = cwd;
     const plan = { version: "kair.plan.v1", title: "T", steps: [{ id: "a", summary: "A" }] };
     const contractId = "approval_contract";
     try {
@@ -25,14 +27,18 @@ describe("approval artifacts", () => {
         plan,
         approvedBy: "tester",
         source: "manual",
-        cwd,
       });
       expect(fs.existsSync(written.filePath)).toBe(true);
 
-      const validated = validateApprovalArtifact({ contractId, plan, cwd });
+      const validated = validateApprovalArtifact({ contractId, plan });
       expect(validated.expectedPlanHash).toBe(written.planHash);
-      expect(validated.expectedPath).toBe(getApprovalArtifactPathByHash(written.planHash, cwd));
+      expect(validated.expectedPath).toBe(getApprovalArtifactPathByHash(contractId, written.planHash));
     } finally {
+      if (previousDataDir === undefined) {
+        delete process.env.KAIR_DATA_DIR;
+      } else {
+        process.env.KAIR_DATA_DIR = previousDataDir;
+      }
       fs.rmSync(cwd, { recursive: true, force: true });
     }
   });

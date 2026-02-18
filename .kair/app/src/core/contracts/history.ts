@@ -1,5 +1,5 @@
 import { fail } from "../errors";
-import { saveStore } from "../store/contracts_store";
+import { appendContractHistoryEntry, saveStore } from "../store/contracts_store";
 import { now } from "../time";
 import { STATES } from "./constants";
 
@@ -32,6 +32,7 @@ export function recordHistory(contract: any, label: string, message: string, act
     entry.actor = actor;
   }
   contract.history.push(entry);
+  appendContractHistoryEntry(contract.id, entry);
   logAudit(contract.id, label, message, timestamp);
   saveStore();
 }

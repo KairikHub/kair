@@ -61,7 +61,9 @@ Grant List Output (current static set):
 - network:read / network:write
 
 ## Persistence
-- Local JSON store: `data/contracts.json`.
+- Per-contract snapshots: `.kair/contracts/<contract_id>/contract.json`.
+- Lightweight index: `.kair/contracts/index.json`.
+- Append-only history log: `.kair/contracts/<contract_id>/history.jsonl`.
 - Append‑only history is preserved across runs.
 - v0 best practices:
   - Write to a temp file, then rename (atomic write).
@@ -70,7 +72,7 @@ Grant List Output (current static set):
   - Future: file locking for concurrency.
 
 ## Artifacts
-- Written on `run` under `artifacts/<contract_id>/run/`.
+- Written on `run` under `.kair/contracts/<contract_id>/artifacts/run/`.
 - Canonical files:
   - `run-request.json`
   - `run-result.json`
@@ -85,7 +87,7 @@ Grant List Output (current static set):
   - Q = `open_questions`
   - E = `evidence`
   - Plus `topic`, `version`, and `updated_at`.
-- Storage path: `artifacts/<contract_id>/dpc/dpc_v1.json`.
+- Storage path: `.kair/contracts/<contract_id>/dpc/dpc_v1.json`.
 - Current plan generate/refine flows append prompt/plan evidence into DPC so context remains deterministic and replay-friendly across runs.
 - DPC is not narrative prose; it is decision-critical state meant for validation, portability, and auditability.
 - Debug visibility: `kair plan --debug` prints the prompt payload plus the DPC artifact path (and a DPC preview). `--json` mode suppresses this debug output.

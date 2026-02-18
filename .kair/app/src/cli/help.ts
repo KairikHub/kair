@@ -110,7 +110,8 @@ ${label("Description:")}
 ${label("Notes:")}
   If <contract_id> is omitted, run targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
-  Requires PLAN.md, RULES.md, and a valid .kair approval artifact unless --dry-run is used.
+  Requires .kair/contracts/<id>/plan/plan_v1.json, .kair/contracts/<id>/plan/RULES.md,
+  and a valid .kair/contracts/<id>/approvals/<plan_hash>.json unless --dry-run is used.
   --force is only valid when the Contract is in FAILED state.
   --with=git enables git pull prompt/integration.
   --pull runs git pull automatically.

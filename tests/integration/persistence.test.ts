@@ -11,7 +11,7 @@ function resetStore() {
 }
 
 describe("integration: persistence store", () => {
-  test("writes contracts.json and loads it back with required fields", () => {
+  test("writes index.json and loads it back with required fields", () => {
     const tmp = makeTempRoot();
     const previousDataDir = process.env.KAIR_DATA_DIR;
     process.env.KAIR_DATA_DIR = tmp.dataDir;
@@ -21,7 +21,7 @@ describe("integration: persistence store", () => {
       const created = proposeContract("Persist contract state", ["local:read"], "contract_it_1");
       saveStore();
 
-      const dataFile = path.join(tmp.dataDir, "contracts.json");
+      const dataFile = path.join(tmp.dataDir, "index.json");
       expect(fs.existsSync(dataFile)).toBe(true);
 
       resetStore();

@@ -2,7 +2,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { getArtifactsDir } from "../store/paths";
+import {
+  getContractArtifactsDir,
+  getContractPlanJsonPath,
+  getContractPlanMarkdownPath,
+  getContractSnapshotPath,
+  getContractsIndexPath,
+} from "../store/paths";
 import { now } from "../time";
 
 type GitResult = {
@@ -41,7 +47,7 @@ export function ensureGitRepo(cwd = process.cwd()) {
 }
 
 function appendGitReceipt(contractId: string, payload: Record<string, unknown>) {
-  const logPath = path.join(getArtifactsDir(), contractId, "git", "commands.jsonl");
+  const logPath = path.join(getContractArtifactsDir(contractId), "git", "commands.jsonl");
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   fs.appendFileSync(logPath, `${JSON.stringify(payload)}\n`);
   return logPath;
@@ -77,7 +83,19 @@ export function checkoutContractBranch(contractId: string, cwd = process.cwd()) 
 }
 
 export function commitPlanChanges(contractId: string, message: string, cwd = process.cwd()) {
-  const addResult = runAndReceipt(contractId, ["add", "PLAN.md", "data/contracts.json"], cwd);
+  const stageCandidates = [
+    getContractPlanMarkdownPath(contractId),
+    getContractPlanJsonPath(contractId),
+    getContractSnapshotPath(contractId),
+    getContractsIndexPath(),
+  ];
+  const stagePaths = stageCandidates
+    .map((candidate) => path.relative(cwd, candidate))
+    .filter((candidate) => candidate && !candidate.startsWith("..") && !path.isAbsolute(candidate));
+  if (stagePaths.length === 0) {
+    throw new Error("No in-repo contract files were available to stage for commit.");
+  }
+  const addResult = runAndReceipt(contractId, ["add", ...stagePaths], cwd);
   if (addResult.status !== 0) {
     throw new Error(`git add failed: ${addResult.stderr || addResult.stdout}`);
   }

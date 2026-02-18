@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { getArtifactsDir } from "../store/paths";
+import { getContractArtifactsDir } from "../store/paths";
 import { now } from "../time";
 
 export type StreamPhase = "plan" | "run";
@@ -17,7 +17,7 @@ export type StreamEvent = {
 };
 
 export function getStreamLogPath(contractId: string) {
-  return path.join(getArtifactsDir(), contractId, "run", "stream.jsonl");
+  return path.join(getContractArtifactsDir(contractId), "run", "stream.jsonl");
 }
 
 export function appendStreamEvent(params: {

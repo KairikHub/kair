@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import type { Plan } from "../plans/schema";
-import { getArtifactsDir } from "../store/paths";
+import { getContractArtifactsDir } from "../store/paths";
 import { now } from "../time";
 import { fail } from "../errors";
 import { enforceControls } from "./controls";
@@ -174,7 +174,7 @@ export async function runContract(
     message: "Run started.",
   });
 
-  const runDir = path.join(getArtifactsDir(), contract.id, "run");
+  const runDir = path.join(getContractArtifactsDir(contract.id), "run");
   const requestPath = path.join(runDir, "run-request.json");
   const resultPath = path.join(runDir, "run-result.json");
   const executionRequest = buildExecutionRequest(contract, runDir);
@@ -221,7 +221,7 @@ export async function runContract(
   const evidenceClassification = classifyClaimedEvidencePaths(claimedEvidencePaths, runDir);
   let evidenceValidationFailed = false;
   let failureReason: string | null = null;
-  if (result.status === "completed") {
+  if (result.status === "completed" && !options.dryRun) {
     const logsRef = result.logsPath || "run-result.json";
     if (claimedEvidencePaths.length === 0) {
       failureReason = `Runner did not claim any evidence paths. See logs: ${logsRef}.`;

@@ -2,11 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import type { PlanLlmRequestRecord } from "../llm/plan_request_record";
-import { getArtifactsDir } from "../store/paths";
+import { getContractArtifactsDir } from "../store/paths";
 import { now } from "../time";
 
 export function writeArtifact(contract: any, proposalSummary: any) {
-  const dir = path.join(getArtifactsDir(), contract.id);
+  const dir = getContractArtifactsDir(contract.id);
   fs.mkdirSync(dir, { recursive: true });
   const safeTimestamp = now().replace(/[:.]/g, "-");
   const filename = `${safeTimestamp}-run.json`;
@@ -40,7 +40,7 @@ export function writePlanPromptArtifact(record: PlanLlmRequestRecord) {
   }
   const mode = record.mode === "refine" ? "refine" : "generate";
   const safeTimestamp = toSafeTimestamp(record.timestamp);
-  const dir = path.join(getArtifactsDir(), contractId, "prompts");
+  const dir = path.join(getContractArtifactsDir(contractId), "prompts");
   fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, `${safeTimestamp}-plan-${mode}.json`);
   fs.writeFileSync(filePath, JSON.stringify(record, null, 2));

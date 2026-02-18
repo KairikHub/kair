@@ -1,14 +1,14 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { getArtifactsDir } from "../store/paths";
+import { getContractDir } from "../store/paths";
 import { DpcV1 } from "./schema";
 import { parseAndValidateDpcJson } from "./validate";
 
 const DPC_FILENAME = "dpc_v1.json";
 
 export function getDpcDir(contractId: string) {
-  return path.join(getArtifactsDir(), contractId, "dpc");
+  return path.join(getContractDir(contractId), "dpc");
 }
 
 export function getDpcPath(contractId: string) {

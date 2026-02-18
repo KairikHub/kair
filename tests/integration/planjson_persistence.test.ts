@@ -58,17 +58,30 @@ describe("integration: structured plan persistence", () => {
     }
   });
 
-  test("loads legacy contracts.json with string plan and no structured plan", () => {
+  test("loads index entry + contract snapshot", () => {
     const tmp = makeTempRoot();
     const previousDataDir = process.env.KAIR_DATA_DIR;
     process.env.KAIR_DATA_DIR = tmp.dataDir;
 
     try {
       resetStore();
-      const dataFile = path.join(tmp.dataDir, "contracts.json");
-      const legacyPayload = {
+      const dataFile = path.join(tmp.dataDir, "index.json");
+      const indexPayload = {
         nextId: 2,
         contracts: [
+          {
+            id: "legacy_contract",
+            current_state: "PLANNED",
+            updated_at: "2026-02-10T00:00:00.000Z",
+            active_version: null,
+          },
+        ],
+      };
+      fs.writeFileSync(dataFile, JSON.stringify(indexPayload, null, 2));
+      fs.mkdirSync(path.join(tmp.dataDir, "legacy_contract"), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmp.dataDir, "legacy_contract", "contract.json"),
+        JSON.stringify(
           {
             id: "legacy_contract",
             intent: "Legacy contract",
@@ -88,9 +101,10 @@ describe("integration: structured plan persistence", () => {
               updated_at: "2026-02-10T00:00:00.000Z",
             },
           },
-        ],
-      };
-      fs.writeFileSync(dataFile, JSON.stringify(legacyPayload, null, 2));
+          null,
+          2
+        )
+      );
 
       expect(() => loadStore()).not.toThrow();
       const loaded = contractStore.contracts.get("legacy_contract");

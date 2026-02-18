@@ -87,7 +87,7 @@ function renderEvidenceChecklist(contract: any, evidenceItems: EvidenceItem[]) {
   return evidenceItems.map(
     (item) =>
       `${style("[ ]", COLORS.green)} ${item.type} - ${item.label} (${style(
-        `artifacts/${contract.id}/evidence/${item.path}`,
+        `.kair/contracts/${contract.id}/artifacts/evidence/${item.path}`,
         COLORS.gray
       )})`
   );

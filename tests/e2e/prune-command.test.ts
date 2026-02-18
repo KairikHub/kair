@@ -5,7 +5,7 @@ import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
 
 function readStore(dataDir: string) {
-  const storePath = path.join(dataDir, "contracts.json");
+  const storePath = path.join(dataDir, "index.json");
   const raw = fs.readFileSync(storePath, "utf8");
   return JSON.parse(raw);
 }

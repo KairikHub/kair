@@ -1,8 +1,14 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 
 import { fail } from "../errors";
 import type { Plan } from "../plans/schema";
-import { getDataDir, getDataFile } from "./paths";
+import {
+  getContractHistoryPath,
+  getContractSnapshotPath,
+  getContractsIndexPath,
+  getContractsRoot,
+} from "./paths";
 
 export type ContractRecord = {
   id: string;
@@ -27,15 +33,65 @@ export type ContractRecord = {
   [key: string]: any;
 };
 
+type ContractIndexEntry = {
+  id: string;
+  current_state: string;
+  updated_at: string;
+  active_version: number | null;
+  intent_preview?: string;
+};
+
 export const contractStore = {
   contracts: new Map<string, ContractRecord>(),
   nextId: 1,
 };
 
+function normalizeContract(raw: any): ContractRecord | null {
+  if (!raw || !raw.id) {
+    return null;
+  }
+  const normalized = raw as ContractRecord;
+  if (!normalized.plan_v1 && normalized.planJson) {
+    normalized.plan_v1 = normalized.planJson;
+  }
+  if (!normalized.planJson && normalized.plan_v1) {
+    normalized.planJson = normalized.plan_v1;
+  }
+  if (!Array.isArray(normalized.history)) {
+    normalized.history = [];
+  }
+  if (!Array.isArray(normalized.approvals)) {
+    normalized.approvals = [];
+  }
+  if (!Array.isArray(normalized.artifacts)) {
+    normalized.artifacts = [];
+  }
+  if (!Array.isArray(normalized.controlsRequired)) {
+    normalized.controlsRequired = [];
+  }
+  if (!Array.isArray(normalized.controlsApproved)) {
+    normalized.controlsApproved = [];
+  }
+  if (!Array.isArray(normalized.versions)) {
+    normalized.versions = [];
+  }
+  return normalized;
+}
+
+function buildIndexEntry(contract: ContractRecord): ContractIndexEntry {
+  return {
+    id: contract.id,
+    current_state: contract.current_state,
+    updated_at: String(contract?.timestamps?.updated_at || ""),
+    active_version: contract.activeVersion ?? null,
+    intent_preview: String(contract.intent || "").slice(0, 160),
+  };
+}
+
 export function loadStore() {
-  const dataFile = getDataFile();
+  const indexPath = getContractsIndexPath();
   try {
-    const raw = fs.readFileSync(dataFile, "utf8");
+    const raw = fs.readFileSync(indexPath, "utf8");
     if (!raw.trim()) {
       return;
     }
@@ -44,16 +100,19 @@ export function loadStore() {
       return;
     }
     contractStore.contracts.clear();
-    for (const contract of parsed.contracts) {
-      if (contract && contract.id) {
-        const normalized = contract as ContractRecord;
-        if (!normalized.plan_v1 && normalized.planJson) {
-          normalized.plan_v1 = normalized.planJson;
+    for (const entry of parsed.contracts as ContractIndexEntry[]) {
+      const snapshotPath = getContractSnapshotPath(entry.id);
+      try {
+        const snapshotRaw = fs.readFileSync(snapshotPath, "utf8");
+        const contract = normalizeContract(JSON.parse(snapshotRaw));
+        if (contract) {
+          contractStore.contracts.set(contract.id, contract);
         }
-        if (!normalized.planJson && normalized.plan_v1) {
-          normalized.planJson = normalized.plan_v1;
+      } catch (error: any) {
+        if (error && error.code === "ENOENT") {
+          continue;
         }
-        contractStore.contracts.set(contract.id, normalized);
+        throw error;
       }
     }
     contractStore.nextId = Number(parsed.nextId) || contractStore.contracts.size + 1;
@@ -66,14 +125,27 @@ export function loadStore() {
 }
 
 export function saveStore() {
-  const dataDir = getDataDir();
-  const dataFile = getDataFile();
-  fs.mkdirSync(dataDir, { recursive: true });
+  const contractsRoot = getContractsRoot();
+  const indexPath = getContractsIndexPath();
+  fs.mkdirSync(contractsRoot, { recursive: true });
+
+  for (const contract of contractStore.contracts.values()) {
+    const snapshotPath = getContractSnapshotPath(contract.id);
+    fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
+    fs.writeFileSync(snapshotPath, JSON.stringify(contract, null, 2));
+  }
+
   const payload = {
     nextId: contractStore.nextId,
-    contracts: [...contractStore.contracts.values()],
+    contracts: [...contractStore.contracts.values()].map(buildIndexEntry),
   };
-  fs.writeFileSync(dataFile, JSON.stringify(payload, null, 2));
+  fs.writeFileSync(indexPath, JSON.stringify(payload, null, 2));
+}
+
+export function appendContractHistoryEntry(contractId: string, entry: any) {
+  const historyPath = getContractHistoryPath(contractId);
+  fs.mkdirSync(path.dirname(historyPath), { recursive: true });
+  fs.appendFileSync(historyPath, `${JSON.stringify(entry)}\n`);
 }
 
 export function getContract(id: string): ContractRecord {

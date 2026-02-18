@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { getArtifactsDir } from "../store/paths";
+import { getContractArtifactsDir } from "../store/paths";
 import { now } from "../time";
 
 export type EvidenceType =
@@ -23,7 +23,7 @@ export type EvidenceItem = {
 };
 
 export function getEvidenceDir(contractId: string) {
-  return path.join(getArtifactsDir(), contractId, "evidence");
+  return path.join(getContractArtifactsDir(contractId), "evidence");
 }
 
 export function getEvidenceIndexPath(contractId: string) {

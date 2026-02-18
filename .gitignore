@@ -1,6 +1,4 @@
 node_modules/
-artifacts/
-data/
 .openclaw/
 .openclaw-workspace/
 .env

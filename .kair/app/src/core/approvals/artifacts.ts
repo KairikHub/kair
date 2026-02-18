@@ -1,21 +1,21 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { getDataFile } from "../store/paths";
+import { getContractApprovalsDir, getContractPlanJsonPath } from "../store/paths";
 import { computePlanHash } from "./hash";
 import { APPROVAL_VERSION, ApprovalArtifact } from "./schema";
 
-export function getApprovalsDir(cwd = process.cwd()) {
-  return path.join(cwd, ".kair", "approvals");
+export function getApprovalsDir(contractId: string) {
+  return getContractApprovalsDir(contractId);
 }
 
-export function getApprovalArtifactPathByHash(planHash: string, cwd = process.cwd()) {
+export function getApprovalArtifactPathByHash(contractId: string, planHash: string) {
   const name = String(planHash || "").trim();
-  return path.join(getApprovalsDir(cwd), `${name}.json`);
+  return path.join(getApprovalsDir(contractId), `${name}.json`);
 }
 
 export function getPlanRef(contractId: string) {
-  return `${getDataFile()}#/contracts[id=${contractId}]/plan_v1`;
+  return `${getContractPlanJsonPath(contractId)}#/`;
 }
 
 function parseArtifact(raw: string, filePath: string): ApprovalArtifact {
@@ -59,7 +59,6 @@ export function writeApprovalArtifact(params: {
   approvedBy: string;
   source: "manual" | "ci";
   notes?: string;
-  cwd?: string;
 }) {
   const planHash = computePlanHash(params.plan);
   const artifact: ApprovalArtifact = {
@@ -72,7 +71,7 @@ export function writeApprovalArtifact(params: {
     source: params.source,
     ...(params.notes ? { notes: params.notes } : {}),
   };
-  const filePath = getApprovalArtifactPathByHash(planHash, params.cwd);
+  const filePath = getApprovalArtifactPathByHash(params.contractId, planHash);
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(artifact, null, 2));
   return { planHash, filePath, artifact };
@@ -81,10 +80,9 @@ export function writeApprovalArtifact(params: {
 export function validateApprovalArtifact(params: {
   contractId: string;
   plan: unknown;
-  cwd?: string;
 }) {
   const expectedPlanHash = computePlanHash(params.plan);
-  const expectedPath = getApprovalArtifactPathByHash(expectedPlanHash, params.cwd);
+  const expectedPath = getApprovalArtifactPathByHash(params.contractId, expectedPlanHash);
   if (!fs.existsSync(expectedPath)) {
     throw new Error(
       [

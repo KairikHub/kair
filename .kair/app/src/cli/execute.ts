@@ -26,7 +26,13 @@ import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
 import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
-import { getArtifactsDir, getDataFile } from "../core/store/paths";
+import {
+  getArtifactsDir,
+  getContractsRoot,
+  getContractPlanJsonPath,
+  getContractRulesPath,
+  getDataFile,
+} from "../core/store/paths";
 import { now } from "../core/time";
 import { writePlanMarkdown } from "../core/plans/markdown";
 import { appendStreamEvent } from "../core/streaming/events";
@@ -183,7 +189,7 @@ function persistStructuredPlan(params: {
   message: string;
 }) {
   const contract = setPlanJson(params.contractId, params.plan, params.actor, params.message);
-  writePlanMarkdown(params.plan);
+  writePlanMarkdown(params.contractId, params.plan);
   if (contract.current_state !== "PLANNED") {
     transition(
       contract,
@@ -196,7 +202,7 @@ function persistStructuredPlan(params: {
     contractId: params.contractId,
     phase: "plan",
     event: "summary",
-    message: "Plan persisted and PLAN.md written.",
+    message: "Plan persisted and contract-local PLAN.md written.",
   });
 }
 
@@ -261,6 +267,11 @@ async function promptPruneConfirmation() {
 function resetContractsAndArtifacts() {
   contractStore.contracts.clear();
   contractStore.nextId = 1;
+  const contractsRoot = getContractsRoot();
+  fs.mkdirSync(contractsRoot, { recursive: true });
+  for (const entry of fs.readdirSync(contractsRoot)) {
+    fs.rmSync(path.join(contractsRoot, entry), { recursive: true, force: true });
+  }
   const dataFile = getDataFile();
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
   fs.writeFileSync(
@@ -274,12 +285,7 @@ function resetContractsAndArtifacts() {
       2
     )
   );
-  const artifactsDir = getArtifactsDir();
-  fs.mkdirSync(artifactsDir, { recursive: true });
-  for (const entry of fs.readdirSync(artifactsDir)) {
-    fs.rmSync(path.join(artifactsDir, entry), { recursive: true, force: true });
-  }
-  return { dataFile, artifactsDir };
+  return { dataFile, artifactsDir: getArtifactsDir() };
 }
 
 function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
@@ -674,11 +680,14 @@ function resolveContractPlanForRun(contract: any): Plan {
   return plan;
 }
 
-function ensureRequiredRunFiles() {
-  const requiredFiles = ["PLAN.md", "RULES.md"];
-  for (const file of requiredFiles) {
-    if (!fs.existsSync(path.join(process.cwd(), file))) {
-      fail(`Missing required file: ${file}.`);
+function ensureRequiredRunFiles(contractId: string) {
+  const requiredPaths = [
+    { label: "plan_v1.json", filePath: getContractPlanJsonPath(contractId) },
+    { label: "RULES.md", filePath: getContractRulesPath(contractId) },
+  ];
+  for (const requiredPath of requiredPaths) {
+    if (!fs.existsSync(requiredPath.filePath)) {
+      fail(`Missing required file: ${requiredPath.filePath} (${requiredPath.label}).`);
     }
   }
 }
@@ -1431,7 +1440,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         (process.env.KAIR_TEST_MODE || "").trim() === "1" &&
         (process.env.KAIR_ENFORCE_APPROVAL_GATE || "").trim() !== "1";
       if (!bypassStrictRunGate) {
-        ensureRequiredRunFiles();
+        ensureRequiredRunFiles(contract.id);
       }
 
       if (!dryRun && !bypassStrictRunGate && plan) {

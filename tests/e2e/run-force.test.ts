@@ -5,11 +5,10 @@ import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
 
 function readContractFromStore(dataDir: string, contractId: string) {
-  const storePath = path.join(dataDir, "contracts.json");
-  const raw = fs.readFileSync(storePath, "utf8");
-  const parsed = JSON.parse(raw);
-  const contract = (parsed.contracts || []).find((item: any) => item.id === contractId);
-  return { contract, parsed };
+  const contractPath = path.join(dataDir, contractId, "contract.json");
+  const raw = fs.readFileSync(contractPath, "utf8");
+  const contract = JSON.parse(raw);
+  return { contract, parsed: { contract } };
 }
 
 function prepareApprovedContract(params: {

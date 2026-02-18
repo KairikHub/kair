@@ -43,7 +43,7 @@ dpc_version: 0.1
 topic: Minimal receipt schema for emitted evidence that is stable enough for review and replay tooling
 
 A:  # Facts / Assumptions
-  - `kair emit` currently lists checklist items from `artifacts/<contract_id>/evidence/index.json`.
+  - `kair emit` currently lists checklist items from `.kair/contracts/<contract_id>/artifacts/evidence/index.json`.
   - Evidence formats are explicitly experimental and may change.
   - Cross-run comparison needs a stable envelope even if payload formats differ.
   - Local artifact persistence already exists and is append-only friendly.

@@ -20,7 +20,7 @@ kair review demo_review
 ```
 
 Expected highlights:
-- Run artifacts are created under `artifacts/demo_review/run/` (`run-request.json`, `run-result.json`).
+- Run artifacts are created under `.kair/contracts/demo_review/artifacts/run/` (`run-request.json`, `run-result.json`).
 - Review output includes run artifact pointers.
 - Decision action lines are present in review output.
 - After accept, history includes `Accepted responsibility...`.

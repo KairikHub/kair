@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { getContractPlanMarkdownPath } from "../store/paths";
 import type { Plan } from "./schema";
 
 export function planToMarkdown(plan: Plan) {
@@ -16,8 +17,9 @@ export function planToMarkdown(plan: Plan) {
   return `${lines.join("\n").trim()}\n`;
 }
 
-export function writePlanMarkdown(plan: Plan, cwd = process.cwd()) {
-  const filePath = path.join(cwd, "PLAN.md");
+export function writePlanMarkdown(contractId: string, plan: Plan) {
+  const filePath = getContractPlanMarkdownPath(contractId);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, planToMarkdown(plan));
   return filePath;
 }

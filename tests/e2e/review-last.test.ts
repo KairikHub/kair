@@ -5,10 +5,9 @@ import { runCli } from "../helpers/cli";
 import { makeTempRoot } from "../helpers/tmp";
 
 function loadContract(dataDir: string, contractId: string) {
-  const storePath = path.join(dataDir, "contracts.json");
-  const raw = fs.readFileSync(storePath, "utf8");
-  const parsed = JSON.parse(raw);
-  return (parsed.contracts || []).find((item: any) => item.id === contractId);
+  const contractPath = path.join(dataDir, contractId, "contract.json");
+  const raw = fs.readFileSync(contractPath, "utf8");
+  return JSON.parse(raw);
 }
 
 describe("e2e: review surface", () => {
