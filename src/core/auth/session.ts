@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 
 import { getProviderToken, setProviderToken } from "./keychain";
 import { runBrowserOAuth } from "./oauth";
+import { getDefaultProvider, setDefaultProvider } from "../store/config";
 
 export type SupportedProvider = "openai" | "claude";
 
@@ -18,13 +19,14 @@ export async function promptProviderSelection() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     while (true) {
-      const answer = (await rl.question("Select provider: [A] OpenAI or [B] Claude: "))
+      const answerRaw = (await rl.question("Select provider: [A] OpenAI or [B] Claude: "))
         .trim()
         .toLowerCase();
-      if (answer === "a" || answer === "openai") {
+      const first = answerRaw[0] || "";
+      if (first === "a" || answerRaw === "openai") {
         return "openai" as SupportedProvider;
       }
-      if (answer === "b" || answer === "claude") {
+      if (first === "b" || answerRaw === "claude") {
         return "claude" as SupportedProvider;
       }
       console.log("Choose A/OpenAI or B/Claude.");
@@ -40,6 +42,33 @@ export function resolveProviderFromInput(providerRaw: string): SupportedProvider
     return direct;
   }
   return toSupportedProvider(process.env.KAIR_LLM_PROVIDER || "");
+}
+
+export function resolveDefaultProvider(): SupportedProvider | null {
+  return toSupportedProvider(getDefaultProvider() || "");
+}
+
+export async function isProviderConfigured(provider: SupportedProvider) {
+  const envToken =
+    provider === "openai"
+      ? String(process.env.KAIR_OPENAI_API_KEY || "").trim()
+      : String(process.env.KAIR_CLAUDE_API_KEY || "").trim();
+  if (envToken) {
+    return true;
+  }
+  const storedToken = String((await getProviderToken(provider)) || "").trim();
+  return Boolean(storedToken);
+}
+
+export async function getConfiguredProviders() {
+  const providers: SupportedProvider[] = [];
+  if (await isProviderConfigured("openai")) {
+    providers.push("openai");
+  }
+  if (await isProviderConfigured("claude")) {
+    providers.push("claude");
+  }
+  return providers;
 }
 
 function applyProviderTokenToEnv(provider: SupportedProvider, token: string) {
@@ -138,6 +167,7 @@ export async function loginProvider(providerRaw: string, options: { allowInterac
     throw new Error('Unsupported provider. Use "openai" or "claude".');
   }
   await ensureProviderSession(provider, options);
+  setDefaultProvider(provider);
   process.env.KAIR_LLM_PROVIDER = provider;
   return provider;
 }

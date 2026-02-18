@@ -30,6 +30,7 @@ kair <command>
 - `kair login --provider <openai|claude>`
   - Browser OAuth login with localhost callback.
   - Stores tokens in keychain (fallback file in test/dev environments).
+  - Persists default provider in `.kair/config.json` after successful login.
   - If OAuth client config is missing, opens provider API-key page and prompts for key paste.
 - `kair contract "<intent>" [--id <contract_id>] [--with=git]`
   - Create a contract in `DRAFT`.
@@ -37,6 +38,9 @@ kair <command>
   - `--with=git` creates/switches branch `kair-contract/<contract_id>` and logs git receipts.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
   - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - Provider resolution order: `--provider`, then `KAIR_LLM_PROVIDER`, then `.kair/config.json` default provider (if configured).
+  - If exactly one provider is configured with a key/token, it is auto-selected.
+  - If multiple providers are configured, interactive mode prompts; non-interactive mode requires `--provider` or `KAIR_LLM_PROVIDER`.
   - Writes `.kair/contracts/<contract_id>/plan/PLAN.md` and `.kair/contracts/<contract_id>/plan/plan_v1.json` when persisted.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.

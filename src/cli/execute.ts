@@ -49,10 +49,13 @@ import {
 import { validateApprovalArtifact } from "../core/approvals";
 import {
   ensureProviderSession,
+  getConfiguredProviders,
   loginProvider,
   promptProviderSelection,
+  resolveDefaultProvider,
   resolveProviderFromInput,
 } from "../core/auth/session";
+import { setDefaultProvider } from "../core/store/config";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, requireArgs } from "./argv";
@@ -105,6 +108,8 @@ const INVALID_GRANT_FORMAT_MESSAGE =
   "Invalid grant format. Expected <namespace>:<permission> (example: local:write).";
 const MISSING_PROVIDER_CONFIG_MESSAGE =
   "Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>.";
+const MULTIPLE_PLAN_PROVIDERS_CONFIGURED_MESSAGE =
+  "Multiple providers configured (openai, claude). Pass --provider <name> or set KAIR_LLM_PROVIDER.";
 const DPC_DEFAULT_CONSTRAINTS = [
   "LLM output must be strict JSON-only.",
   "Pretty formatting is produced by the CLI renderer only.",
@@ -637,13 +642,38 @@ async function ensurePlanProviderSession(parsed: ParsedTopLevelPlanOptions, allo
     return "mock";
   }
   let provider = resolveProviderFromInput(parsed.providerRaw);
+  let pickedViaPrompt = false;
   if (!provider) {
-    if (!allowPrompt) {
-      fail("Missing provider configuration. Set KAIR_LLM_PROVIDER or pass --provider <name>.");
+    const defaultProvider = resolveDefaultProvider();
+    if (defaultProvider) {
+      const configured = await getConfiguredProviders();
+      if (configured.includes(defaultProvider)) {
+        provider = defaultProvider;
+      }
     }
-    provider = await promptProviderSelection();
-    process.env.KAIR_LLM_PROVIDER = provider;
   }
+  if (!provider) {
+    const configuredProviders = await getConfiguredProviders();
+    if (configuredProviders.length === 1) {
+      provider = configuredProviders[0];
+    } else if (configuredProviders.length > 1) {
+      if (!allowPrompt) {
+        fail(MULTIPLE_PLAN_PROVIDERS_CONFIGURED_MESSAGE);
+      }
+      provider = await promptProviderSelection();
+      pickedViaPrompt = true;
+    } else {
+      if (!allowPrompt) {
+        fail(MISSING_PROVIDER_CONFIG_MESSAGE);
+      }
+      provider = await promptProviderSelection();
+      pickedViaPrompt = true;
+    }
+  }
+  if (pickedViaPrompt) {
+    setDefaultProvider(provider);
+  }
+  process.env.KAIR_LLM_PROVIDER = provider;
   await ensureProviderSession(provider);
   return provider;
 }
@@ -1165,13 +1195,16 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           continue;
         }
       }
-      let provider = resolveProviderFromInput(providerRaw);
+      const explicitProvider = normalizeProviderName(providerRaw);
+      let provider = explicitProvider;
+      if (!provider && options.allowPrompt === true) {
+        provider = await promptProviderSelection();
+      }
       if (!provider) {
-        if (options.allowPrompt === true) {
-          provider = await promptProviderSelection();
-        } else {
-          fail("Missing provider. Pass --provider <openai|claude> or set KAIR_LLM_PROVIDER.");
-        }
+        provider = resolveProviderFromInput(providerRaw);
+      }
+      if (!provider) {
+        fail("Missing provider. Pass --provider <openai|claude> or set KAIR_LLM_PROVIDER.");
       }
       provider = await loginProvider(provider, {
         allowInteractiveAuth: options.allowPrompt === true,

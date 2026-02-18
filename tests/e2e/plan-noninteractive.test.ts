@@ -197,6 +197,86 @@ describe("e2e: plan non-interactive", () => {
     }
   });
 
+  test("kair plan requiring provider fails clearly when multiple providers are configured in non-interactive mode", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_multi_provider";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+      KAIR_LLM_PROVIDER: "",
+      KAIR_OPENAI_API_KEY: "openai-test-token",
+      KAIR_CLAUDE_API_KEY: "claude-test-token",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "--id", contractId, "Plan multiple provider contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const result = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--instructions",
+          "Add rollback verification step",
+        ],
+        env
+      );
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(
+        "Multiple providers configured (openai, claude). Pass --provider <name> or set KAIR_LLM_PROVIDER."
+      );
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
+  test("kair plan honors explicit --provider even when multiple providers are configured", () => {
+    const tmp = makeTempRoot();
+    const contractId = "plan_noninteractive_explicit_provider";
+    const env = {
+      KAIR_DATA_DIR: tmp.dataDir,
+      KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
+      KAIR_ACTOR: "e2e-actor",
+      KAIR_TEST_MODE: "1",
+      KAIR_OPENAI_API_KEY: "openai-test-token",
+      KAIR_CLAUDE_API_KEY: "claude-test-token",
+    };
+
+    try {
+      const create = runCli(
+        ["contract", "--id", contractId, "Plan explicit provider contract"],
+        env
+      );
+      expect(create.status).toBe(0);
+
+      const result = runCli(
+        [
+          "plan",
+          contractId,
+          "--interactive=false",
+          "--provider",
+          "mock",
+          "--instructions",
+          "Add rollback verification step",
+        ],
+        env
+      );
+      expect(result.status).toBe(0);
+
+      const after = readContractFromStore(tmp.dataDir, contractId);
+      expect(after.contract.plan_v1).toBeDefined();
+      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+    } finally {
+      tmp.cleanup();
+    }
+  });
+
   test("kair plan --json prints only validated JSON output", () => {
     const tmp = makeTempRoot();
     const contractId = "plan_noninteractive_json_output";
