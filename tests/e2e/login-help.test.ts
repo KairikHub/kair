@@ -15,6 +15,7 @@ describe("e2e: login help", () => {
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Login Command");
       expect(result.stdout).toContain("kair login [--provider <openai|claude>]");
+      expect(result.stdout).toContain("kair login list");
     } finally {
       tmp.cleanup();
     }

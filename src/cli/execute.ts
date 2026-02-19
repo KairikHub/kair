@@ -66,6 +66,7 @@ import {
   printContractHelp,
   printEmitHelp,
   printGrantHelp,
+  printLoginsHelp,
   printLoginHelp,
   printPauseHelp,
   printPlanHelp,
@@ -81,7 +82,7 @@ import {
 } from "./help";
 import { promptForProposeInput } from "./prompt";
 import { showContractStatus } from "./status";
-import { listContracts } from "./list";
+import { listContracts, listLogins } from "./list";
 import { renderEvidence, renderReview } from "./review";
 import { renderDpcPretty } from "./render_dpc";
 
@@ -1178,6 +1179,17 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       break;
     }
     case "login": {
+      if (rest[0] === "list") {
+        if (rest.length === 1) {
+          await listLogins();
+          return;
+        }
+        if (hasHelpFlag(rest.slice(1))) {
+          printLoginsHelp();
+          return;
+        }
+        fail("Invalid arguments. Usage: login [--provider <openai|claude>] | login list");
+      }
       if (hasHelpFlag(rest)) {
         printLoginHelp();
         return;
@@ -1881,6 +1893,15 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
       requireArgs(rest, 0, "contracts");
       listContracts();
+      break;
+    }
+    case "logins": {
+      if (hasHelpFlag(rest)) {
+        printLoginsHelp();
+        return;
+      }
+      requireArgs(rest, 0, "logins");
+      await listLogins();
       break;
     }
     case "prune": {

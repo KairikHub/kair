@@ -125,6 +125,7 @@ The current `kair --help` command groups are:
 
 - Start a workflow:
   - `kair login` OAuth login for `openai`/`claude`
+  - `kair logins` list provider login/configuration status (`kair login list` alias)
   - `kair contract` create a new Contract in `DRAFT`
   - `kair plan` generate/refine structured `kair.plan.v1`
   - `kair propose` submit/share a planned Contract
@@ -143,6 +144,7 @@ The current `kair --help` command groups are:
 
 Auth:
 - Preferred: `kair login --provider openai` or `kair login --provider claude`
+- Inspect provider status/default: `kair logins` (or `kair login list`)
 - Fallback: env vars (`KAIR_OPENAI_API_KEY`, `KAIR_CLAUDE_API_KEY`)
 - If OAuth client config is missing, `kair login` opens provider API-key page and prompts to paste key.
 
@@ -199,3 +201,13 @@ Manual test checklist:
 - Roadmap: `docs/ROADMAP.md`
 - Competition analysis: `docs/COMPETITION.md`
 - Changelog: `CHANGELOG.md`
+
+## Troubleshooting Installed Runtime Drift
+If CLI behavior seems stale after updating code:
+
+1. Check active binary:
+   - `which kair`
+2. Check installed embedded runtime SHA:
+   - `cat ~/.kair/VERSION`
+3. Update installed runtime:
+   - `kair self-update`

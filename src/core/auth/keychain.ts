@@ -51,3 +51,19 @@ export async function getProviderToken(provider: string) {
   const store = loadFallbackStore();
   return typeof store[account] === "string" ? store[account] : null;
 }
+
+export async function hasKeychainProviderToken(provider: string) {
+  const account = `provider/${provider}`;
+  const keytar = await loadKeytar();
+  if (!keytar?.getPassword) {
+    return false;
+  }
+  const value = await keytar.getPassword(SERVICE_NAME, account);
+  return Boolean(String(value || "").trim());
+}
+
+export function hasFallbackProviderToken(provider: string) {
+  const account = `provider/${provider}`;
+  const store = loadFallbackStore();
+  return Boolean(typeof store[account] === "string" && String(store[account]).trim());
+}
