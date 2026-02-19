@@ -1,0 +1,31 @@
+name: kair-embedded-runtime-sync-check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sync-check:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build embedded runtime package
+        run: ./scripts/package-kair-runtime.sh
+
+      - name: Verify manifest
+        run: ./scripts/verify-kair-manifest.sh
+
+      - name: Ensure embedded payload is committed
+        run: |
+          CHANGED="$(git status --porcelain -- .kair | awk '{print $2}' | grep -vE '^\.kair/(VERSION|MANIFEST\.json)$' || true)"
+          if [ -n "$CHANGED" ]; then
+            echo "Embedded .kair payload is out of sync with source." >&2
+            echo "Run ./scripts/package-kair-runtime.sh && ./scripts/verify-kair-manifest.sh and commit .kair changes." >&2
+            printf '%s\n' "$CHANGED" >&2
+            exit 1
+          fi

@@ -49,6 +49,7 @@ Installer behavior:
 - installs runtime JS dependencies
 - installs `~/bin/kair` shim for immediate use when `~/bin` is in `PATH`
 - installs persistent shell alias (`kair`) by default
+- installer uses the committed prebuilt `.kair` payload from `main` (not raw `src/`)
 
 Installer options:
 
@@ -82,7 +83,19 @@ If you are working from a repo checkout:
 ./scripts/verify-kair-manifest.sh
 ./.kair/bin/kair --help
 ./scripts/smoke-kair-embedded.sh
+./scripts/check-kair-embed-sync.sh
 ```
+
+## Embedded Runtime Release Checklist
+For changes intended to ship via `curl ... install.sh | sh`:
+
+1. Rebuild embedded payload:
+   - `./scripts/package-kair-runtime.sh`
+2. Verify manifest:
+   - `./scripts/verify-kair-manifest.sh`
+3. Verify runtime SHA stamp:
+   - `./scripts/check-kair-embed-sync.sh`
+4. Commit updated `.kair/*` artifacts.
 
 ## Contract Directory Anatomy
 

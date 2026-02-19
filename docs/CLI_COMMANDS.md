@@ -15,6 +15,7 @@ kair <command>
 
 - No-clone installer (macOS host, no Node/npm):
   - `curl -fsSL https://raw.githubusercontent.com/KairikHub/kair/main/install.sh | sh`
+  - Installs the committed prebuilt `.kair` payload from `main` (not raw `src/`).
   - then use `kair <command>` (or `~/bin/kair <command>` or `~/.kair/bin/kair <command>`)
 - Embedded runtime (no host Node/npm required):
   - `./.kair/bin/kair <command>`
@@ -138,3 +139,11 @@ kair review
 kair accept contract_demo --actor Damien
 kair emit
 ```
+
+## Embedded Payload Maintainer Checklist
+When source changes should be available via installer:
+
+1. `./scripts/package-kair-runtime.sh`
+2. `./scripts/verify-kair-manifest.sh`
+3. `./scripts/check-kair-embed-sync.sh`
+4. Commit updated `.kair/*` payload files.

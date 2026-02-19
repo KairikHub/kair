@@ -1,10 +1,27 @@
 import { createInterface } from "node:readline/promises";
 import { spawn } from "node:child_process";
 
-import { getProviderToken, setProviderToken } from "./keychain";
+import {
+  getProviderToken,
+  hasFallbackProviderToken,
+  hasKeychainProviderToken,
+  setProviderToken,
+} from "./keychain";
 import { runBrowserOAuth } from "./oauth";
+import { getDefaultProvider, setDefaultProvider } from "../store/config";
 
 export type SupportedProvider = "openai" | "claude";
+export type ProviderConfigSource = "env" | "keychain" | "fallback";
+export type ProviderConfigSourceSummary = ProviderConfigSource | "none" | "mixed";
+export type ProviderConfigSnapshot = {
+  provider: SupportedProvider;
+  configured: boolean;
+  sources: ProviderConfigSource[];
+  source: ProviderConfigSourceSummary;
+  default: boolean;
+};
+
+const SUPPORTED_PROVIDERS: SupportedProvider[] = ["openai", "claude"];
 
 function toSupportedProvider(value: string): SupportedProvider | null {
   const normalized = String(value || "").trim().toLowerCase();
@@ -14,18 +31,26 @@ function toSupportedProvider(value: string): SupportedProvider | null {
   return null;
 }
 
+export function resolveProviderSelectionAnswer(answerRaw: string): SupportedProvider | null {
+  const normalized = String(answerRaw || "").trim().toLowerCase();
+  const first = normalized[0] || "";
+  if (first === "a" || normalized === "openai") {
+    return "openai";
+  }
+  if (first === "b" || normalized === "claude") {
+    return "claude";
+  }
+  return null;
+}
+
 export async function promptProviderSelection() {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     while (true) {
-      const answer = (await rl.question("Select provider: [A] OpenAI or [B] Claude: "))
-        .trim()
-        .toLowerCase();
-      if (answer === "a" || answer === "openai") {
-        return "openai" as SupportedProvider;
-      }
-      if (answer === "b" || answer === "claude") {
-        return "claude" as SupportedProvider;
+      const answerRaw = await rl.question("Select provider: [A] OpenAI or [B] Claude: ");
+      const resolved = resolveProviderSelectionAnswer(answerRaw);
+      if (resolved) {
+        return resolved;
       }
       console.log("Choose A/OpenAI or B/Claude.");
     }
@@ -40,6 +65,71 @@ export function resolveProviderFromInput(providerRaw: string): SupportedProvider
     return direct;
   }
   return toSupportedProvider(process.env.KAIR_LLM_PROVIDER || "");
+}
+
+export function resolveDefaultProvider(): SupportedProvider | null {
+  return toSupportedProvider(getDefaultProvider() || "");
+}
+
+function getEnvToken(provider: SupportedProvider) {
+  return provider === "openai"
+    ? String(process.env.KAIR_OPENAI_API_KEY || "").trim()
+    : String(process.env.KAIR_CLAUDE_API_KEY || "").trim();
+}
+
+function summarizeSources(sources: ProviderConfigSource[]): ProviderConfigSourceSummary {
+  if (sources.length === 0) {
+    return "none";
+  }
+  if (sources.length === 1) {
+    return sources[0];
+  }
+  return "mixed";
+}
+
+export async function getProviderConfigSnapshot(provider: SupportedProvider): Promise<ProviderConfigSnapshot> {
+  const sources: ProviderConfigSource[] = [];
+  if (getEnvToken(provider)) {
+    sources.push("env");
+  }
+  if (await hasKeychainProviderToken(provider)) {
+    sources.push("keychain");
+  }
+  if (hasFallbackProviderToken(provider)) {
+    sources.push("fallback");
+  }
+  const defaultProvider = resolveDefaultProvider();
+  return {
+    provider,
+    configured: sources.length > 0,
+    sources,
+    source: summarizeSources(sources),
+    default: defaultProvider === provider,
+  };
+}
+
+export async function listProviderConfigSnapshots() {
+  return Promise.all(SUPPORTED_PROVIDERS.map((provider) => getProviderConfigSnapshot(provider)));
+}
+
+export async function isProviderConfigured(provider: SupportedProvider) {
+  const envToken = getEnvToken(provider);
+  if (envToken) {
+    return true;
+  }
+  const storedToken = String((await getProviderToken(provider)) || "").trim();
+  return Boolean(storedToken);
+}
+
+export async function getConfiguredProviders() {
+  const providers: SupportedProvider[] = [];
+  if (await isProviderConfigured("openai")) {
+    providers.push("openai");
+  }
+  if (await isProviderConfigured("claude")) {
+    providers.push("claude");
+  }
+  return providers;
 }
 
 function applyProviderTokenToEnv(provider: SupportedProvider, token: string) {
@@ -138,6 +228,7 @@ export async function loginProvider(providerRaw: string, options: { allowInterac
     throw new Error('Unsupported provider. Use "openai" or "claude".');
   }
   await ensureProviderSession(provider, options);
+  setDefaultProvider(provider);
   process.env.KAIR_LLM_PROVIDER = provider;
   return provider;
 }

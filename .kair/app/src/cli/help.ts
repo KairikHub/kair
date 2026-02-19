@@ -9,6 +9,7 @@ These are common Kair commands used in various situations:
 
 ${label("start a workflow")}
   login                   OAuth login for OpenAI/Claude providers.
+  logins                  List provider login/configuration status.
   contract                Create a new Contract in DRAFT.
   plan                    Generate/refine a structured plan (kair.plan.v1).
   propose                 Submit a planned Contract for approval.
@@ -77,6 +78,9 @@ ${label("Modes:")}
 
 ${label("Notes:")}
   If <contract_id> is omitted, plan targets the most recently updated Contract.
+  Provider resolution order: --provider, then KAIR_LLM_PROVIDER, then .kair/config.json defaultProvider (if configured).
+  If exactly one provider is configured with an API key/token, plan auto-selects it.
+  If multiple providers are configured, interactive mode prompts; non-interactive mode requires --provider or KAIR_LLM_PROVIDER.
   --json implies --interactive=false.
   --debug prints prompt payload and DPC details (suppressed in --json mode).
 `);
@@ -127,13 +131,34 @@ export function printLoginHelp() {
 
 ${label("Usage:")}
   kair login [--provider <openai|claude>]
+  kair login list
 
 ${label("Description:")}
   Start OAuth browser login and securely store provider token in OS keychain.
 
 ${label("Notes:")}
-  If --provider is omitted, uses KAIR_LLM_PROVIDER if set, otherwise prompts in interactive mode.
+  Use "kair login list" (or "kair logins") to inspect provider login/configuration status.
+  If --provider is omitted, login prompts in interactive mode or uses KAIR_LLM_PROVIDER in non-interactive mode.
+  Successful login persists default provider to .kair/config.json for future commands.
   If OAuth client config is unavailable, login falls back to browser-opened API key setup + paste.
+`);
+}
+
+export function printLoginsHelp() {
+  console.log(`${title("Kair Logins Command")}
+
+${label("Usage:")}
+  kair logins
+  kair login list
+
+${label("Description:")}
+  List provider login/configuration status for openai and claude.
+
+${label("Output columns:")}
+  provider    provider name.
+  configured  yes/no based on env/keychain/fallback availability.
+  source      env, keychain, fallback, none, or mixed.
+  default     * marks default provider from .kair/config.json.
 `);
 }
 
