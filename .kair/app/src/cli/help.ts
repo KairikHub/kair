@@ -101,6 +101,7 @@ ${label("Notes:")}
   If <contract_id> is omitted, approve targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
   --actor (alias: --by) records who approved.
+  Approve writes/updates .kair/contracts/<id>/approvals/<plan_hash>.json for the active plan.
 `);
 }
 

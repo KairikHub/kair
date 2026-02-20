@@ -70,6 +70,7 @@ kair <command>
   - If in a git repo, pushes `kair-contract/<contract_id>` to origin.
 - `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
+  - Writes/updates approval artifact `.kair/contracts/<id>/approvals/<plan_hash>.json` for the active plan hash.
   - With no args, defaults to the most recently updated contract.
 
 ### Execution and Recovery

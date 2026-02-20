@@ -47,7 +47,7 @@ import {
   pullCurrentBranch,
   pushContractBranch,
 } from "../core/git/integration";
-import { validateApprovalArtifact } from "../core/approvals";
+import { validateApprovalArtifact, writeApprovalArtifact } from "../core/approvals";
 import {
   ensureProviderSession,
   getConfiguredProviders,
@@ -1548,6 +1548,21 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const actor = resolveActor(actorRaw || legacyActor);
       const contract = getContract(contractId);
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
+      const plan = resolveContractPlanV1(contract);
+      if (!plan) {
+        fail(`Cannot approve Contract "${contract.id}" without a structured plan. Run \`kair plan\` first.`);
+      }
+      try {
+        writeApprovalArtifact({
+          contractId: contract.id,
+          plan,
+          approvedBy: actor,
+          source: "manual",
+        });
+      } catch (error: any) {
+        const message = error && error.message ? error.message : String(error);
+        fail(`Failed to write approval artifact for Contract "${contract.id}": ${message}`);
+      }
       appendApprovalVersion(contract, actor);
       transition(contract, "APPROVED", `Approve a Kair Contract. Actor: ${actor}.`, actor);
       maybeAutoCommitContractState({
