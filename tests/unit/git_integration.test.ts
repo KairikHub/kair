@@ -66,7 +66,7 @@ function writeContractFiles(root: string, contractId: string) {
 }
 
 describe("unit: git integration contract-scoped commit paths", () => {
-  test("buildContractGitPaths includes contract artifacts and excludes auth/config", () => {
+  test("buildContractGitPaths includes plan/governance paths and excludes auth/config + artifacts", () => {
     const repo = setupRepo();
     const prevCwd = process.cwd();
     const contractId = "contract_git_paths";
@@ -76,12 +76,21 @@ describe("unit: git integration contract-scoped commit paths", () => {
       writeContractFiles(repo, contractId);
       fs.writeFileSync(path.join(repo, ".kair", "auth-fallback.json"), "{ \"provider/openai\": \"secret\" }\n");
       fs.writeFileSync(path.join(repo, ".kair", "config.json"), "{ \"defaultProvider\": \"openai\" }\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run", "stream.jsonl"), "{}\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "run"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "run", "stream.jsonl"), "{}\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "git"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "git", "commands.jsonl"), "{}\n");
 
       const paths = buildContractGitPaths(contractId, repo);
       expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/contract.json`))).toBe(true);
       expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/plan/PLAN.md`))).toBe(true);
       expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/dpc/dpc_v1.json`))).toBe(true);
       expect(paths.some((entry) => entry === ".kair/contracts/index.json")).toBe(true);
+      expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/artifacts/`))).toBe(false);
+      expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/run/`))).toBe(false);
+      expect(paths.some((entry) => entry.includes(`.kair/contracts/${contractId}/git/`))).toBe(false);
       expect(paths.some((entry) => entry.includes(".kair/auth-fallback.json"))).toBe(false);
       expect(paths.some((entry) => entry.includes(".kair/config.json"))).toBe(false);
     } finally {
@@ -91,7 +100,7 @@ describe("unit: git integration contract-scoped commit paths", () => {
     }
   });
 
-  test("listUncommittedContractPaths detects modified and untracked contract paths", () => {
+  test("listUncommittedContractPaths detects plan/governance paths and ignores artifacts", () => {
     const repo = setupRepo();
     const prevCwd = process.cwd();
     const contractId = "contract_git_status";
@@ -105,10 +114,19 @@ describe("unit: git integration contract-scoped commit paths", () => {
 
       fs.appendFileSync(path.join(repo, ".kair", "contracts", contractId, "plan", "PLAN.md"), "\nextra");
       fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "plan", "extra.txt"), "u\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run", "stream.jsonl"), "1\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "run"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "run", "stream.jsonl"), "1\n");
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "git"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".kair", "contracts", contractId, "git", "commands.jsonl"), "1\n");
 
       const dirty = listUncommittedContractPaths(contractId, repo);
       expect(dirty.some((entry) => entry.endsWith(`.kair/contracts/${contractId}/plan/PLAN.md`))).toBe(true);
       expect(dirty.some((entry) => entry.endsWith(`.kair/contracts/${contractId}/plan/extra.txt`))).toBe(true);
+      expect(dirty.some((entry) => entry.includes(`.kair/contracts/${contractId}/artifacts/`))).toBe(false);
+      expect(dirty.some((entry) => entry.includes(`.kair/contracts/${contractId}/run/`))).toBe(false);
+      expect(dirty.some((entry) => entry.includes(`.kair/contracts/${contractId}/git/`))).toBe(false);
       expect(dirty.some((entry) => entry.includes("README.tmp"))).toBe(false);
     } finally {
       restoreEnv();

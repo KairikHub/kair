@@ -125,4 +125,46 @@ describe("e2e: plan/propose git authority", () => {
       fs.rmSync(repo, { recursive: true, force: true });
     }
   });
+
+  test("propose ignores volatile contract artifacts files", () => {
+    const repo = setupTempRepoWithEmbeddedKair();
+    const kair = path.join(repo, ".kair", "bin", "kair");
+    const contractId = "git_propose_ignore_artifacts";
+    const planJson = JSON.stringify({
+      version: "kair.plan.v1",
+      title: "Git propose ignore artifacts",
+      steps: [{ id: "step-a", summary: "Ignore artifacts noise." }],
+    });
+
+    try {
+      const create = runInCwd(kair, ["contract", "--id", contractId, "Git propose artifacts contract"], repo, {
+        ...buildKairEnv(repo),
+      });
+      expect(create.status).toBe(0);
+
+      const plan = runInCwd(
+        kair,
+        ["plan", contractId, "--interactive=false", planJson],
+        repo,
+        buildKairEnv(repo)
+      );
+      expect(plan.status).toBe(0);
+
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run"), { recursive: true });
+      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "git"), { recursive: true });
+      fs.appendFileSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run", "stream.jsonl"), "x\n");
+      fs.appendFileSync(
+        path.join(repo, ".kair", "contracts", contractId, "artifacts", "git", "commands.jsonl"),
+        "{}\n"
+      );
+
+      const propose = runInCwd(kair, ["propose", contractId], repo, {
+        ...buildKairEnv(repo),
+      });
+      expect(propose.status).toBe(0);
+      expect(propose.stderr).not.toContain("Uncommitted plan artifacts detected");
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  });
 });

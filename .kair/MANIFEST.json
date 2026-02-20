@@ -76,7 +76,7 @@
     {"path": ".kair/app/package.json", "sha256": "b61050974adc50064720ae3d3f6a0c90809977e20c8f87bf1428d950c75522e4", "size": 602},
     {"path": ".kair/app/src/cli/argv.ts", "sha256": "e2d35ebce59b08576fa4bc9ac04c3efa083c6e5250c03a8ac04095b8e96157c4", "size": 3527},
     {"path": ".kair/app/src/cli/errors.ts", "sha256": "524765ba7a3f71a7f14bb483d0d409f9a2626a10df1dfbee8976c88aded27d81", "size": 387},
-    {"path": ".kair/app/src/cli/execute.ts", "sha256": "e2e28cf8838d1bb43939caa3cd898d45e1a202229a4f21bee22c3579b20b3d2b", "size": 64993},
+    {"path": ".kair/app/src/cli/execute.ts", "sha256": "62e1875077a09c311ca4c05720c78ea5ccc1dc426db5acdb3dbe64df71e82e87", "size": 65174},
     {"path": ".kair/app/src/cli/format.ts", "sha256": "b86b467bcec4cf8851e3468125ccba16b997614c1f5fef8223fcc1bd6c8a8d67", "size": 1427},
     {"path": ".kair/app/src/cli/help.ts", "sha256": "5f5ebb6fa483a5dc7f987e73568597a453dffce634b365ef13a686dbd59a63d1", "size": 10384},
     {"path": ".kair/app/src/cli/list.ts", "sha256": "5ffce94299d796d921b315ece9400ac66bd4c1d716a9239c5b09578516cac1a2", "size": 1971},
@@ -109,7 +109,7 @@
     {"path": ".kair/app/src/core/dpc/storage.ts", "sha256": "5824e2ffbcf0a71abb71732eb4654fb9acec63cbf4395a611952a4cb791504e2", "size": 1867},
     {"path": ".kair/app/src/core/dpc/validate.ts", "sha256": "7a2de7a4d5389054e5e004af9233a4a873d270d74d13a8e3c581af7226596fde", "size": 6657},
     {"path": ".kair/app/src/core/errors.ts", "sha256": "796fe06f81f84ccefe0eb53def6e00b4fbc52f285f1e2ac70f0e8d2eea390db7", "size": 182},
-    {"path": ".kair/app/src/core/git/integration.ts", "sha256": "5a3ac1ad5e2425e0b4cdc997472402d883db2fa01f2b77990673880bf6c15e35", "size": 7848},
+    {"path": ".kair/app/src/core/git/integration.ts", "sha256": "3b061228e3c52ec2a6aca989de42e117713c81ffc3a79986999892e3f350b752", "size": 7964},
     {"path": ".kair/app/src/core/llm/claude_responses.ts", "sha256": "439ad695f1a9b25de190e33e0a9f90502bc9281e1ecfed280137eb302fb21b07", "size": 1870},
     {"path": ".kair/app/src/core/llm/openai_responses.ts", "sha256": "6d1a27e12925b0c099498497612b16196e7a11b905a50a175c76ccab6a10edaf", "size": 5033},
     {"path": ".kair/app/src/core/llm/plan_prompt.ts", "sha256": "430614834771bb01826a374b993f3710174a23a0ff0f640d57ec3d6f0c2f5b40", "size": 2462},
@@ -134,6 +134,6 @@
     {"path": ".kair/app/src/kair.ts", "sha256": "b41b65a0366849aeb39300f24543b21c437288a2e149296b60c924d96ebb8cd2", "size": 158},
     {"path": ".kair/bin/kair", "sha256": "48dd48ae043b2440d4bba4d113e93bef72eb2fa0819f1cd64191c475b6bd109e", "size": 657},
     {"path": ".kair/runtime/node", "sha256": "dd6f3352057e904b0b32b7e74829b82acb33958f20c8feab6c0f781f7d042ebd", "size": 113991760},
-    {"path": ".kair/VERSION", "sha256": "637e029b17d0f2fd036645547b743105dbe74141ae685d59c491d7ddaaeaf3f5", "size": 78}
+    {"path": ".kair/VERSION", "sha256": "93a66903eedd1e30eef76846abbb112ab6398719d75c8cb91e5d7de9ca2e275d", "size": 78}
   ]
 }

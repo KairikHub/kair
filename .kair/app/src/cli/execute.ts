@@ -1396,7 +1396,10 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           const uncommitted = listUncommittedContractPaths(contract.id);
           if (uncommitted.length > 0) {
             const stageHint = [
-              `.kair/contracts/${contract.id}`,
+              `.kair/contracts/${contract.id}/contract.json`,
+              `.kair/contracts/${contract.id}/history.jsonl`,
+              `.kair/contracts/${contract.id}/plan`,
+              `.kair/contracts/${contract.id}/dpc`,
               ".kair/contracts/index.json",
             ].join(" ");
             fail(

@@ -6,6 +6,7 @@ import {
   getContractDir,
   getContractArtifactsDir,
   getContractHistoryPath,
+  getContractPlanDir,
   getContractPlanJsonPath,
   getContractPlanMarkdownPath,
   getContractRulesPath,
@@ -158,6 +159,7 @@ export function buildContractGitPaths(contractId: string, cwd = process.cwd()) {
   const candidates = [
     getContractSnapshotPath(contractId),
     getContractHistoryPath(contractId),
+    getContractPlanDir(contractId),
     getContractPlanJsonPath(contractId),
     getContractPlanMarkdownPath(contractId),
     getContractRulesPath(contractId),
@@ -172,12 +174,10 @@ export function buildContractGitPaths(contractId: string, cwd = process.cwd()) {
     }
   }
 
-  const contractRelativeRoot = toRepoRelative(getContractDir(contractId), cwd);
-  if (contractRelativeRoot) {
-    stagePaths.add(contractRelativeRoot);
-  }
-
   const filtered = [...stagePaths]
+    .filter((entry) => !entry.includes("/artifacts/"))
+    .filter((entry) => !entry.startsWith(`.kair/contracts/${contractId}/run/`))
+    .filter((entry) => !entry.startsWith(`.kair/contracts/${contractId}/git/`))
     .filter((entry) => !entry.startsWith(".kair/auth-fallback.json"))
     .filter((entry) => !entry.startsWith(".kair/config.json"))
     .sort((a, b) => a.localeCompare(b));
