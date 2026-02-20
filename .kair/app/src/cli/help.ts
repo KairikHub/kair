@@ -62,6 +62,7 @@ ${label("Description:")}
 ${label("Notes:")}
   If <contract_id> is omitted, propose targets the most recently updated Contract.
   Do not combine <contract_id> with --last.
+  In a git repo, propose requires committed contract plan artifacts before requesting approval.
 `);
 }
 
@@ -81,6 +82,7 @@ ${label("Notes:")}
   Provider resolution order: --provider, then KAIR_LLM_PROVIDER, then .kair/config.json defaultProvider (if configured).
   If exactly one provider is configured with an API key/token, plan auto-selects it.
   If multiple providers are configured, interactive mode prompts; non-interactive mode requires --provider or KAIR_LLM_PROVIDER.
+  In a git repo, successful structured plan persistence auto-commits contract-local .kair artifacts.
   --json implies --interactive=false.
   --debug prints prompt payload and DPC details (suppressed in --json mode).
 `);

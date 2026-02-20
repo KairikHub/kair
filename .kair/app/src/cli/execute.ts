@@ -43,6 +43,7 @@ import {
   ensureGitInstalled,
   ensureGitRepo,
   isInsideGitRepo,
+  listUncommittedContractPaths,
   pullCurrentBranch,
   pushContractBranch,
 } from "../core/git/integration";
@@ -210,6 +211,60 @@ function persistStructuredPlan(params: {
     event: "summary",
     message: "Plan persisted and contract-local PLAN.md written.",
   });
+}
+
+function buildPlanAutoCommitMessage(params: {
+  contractId: string;
+  actor?: string;
+  mode: "interactive" | "non-interactive";
+  provider?: string | null;
+  model?: string | null;
+}) {
+  const lines = [
+    `kair(plan): persist contract ${params.contractId}`,
+    "",
+    `Contract: ${params.contractId}`,
+    `Actor: ${String(params.actor || "").trim() || "unknown"}`,
+    `Mode: ${params.mode}`,
+    `Provider: ${String(params.provider || "").trim() || "n/a"}`,
+    `Model: ${String(params.model || "").trim() || "n/a"}`,
+    `Timestamp: ${new Date().toISOString()}`,
+  ];
+  return lines.join("\n");
+}
+
+function maybeAutoCommitPlanArtifacts(params: {
+  contractId: string;
+  actor?: string;
+  mode: "interactive" | "non-interactive";
+  provider?: string | null;
+  model?: string | null;
+}) {
+  if (!isInsideGitRepo()) {
+    return;
+  }
+  try {
+    const commitResult = commitPlanChanges(
+      params.contractId,
+      buildPlanAutoCommitMessage({
+        contractId: params.contractId,
+        actor: params.actor,
+        mode: params.mode,
+        provider: params.provider,
+        model: params.model,
+      })
+    );
+    if (commitResult.committed) {
+      appendStreamEvent({
+        contractId: params.contractId,
+        phase: "plan",
+        event: "summary",
+        message: "Plan artifacts committed to git.",
+      });
+    }
+  } catch (error: any) {
+    warn(`Plan commit skipped: ${error.message}`);
+  }
 }
 
 function parseBooleanFlag(value: string, flagName: string) {
@@ -936,6 +991,13 @@ async function handleTopLevelPlan(rest: string[]) {
         actor,
         message: "Plan updated via non-interactive refine.",
       });
+      maybeAutoCommitPlanArtifacts({
+        contractId,
+        actor,
+        mode: "non-interactive",
+        provider: providerName || null,
+        model,
+      });
       process.stdout.write(`${JSON.stringify(planJson, null, 2)}\n`);
       return;
     }
@@ -963,6 +1025,13 @@ async function handleTopLevelPlan(rest: string[]) {
         plan: result.plan,
         actor,
         message: buildPlanHistoryMessage("non-interactive", providerName, model || undefined),
+      });
+      maybeAutoCommitPlanArtifacts({
+        contractId,
+        actor,
+        mode: "non-interactive",
+        provider: providerName || null,
+        model,
       });
       appendStreamEvent({
         contractId,
@@ -1009,6 +1078,13 @@ async function handleTopLevelPlan(rest: string[]) {
       plan: planJson,
       actor,
       message: "Plan updated via non-interactive refine.",
+    });
+    maybeAutoCommitPlanArtifacts({
+      contractId,
+      actor,
+      mode: "non-interactive",
+      provider: providerName || null,
+      model,
     });
     console.log(`Structured plan set for Contract ${contractId}.`);
     return;
@@ -1087,13 +1163,13 @@ async function handleTopLevelPlan(rest: string[]) {
           actor,
           message: buildPlanHistoryMessage("interactive", providerName, model || undefined),
         });
-        if (isInsideGitRepo()) {
-          try {
-            commitPlanChanges(contractId, `kair: plan commit ${contractId}`);
-          } catch (error: any) {
-            warn(`Plan commit skipped: ${error.message}`);
-          }
-        }
+        maybeAutoCommitPlanArtifacts({
+          contractId,
+          actor,
+          mode: "interactive",
+          provider: providerName || null,
+          model,
+        });
         console.log(`Structured plan set for Contract ${contractId}.`);
         return;
       }
@@ -1315,6 +1391,27 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       }
       const contract = getContract(contractId);
       assertState(contract, ["PLANNED"], "propose");
+      if (isInsideGitRepo()) {
+        try {
+          const uncommitted = listUncommittedContractPaths(contract.id);
+          if (uncommitted.length > 0) {
+            const stageHint = [
+              `.kair/contracts/${contract.id}`,
+              ".kair/contracts/index.json",
+            ].join(" ");
+            fail(
+              [
+                `Uncommitted plan artifacts detected for contract "${contract.id}".`,
+                "Commit these files before `kair propose`:",
+                ...uncommitted.map((entry) => `- ${entry}`),
+                `Suggested next step: git add ${stageHint} && git commit -m "kair(plan): persist contract ${contract.id}"`,
+              ].join("\n")
+            );
+          }
+        } catch (error: any) {
+          fail(error && error.message ? error.message : String(error));
+        }
+      }
       if (!enforceControls(contract, "approval request")) {
         return;
       }

@@ -3,9 +3,12 @@ import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 
 import {
+  getContractDir,
   getContractArtifactsDir,
+  getContractHistoryPath,
   getContractPlanJsonPath,
   getContractPlanMarkdownPath,
+  getContractRulesPath,
   getContractSnapshotPath,
   getContractsIndexPath,
 } from "../store/paths";
@@ -83,15 +86,7 @@ export function checkoutContractBranch(contractId: string, cwd = process.cwd()) 
 }
 
 export function commitPlanChanges(contractId: string, message: string, cwd = process.cwd()) {
-  const stageCandidates = [
-    getContractPlanMarkdownPath(contractId),
-    getContractPlanJsonPath(contractId),
-    getContractSnapshotPath(contractId),
-    getContractsIndexPath(),
-  ];
-  const stagePaths = stageCandidates
-    .map((candidate) => path.relative(cwd, candidate))
-    .filter((candidate) => candidate && !candidate.startsWith("..") && !path.isAbsolute(candidate));
+  const stagePaths = buildContractGitPaths(contractId, cwd);
   if (stagePaths.length === 0) {
     throw new Error("No in-repo contract files were available to stage for commit.");
   }
@@ -106,7 +101,116 @@ export function commitPlanChanges(contractId: string, message: string, cwd = pro
       throw new Error(`git commit failed: ${commitResult.stderr || commitResult.stdout}`);
     }
   }
-  return { receiptPath: commitResult.receiptPath };
+  const commitSummary = `${commitResult.stderr} ${commitResult.stdout}`.toLowerCase();
+  const committed = !commitSummary.includes("nothing to commit");
+  return { receiptPath: commitResult.receiptPath, committed };
+}
+
+function toRepoRelative(filePath: string, cwd = process.cwd()) {
+  let normalizedCwd = path.resolve(cwd);
+  let normalizedFilePath = path.resolve(filePath);
+  try {
+    normalizedCwd = fs.realpathSync.native(normalizedCwd);
+  } catch {
+    // fallback to resolved cwd path
+  }
+  try {
+    normalizedFilePath = fs.realpathSync.native(normalizedFilePath);
+  } catch {
+    // fallback to resolved file path
+  }
+  const relative = path.relative(normalizedCwd, normalizedFilePath);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    return "";
+  }
+  return relative;
+}
+
+function gatherExistingRelativeFiles(rootPath: string, cwd = process.cwd()) {
+  if (!fs.existsSync(rootPath)) {
+    return [] as string[];
+  }
+  const stat = fs.statSync(rootPath);
+  if (stat.isFile()) {
+    const relative = toRepoRelative(rootPath, cwd);
+    return relative ? [relative] : [];
+  }
+  const output: string[] = [];
+  const stack = [rootPath];
+  while (stack.length > 0) {
+    const current = stack.pop() as string;
+    const currentStat = fs.statSync(current);
+    if (currentStat.isDirectory()) {
+      for (const entry of fs.readdirSync(current)) {
+        stack.push(path.join(current, entry));
+      }
+      continue;
+    }
+    const relative = toRepoRelative(current, cwd);
+    if (relative) {
+      output.push(relative);
+    }
+  }
+  return output;
+}
+
+export function buildContractGitPaths(contractId: string, cwd = process.cwd()) {
+  const candidates = [
+    getContractSnapshotPath(contractId),
+    getContractHistoryPath(contractId),
+    getContractPlanJsonPath(contractId),
+    getContractPlanMarkdownPath(contractId),
+    getContractRulesPath(contractId),
+    getContractsIndexPath(),
+    path.join(getContractDir(contractId), "dpc"),
+  ];
+
+  const stagePaths = new Set<string>();
+  for (const candidate of candidates) {
+    for (const item of gatherExistingRelativeFiles(candidate, cwd)) {
+      stagePaths.add(item);
+    }
+  }
+
+  const contractRelativeRoot = toRepoRelative(getContractDir(contractId), cwd);
+  if (contractRelativeRoot) {
+    stagePaths.add(contractRelativeRoot);
+  }
+
+  const filtered = [...stagePaths]
+    .filter((entry) => !entry.startsWith(".kair/auth-fallback.json"))
+    .filter((entry) => !entry.startsWith(".kair/config.json"))
+    .sort((a, b) => a.localeCompare(b));
+
+  return filtered;
+}
+
+export function listUncommittedContractPaths(contractId: string, cwd = process.cwd()) {
+  const scope = buildContractGitPaths(contractId, cwd);
+  if (scope.length === 0) {
+    return [] as string[];
+  }
+  const result = runGit(["status", "--porcelain", "--untracked-files=all", "--", ...scope], cwd);
+  if (result.status !== 0) {
+    throw new Error(`git status failed: ${result.stderr || result.stdout}`);
+  }
+  const paths = new Set<string>();
+  const lines = result.stdout.split("\n").map((line) => line.trimEnd()).filter(Boolean);
+  for (const line of lines) {
+    const payload = line.slice(3).trim();
+    if (!payload) {
+      continue;
+    }
+    if (payload.includes(" -> ")) {
+      const target = payload.split(" -> ")[1].trim();
+      if (target) {
+        paths.add(target);
+      }
+      continue;
+    }
+    paths.add(payload);
+  }
+  return [...paths].sort((a, b) => a.localeCompare(b));
 }
 
 export function pushContractBranch(contractId: string, cwd = process.cwd()) {

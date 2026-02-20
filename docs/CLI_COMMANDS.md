@@ -46,6 +46,7 @@ kair <command>
   - If exactly one provider is configured with a key/token, it is auto-selected.
   - If multiple providers are configured, interactive mode prompts; non-interactive mode requires `--provider` or `KAIR_LLM_PROVIDER`.
   - Use `kair logins` to diagnose why provider selection prompts.
+  - In a git repo, successful structured plan persistence auto-commits contract-local `.kair` artifacts.
   - Writes `.kair/contracts/<contract_id>/plan/PLAN.md` and `.kair/contracts/<contract_id>/plan/plan_v1.json` when persisted.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.
@@ -65,6 +66,7 @@ kair <command>
 - `kair propose [<contract_id>] [--last]`
   - Move a planned contract into approval request state.
   - With no args, defaults to the most recently updated contract.
+  - In a git repo, propose fails until contract plan artifacts are committed.
   - If in a git repo, pushes `kair-contract/<contract_id>` to origin.
 - `kair approve [<contract_id>] [--last] [--actor <name>]`
   - Approve the contract and create a new immutable version.
