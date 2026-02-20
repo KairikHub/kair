@@ -618,6 +618,15 @@ async function promptRetryOrCancel(rl: any) {
   }
 }
 
+async function promptRetryOrCancelStandalone() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await promptRetryOrCancel(rl);
+  } finally {
+    rl.close();
+  }
+}
+
 function renderPlanPreview(plan: Plan, options: { jsonOutput?: boolean } = {}) {
   if (options.jsonOutput) {
     console.log("Preview current plan");
@@ -1142,67 +1151,66 @@ async function handleTopLevelPlan(rest: string[]) {
 
   let attempts = 0;
   let candidatePlan = existingPlan;
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-
-  try {
-    if (!candidatePlan || parsed.instructionsRaw.trim()) {
-      const activeProvider = await ensureProviderAndApiKey();
-      const initialInstructions = parsed.instructionsRaw.trim() || "Create an initial plan from intent.";
-      while (true) {
-        try {
-          appendStreamEvent({
-            contractId,
-            phase: "plan",
-            event: "step.start",
-            message: "Requesting plan from provider.",
-            print: true,
-            jsonOutput: parsed.jsonOutput,
-          });
-          const result = await requestPlanFromProvider({
-            provider: activeProvider,
-            contractId,
-            intent: targetContract.intent,
-            currentPlan: candidatePlan,
-            currentPlanText: targetContract.plan ?? null,
-            instructions: initialInstructions,
-            model,
-            mode: candidatePlan ? "refine" : "generate",
-            attemptsUsed: attempts,
-          });
-          const priorPlan = candidatePlan;
-          candidatePlan = result.plan;
-          attempts = result.attemptsUsed;
-          appendStreamEvent({
-            contractId,
-            phase: "plan",
-            event: "step.done",
-            message: "Plan candidate received.",
-            print: true,
-            jsonOutput: parsed.jsonOutput,
-          });
-          if (!parsed.jsonOutput && priorPlan) {
-            renderPlanDiffSection(diffPlansByStepId(priorPlan, candidatePlan));
-          }
-          printPlanDebugOutput({
-            parsed,
-            sanitizedRequestRecord: result.sanitizedRequestRecord,
-            promptArtifactPath: result.promptArtifactPath,
-            dpcArtifactPath: result.dpcArtifactPath,
-            dpcPreview: result.dpcPreview,
-          });
-          break;
-        } catch (error: any) {
-          console.log(error && error.message ? error.message : String(error));
-          const next = await promptRetryOrCancel(rl);
-          if (next === "retry") {
-            continue;
-          }
-          console.log("Planning cancelled.");
-          return;
+  if (!candidatePlan || parsed.instructionsRaw.trim()) {
+    const activeProvider = await ensureProviderAndApiKey();
+    const initialInstructions = parsed.instructionsRaw.trim() || "Create an initial plan from intent.";
+    while (true) {
+      try {
+        appendStreamEvent({
+          contractId,
+          phase: "plan",
+          event: "step.start",
+          message: "Requesting plan from provider.",
+          print: true,
+          jsonOutput: parsed.jsonOutput,
+        });
+        const result = await requestPlanFromProvider({
+          provider: activeProvider,
+          contractId,
+          intent: targetContract.intent,
+          currentPlan: candidatePlan,
+          currentPlanText: targetContract.plan ?? null,
+          instructions: initialInstructions,
+          model,
+          mode: candidatePlan ? "refine" : "generate",
+          attemptsUsed: attempts,
+        });
+        const priorPlan = candidatePlan;
+        candidatePlan = result.plan;
+        attempts = result.attemptsUsed;
+        appendStreamEvent({
+          contractId,
+          phase: "plan",
+          event: "step.done",
+          message: "Plan candidate received.",
+          print: true,
+          jsonOutput: parsed.jsonOutput,
+        });
+        if (!parsed.jsonOutput && priorPlan) {
+          renderPlanDiffSection(diffPlansByStepId(priorPlan, candidatePlan));
         }
+        printPlanDebugOutput({
+          parsed,
+          sanitizedRequestRecord: result.sanitizedRequestRecord,
+          promptArtifactPath: result.promptArtifactPath,
+          dpcArtifactPath: result.dpcArtifactPath,
+          dpcPreview: result.dpcPreview,
+        });
+        break;
+      } catch (error: any) {
+        console.log(error && error.message ? error.message : String(error));
+        const next = await promptRetryOrCancelStandalone();
+        if (next === "retry") {
+          continue;
+        }
+        console.log("Planning cancelled.");
+        return;
       }
     }
+  }
 
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
     while (candidatePlan) {
       renderPlanPreview(candidatePlan, { jsonOutput: parsed.jsonOutput });
       const action = await promptPlanChoice(rl);
