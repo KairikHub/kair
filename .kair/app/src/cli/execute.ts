@@ -267,6 +267,56 @@ function maybeAutoCommitPlanArtifacts(params: {
   }
 }
 
+function buildStateAutoCommitMessage(params: {
+  contractId: string;
+  action: string;
+  state: string;
+  actor?: string;
+}) {
+  const lines = [
+    `kair(state): ${params.action} contract ${params.contractId}`,
+    "",
+    `Contract: ${params.contractId}`,
+    `Action: ${params.action}`,
+    `State: ${params.state}`,
+    `Actor: ${String(params.actor || "").trim() || "unknown"}`,
+    `Timestamp: ${new Date().toISOString()}`,
+  ];
+  return lines.join("\n");
+}
+
+function maybeAutoCommitContractState(params: {
+  contractId: string;
+  action: string;
+  state: string;
+  actor?: string;
+}) {
+  if (!isInsideGitRepo()) {
+    return;
+  }
+  try {
+    const commitResult = commitPlanChanges(
+      params.contractId,
+      buildStateAutoCommitMessage({
+        contractId: params.contractId,
+        action: params.action,
+        state: params.state,
+        actor: params.actor,
+      })
+    );
+    if (commitResult.committed) {
+      appendStreamEvent({
+        contractId: params.contractId,
+        phase: "git",
+        event: "summary",
+        message: `Contract state committed after ${params.action}.`,
+      });
+    }
+  } catch (error: any) {
+    warn(`Contract state commit skipped: ${error.message}`);
+  }
+}
+
 function parseBooleanFlag(value: string, flagName: string) {
   const normalized = value.trim().toLowerCase();
   if (normalized === "true") {
@@ -1419,6 +1469,11 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         return;
       }
       transition(contract, "AWAITING_APPROVAL", "Approval requested for Contract.");
+      maybeAutoCommitContractState({
+        contractId: contract.id,
+        action: "propose",
+        state: "AWAITING_APPROVAL",
+      });
       if (isInsideGitRepo()) {
         try {
           const pushed = pushContractBranch(contract.id);
@@ -1487,6 +1542,12 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       assertState(contract, ["AWAITING_APPROVAL"], "approve");
       appendApprovalVersion(contract, actor);
       transition(contract, "APPROVED", `Approve a Kair Contract. Actor: ${actor}.`, actor);
+      maybeAutoCommitContractState({
+        contractId: contract.id,
+        action: "approve",
+        state: "APPROVED",
+        actor,
+      });
       break;
     }
     case "grant": {
@@ -1758,8 +1819,20 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       });
 
       if (runOutcome.result.status !== "completed") {
+        maybeAutoCommitContractState({
+          contractId: contract.id,
+          action: dryRun ? "run-dry" : "run",
+          state: contract.current_state,
+          actor: runActor,
+        });
         fail(runOutcome.result.summary || "Execution failed.");
       }
+      maybeAutoCommitContractState({
+        contractId: contract.id,
+        action: dryRun ? "run-dry" : "run",
+        state: contract.current_state,
+        actor: runActor,
+      });
       break;
     }
     case "pause": {
@@ -1797,6 +1870,12 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const contract = getContract(contractId);
       assertState(contract, ["RUNNING"], "pause");
       transition(contract, "PAUSED", `Paused Contract execution. Actor: ${actor}.`, actor);
+      maybeAutoCommitContractState({
+        contractId: contract.id,
+        action: "pause",
+        state: "PAUSED",
+        actor,
+      });
       break;
     }
     case "resume": {
@@ -1878,6 +1957,12 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         reasonChunks.push("Reason: not provided.");
       }
       transition(contract, "REWOUND", reasonChunks.join(" "), actor);
+      maybeAutoCommitContractState({
+        contractId: contract.id,
+        action: "rewind",
+        state: "REWOUND",
+        actor,
+      });
       break;
     }
     case "status": {

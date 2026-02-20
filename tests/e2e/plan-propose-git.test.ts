@@ -42,7 +42,16 @@ function setupTempRepoWithEmbeddedKair() {
   runGit(["config", "user.email", "e2e@test.local"], root);
   runGit(["config", "user.name", "e2e-test"], root);
   copyDir(path.join(process.cwd(), ".kair"), path.join(root, ".kair"));
-  fs.writeFileSync(path.join(root, ".gitignore"), "node_modules\n");
+  fs.writeFileSync(
+    path.join(root, ".gitignore"),
+    [
+      "node_modules",
+      ".kair/auth-fallback.json",
+      ".kair/config.json",
+      ".kair/contracts/*/artifacts/",
+      "",
+    ].join("\n")
+  );
   runGit(["add", "."], root);
   runGit(["commit", "-m", "seed"], root);
   return root;
@@ -163,6 +172,72 @@ describe("e2e: plan/propose git authority", () => {
       });
       expect(propose.status).toBe(0);
       expect(propose.stderr).not.toContain("Uncommitted plan artifacts detected");
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  test("propose auto-commits contract state transition files", () => {
+    const repo = setupTempRepoWithEmbeddedKair();
+    const kair = path.join(repo, ".kair", "bin", "kair");
+    const contractId = "git_propose_autocommit_state";
+    const planJson = JSON.stringify({
+      version: "kair.plan.v1",
+      title: "Git propose auto-commit",
+      steps: [{ id: "step-a", summary: "Auto-commit propose transition state." }],
+    });
+
+    try {
+      expect(runInCwd(kair, ["contract", "--id", contractId, "Git propose auto commit"], repo, buildKairEnv(repo)).status)
+        .toBe(0);
+      expect(
+        runInCwd(kair, ["plan", contractId, "--interactive=false", planJson], repo, buildKairEnv(repo)).status
+      ).toBe(0);
+
+      const propose = runInCwd(kair, ["propose", contractId], repo, buildKairEnv(repo));
+      expect(propose.status).toBe(0);
+
+      const log = runGit(["log", "--oneline", "-1"], repo);
+      expect(log.status).toBe(0);
+      expect(log.stdout).toContain(`kair(state): propose contract ${contractId}`);
+
+      const status = runGit(["status", "--porcelain"], repo);
+      expect(status.status).toBe(0);
+      expect(status.stdout.trim()).toBe("");
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  test("run auto-commits contract state and ignores artifacts directory noise", () => {
+    const repo = setupTempRepoWithEmbeddedKair();
+    const kair = path.join(repo, ".kair", "bin", "kair");
+    const contractId = "git_run_autocommit_state";
+    const planJson = JSON.stringify({
+      version: "kair.plan.v1",
+      title: "Git run auto-commit",
+      steps: [{ id: "step-a", summary: "Auto-commit run transition state." }],
+    });
+
+    try {
+      expect(runInCwd(kair, ["contract", "--id", contractId, "Git run auto commit"], repo, buildKairEnv(repo)).status)
+        .toBe(0);
+      expect(
+        runInCwd(kair, ["plan", contractId, "--interactive=false", planJson], repo, buildKairEnv(repo)).status
+      ).toBe(0);
+      expect(runInCwd(kair, ["propose", contractId], repo, buildKairEnv(repo)).status).toBe(0);
+      expect(runInCwd(kair, ["approve", contractId], repo, buildKairEnv(repo)).status).toBe(0);
+
+      const run = runInCwd(kair, ["run", contractId], repo, buildKairEnv(repo));
+      expect(run.status).toBe(0);
+
+      const log = runGit(["log", "--oneline", "-1"], repo);
+      expect(log.status).toBe(0);
+      expect(log.stdout).toContain(`kair(state): run contract ${contractId}`);
+
+      const status = runGit(["status", "--porcelain"], repo);
+      expect(status.status).toBe(0);
+      expect(status.stdout.trim()).toBe("");
     } finally {
       fs.rmSync(repo, { recursive: true, force: true });
     }
