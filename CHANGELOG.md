@@ -1,6 +1,23 @@
 # Changelog
 
 ## 2026-02-27
+- `kair architect` implementation (multi-agent planning loop):
+  - Added executable architect command with contract selection, resumable session state, and subcommands:
+    - `kair architect`
+    - `kair architect status`
+    - `kair architect validate`
+    - `kair architect init-agents`
+  - Added contract-local agent SOUL scaffolding and loading:
+    - `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`
+  - Added architect artifact/checkpoint surfaces:
+    - `.contracts/<contract_id>/artifacts/architect/session.json`
+    - `.contracts/<contract_id>/artifacts/architect/decisions.jsonl`
+    - `.contracts/<contract_id>/artifacts/architect/turns.jsonl`
+    - `.contracts/<contract_id>/artifacts/architect/validation.json`
+  - Added architect budget capture/default persistence on contracts:
+    - default `max_tokens=120000`, `total_max_cost_usd=15`
+  - Added milestone validation gate wiring and validator retries before completion.
+  - Added e2e coverage for architect help and command flows (init/run/status/validate).
 - CLI help surface expansion:
   - Added `architect` to top-level `kair --help` command index.
   - Added dedicated `kair architect --help` / `kair architect help` output with usage variants and path contracts.

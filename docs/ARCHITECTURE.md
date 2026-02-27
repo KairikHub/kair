@@ -101,7 +101,7 @@ Grant List Output (current static set):
 - `kair run` delegates execution to the native runner npm runner adapter.
 - Kair remains the authority layer; native runner remains an implementation detail.
 
-## Architect Orchestration Boundary (planned surface)
+## Architect Orchestration Boundary
 - `kair architect` is CLI-first orchestration for multi-agent planning only.
 - It does not auto-approve or auto-run contracts; human authority gates remain unchanged.
 - Agent definitions are contract-local:

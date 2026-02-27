@@ -76,7 +76,7 @@ describe("e2e: architect help", () => {
       expect(result.status).not.toBe(0);
       expect(result.stdout).toContain("Kair Architect Command");
       expect(result.stdout).toContain("kair architect [--contract <contract_id>]");
-      expect(result.stderr).toContain('Architect command is not implemented yet. Use "kair architect --help" for planned interface.');
+      expect(result.stderr).toContain("Invalid architect argument: unknown-subcommand");
     } finally {
       tmp.cleanup();
     }

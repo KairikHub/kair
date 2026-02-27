@@ -62,6 +62,12 @@ import {
   resolveProviderFromInput,
 } from "../core/auth/session";
 import { setDefaultProvider } from "../core/store/config";
+import { ensureArchitectBudget } from "../core/architect/budget";
+import { initDefaultSouls, loadArchitectSouls } from "../core/architect/soul";
+import { loadArchitectSession } from "../core/architect/session";
+import { runArchitectLoop } from "../core/architect/orchestrator";
+import { validateArchitectPlan } from "../core/architect/validate";
+import { getArchitectValidationPath } from "../core/architect/paths";
 
 import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, requireArgs } from "./argv";
@@ -106,6 +112,18 @@ type ParsedTopLevelPlanOptions = {
   debug: boolean;
   last: boolean;
   actorRaw: string;
+};
+
+type ParsedArchitectOptions = {
+  contractIdRaw: string;
+  last: boolean;
+  providerRaw: string;
+  modelRaw: string;
+  instructionsRaw: string;
+  resume: boolean;
+  jsonOutput: boolean;
+  debug: boolean;
+  maxRounds: number;
 };
 
 type PlanChoice = "commit" | "edit" | "prompt_again";
@@ -361,6 +379,113 @@ function parsePruneOptions(args: string[]) {
     fail("Invalid arguments. Usage: prune [-a|--all]");
   }
   return { all };
+}
+
+function parseArchitectOptions(args: string[]): ParsedArchitectOptions {
+  let contractIdRaw = "";
+  let last = false;
+  let providerRaw = "";
+  let modelRaw = "";
+  let instructionsRaw = "";
+  let resume = false;
+  let jsonOutput = false;
+  let debug = false;
+  let maxRounds = 12;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token === "--contract") {
+      contractIdRaw = String(args[i + 1] || "").trim();
+      i += 1;
+      continue;
+    }
+    if (token.startsWith("--contract=")) {
+      contractIdRaw = token.slice("--contract=".length).trim();
+      continue;
+    }
+    if (token === "--last") {
+      last = true;
+      continue;
+    }
+    if (token === "--provider") {
+      providerRaw = String(args[i + 1] || "").trim();
+      i += 1;
+      continue;
+    }
+    if (token.startsWith("--provider=")) {
+      providerRaw = token.slice("--provider=".length).trim();
+      continue;
+    }
+    if (token === "--model") {
+      modelRaw = String(args[i + 1] || "").trim();
+      i += 1;
+      continue;
+    }
+    if (token.startsWith("--model=")) {
+      modelRaw = token.slice("--model=".length).trim();
+      continue;
+    }
+    if (token === "--instructions") {
+      instructionsRaw = String(args[i + 1] || "").trim();
+      i += 1;
+      continue;
+    }
+    if (token.startsWith("--instructions=")) {
+      instructionsRaw = token.slice("--instructions=".length).trim();
+      continue;
+    }
+    if (token === "--resume") {
+      resume = true;
+      continue;
+    }
+    if (token === "--json") {
+      jsonOutput = true;
+      continue;
+    }
+    if (token === "--debug") {
+      debug = true;
+      continue;
+    }
+    if (token === "--max-rounds") {
+      const raw = String(args[i + 1] || "").trim();
+      i += 1;
+      if (!raw) {
+        fail("Missing value for --max-rounds.");
+      }
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+        fail("Invalid --max-rounds value. Use a positive integer.");
+      }
+      maxRounds = parsed;
+      continue;
+    }
+    if (token.startsWith("--max-rounds=")) {
+      const raw = token.slice("--max-rounds=".length).trim();
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+        fail("Invalid --max-rounds value. Use a positive integer.");
+      }
+      maxRounds = parsed;
+      continue;
+    }
+    failWithHelp(`Invalid architect argument: ${token}`, "architect");
+  }
+
+  if (contractIdRaw && last) {
+    fail("Specify either --contract <contract_id> or --last, not both.");
+  }
+
+  return {
+    contractIdRaw,
+    last,
+    providerRaw,
+    modelRaw,
+    instructionsRaw,
+    resume,
+    jsonOutput,
+    debug,
+    maxRounds,
+  };
 }
 
 async function promptPruneConfirmation() {
@@ -754,6 +879,17 @@ function resolvePlanContractId(parsed: ParsedTopLevelPlanOptions) {
   if (parsed.contractIdRaw && parsed.last) {
     fail("Specify either a contract id or --last, not both.");
   }
+  if (parsed.contractIdRaw) {
+    return parsed.contractIdRaw;
+  }
+  const lastId = getLastContractId();
+  if (!lastId) {
+    fail("No Contracts found.");
+  }
+  return lastId;
+}
+
+function resolveArchitectContractId(parsed: ParsedArchitectOptions) {
   if (parsed.contractIdRaw) {
     return parsed.contractIdRaw;
   }
@@ -1535,20 +1671,175 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         return;
       }
       const subcommand = (rest[0] || "").trim().toLowerCase();
-      if (subcommand === "status" || subcommand === "validate" || subcommand === "init-agents") {
-        if (hasHelpFlag(rest.slice(1))) {
-          printArchitectHelp();
+      if (subcommand === "status") {
+        const parsed = parseArchitectOptions(rest.slice(1));
+        const contractId = resolveArchitectContractId(parsed);
+        const session = loadArchitectSession(contractId);
+        if (parsed.jsonOutput) {
+          process.stdout.write(`${JSON.stringify({ contract_id: contractId, session }, null, 2)}\n`);
           return;
         }
-        failWithHelp(
-          `Architect subcommand "${subcommand}" is not implemented yet. See usage below.`,
-          "architect"
+        if (!session) {
+          console.log(`No architect session found for Contract ${contractId}.`);
+          return;
+        }
+        console.log(`Architect session for Contract ${contractId}`);
+        console.log(`Status: ${session.status}`);
+        console.log(`Round: ${session.round}/${session.max_rounds}`);
+        console.log(`Active agent: ${session.active_agent}`);
+        if (session.pending_human_prompt) {
+          console.log(`Pending human input: ${session.pending_human_prompt}`);
+        }
+        console.log(`Updated: ${session.updated_at}`);
+        return;
+      }
+      if (subcommand === "validate") {
+        const parsed = parseArchitectOptions(rest.slice(1));
+        const contractId = resolveArchitectContractId(parsed);
+        const contract = getContract(contractId);
+        const plan = resolveContractPlanV1(contract);
+        if (!plan) {
+          fail(`No structured plan found for Contract "${contractId}". Run \`kair architect\` or \`kair plan\` first.`);
+        }
+        const validation = validateArchitectPlan(plan);
+        fs.mkdirSync(path.dirname(getArchitectValidationPath(contractId)), { recursive: true });
+        fs.writeFileSync(getArchitectValidationPath(contractId), JSON.stringify(validation, null, 2));
+        if (parsed.jsonOutput) {
+          process.stdout.write(`${JSON.stringify(validation, null, 2)}\n`);
+          if (!validation.final_pass) {
+            process.exitCode = 1;
+          }
+          return;
+        }
+        console.log(`Architect validation for Contract ${contractId}: ${validation.final_pass ? "PASS" : "FAIL"}`);
+        console.log(validation.message);
+        if (validation.milestone_steps.length > 0) {
+          console.log(`Milestone steps: ${validation.milestone_steps.join(", ")}`);
+        }
+        if (!validation.final_pass) {
+          fail("Architect validation failed.");
+        }
+        return;
+      }
+      if (subcommand === "init-agents") {
+        const parsed = parseArchitectOptions(rest.slice(1));
+        const contractId = resolveArchitectContractId(parsed);
+        getContract(contractId);
+        const providerSeed = parsed.providerRaw
+          || (process.env.KAIR_LLM_PROVIDER || "").trim()
+          || (resolveDefaultProvider() || "")
+          || "openai";
+        const initialized = initDefaultSouls(contractId, {
+          provider: providerSeed,
+          model: parsed.modelRaw || undefined,
+        });
+        if (parsed.jsonOutput) {
+          process.stdout.write(`${JSON.stringify(initialized, null, 2)}\n`);
+          return;
+        }
+        if (initialized.written.length === 0) {
+          console.log(`Architect SOUL files already exist for Contract ${contractId}.`);
+          return;
+        }
+        console.log(`Initialized architect SOUL files for Contract ${contractId}:`);
+        for (const filePath of initialized.written) {
+          console.log(`- ${toRepoRelativePath(filePath) || filePath}`);
+        }
+        return;
+      }
+
+      const parsed = parseArchitectOptions(rest);
+      const contractId = resolveArchitectContractId(parsed);
+      const contract = getContract(contractId);
+      const actor = resolveActor("architect");
+      const budgetResult = await ensureArchitectBudget({
+        contract,
+        allowPrompt: options.allowPrompt === true,
+        actor,
+      });
+      const providerSeed = parsed.providerRaw
+        || (process.env.KAIR_LLM_PROVIDER || "").trim()
+        || (resolveDefaultProvider() || "")
+        || "openai";
+      initDefaultSouls(contractId, {
+        provider: providerSeed,
+        model: parsed.modelRaw || undefined,
+      });
+      const souls = loadArchitectSouls(contractId, {
+        provider: parsed.providerRaw || undefined,
+        model: parsed.modelRaw || undefined,
+      });
+      const providers = new Set<string>([
+        souls.architect.routing.provider,
+        souls.critic.routing.provider,
+        souls.integrator.routing.provider,
+        souls.validator.routing.provider,
+      ]);
+      for (const providerName of providers) {
+        const normalized = normalizeProviderName(providerName);
+        if (normalized === "openai" || normalized === "claude") {
+          await ensureProviderSession(normalized, {
+            allowInteractiveAuth: options.allowPrompt === true,
+          });
+        }
+        getProvider(providerName);
+      }
+
+      const result = await runArchitectLoop({
+        contract,
+        allowPrompt: options.allowPrompt === true,
+        maxRounds: parsed.maxRounds,
+        providerOverride: parsed.providerRaw || undefined,
+        modelOverride: parsed.modelRaw || undefined,
+        resume: parsed.resume,
+        instructions: parsed.instructionsRaw || undefined,
+      });
+
+      if (result.status === "completed" && result.plan) {
+        setPlanJson(
+          contract.id,
+          result.plan,
+          actor,
+          "Architect loop finalized structured plan."
+        );
+        if (contract.current_state !== "PLANNED") {
+          transition(contract, "PLANNED", "Architect finalized plan; Contract moved to PLANNED.", actor);
+        }
+      }
+
+      if (parsed.jsonOutput) {
+        process.stdout.write(
+          `${JSON.stringify(
+            {
+              contract_id: contract.id,
+              status: result.status,
+              budget: budgetResult.budget,
+              rounds: result.session.round,
+              validation: result.session.validation || (result as any).validation || null,
+            },
+            null,
+            2
+          )}\n`
+        );
+        if (result.status !== "completed") {
+          process.exitCode = 1;
+        }
+        return;
+      }
+
+      console.log(`Architect status for Contract ${contract.id}: ${result.status}`);
+      console.log(`Rounds: ${result.session.round}/${result.session.max_rounds}`);
+      console.log(`Budget: max_tokens=${budgetResult.budget.max_tokens}, total_max_cost_usd=${budgetResult.budget.total_max_cost_usd}`);
+      const resultValidation = result.session.validation || (result as any).validation;
+      if (resultValidation) {
+        console.log(`Validation: ${resultValidation.final_pass ? "PASS" : "FAIL"} (${resultValidation.message})`);
+      }
+      if (result.status === "awaiting_human" || result.status === "blocked") {
+        fail(
+          result.session.pending_human_prompt
+          || "Architect loop paused/blocked. Re-run with --resume and additional --instructions."
         );
       }
-      failWithHelp(
-        'Architect command is not implemented yet. Use "kair architect --help" for planned interface.',
-        "architect"
-      );
       break;
     }
     case "approve": {
