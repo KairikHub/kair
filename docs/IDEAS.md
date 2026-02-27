@@ -36,7 +36,7 @@ Q:  # Open Questions (must be falsifiable)
 
 E:  # Evidence Pointers (optional)
   - `docs/ARCHITECTURE.md`
-  - `docs/CLI_STABILITY.md`
+  - `docs/DECISIONS.md`
 
 ## Idea: Evidence Receipts Schema
 dpc_version: 0.1
@@ -69,7 +69,7 @@ Q:  # Open Questions (must be falsifiable)
 
 E:  # Evidence Pointers (optional)
   - `docs/CLI_COMMANDS.md`
-  - `docs/CLI_STABILITY.md`
+  - `docs/DECISIONS.md`
 
 ## Idea: Runner Interface (Emit / Approve Boundary)
 dpc_version: 0.1

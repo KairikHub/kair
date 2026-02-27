@@ -208,7 +208,6 @@ Manual test checklist:
 
 ## Documentation
 - Command reference: `docs/CLI_COMMANDS.md`
-- CLI stability expectations are documented in `docs/CLI_STABILITY.md`.
 - Architecture: `docs/ARCHITECTURE.md`
 - Decisions: `docs/DECISIONS.md`
 - Roadmap: `docs/ROADMAP.md`

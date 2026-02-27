@@ -153,6 +153,23 @@ Specifically:
 
 ---
 
+## Decision 008 — No longer Docker-First Development
+
+**Status:** Active  
+**Date:** 2026-02-27
+
+All refactors must preserve a clean path for future external integrations.
+
+Specifically:
+- Override "Decision 004 — Docker-First Development and Execution"
+- Side effects previous docker related files may cease to work. 
+- Backwards compatibility is not required. 
+
+**Rationale:**
+- CLI has been bundled, and runs without installing node on the host machine. 
+
+---
+
 ## How to Change a Decision
 
 - Add a new entry with a higher number
