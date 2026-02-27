@@ -18,7 +18,7 @@ function readOverride(names: OverrideName[]) {
 }
 
 export function getContractsRoot() {
-  return readOverride(["KAIR_DATA_DIR", "KAIRIK_DATA_DIR"]) || path.join(process.cwd(), ".kair", "contracts");
+  return readOverride(["KAIR_DATA_DIR", "KAIRIK_DATA_DIR"]) || path.join(process.cwd(), ".contracts");
 }
 
 export function getContractDir(contractId: string) {

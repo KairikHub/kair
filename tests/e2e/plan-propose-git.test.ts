@@ -48,7 +48,7 @@ function setupTempRepoWithEmbeddedKair() {
       "node_modules",
       ".kair/auth-fallback.json",
       ".kair/config.json",
-      ".kair/contracts/*/artifacts/",
+      ".contracts/*/artifacts/",
       "",
     ].join("\n")
   );
@@ -60,8 +60,8 @@ function setupTempRepoWithEmbeddedKair() {
 function buildKairEnv(repo: string) {
   return {
     KAIR_TEST_MODE: "1",
-    KAIR_DATA_DIR: path.join(repo, ".kair", "contracts"),
-    KAIR_ARTIFACTS_DIR: path.join(repo, ".kair", "contracts"),
+    KAIR_DATA_DIR: path.join(repo, ".contracts"),
+    KAIR_ARTIFACTS_DIR: path.join(repo, ".contracts"),
   };
 }
 
@@ -122,14 +122,14 @@ describe("e2e: plan/propose git authority", () => {
       );
       expect(plan.status).toBe(0);
 
-      fs.appendFileSync(path.join(repo, ".kair", "contracts", contractId, "plan", "PLAN.md"), "\nmanual edit");
+      fs.appendFileSync(path.join(repo, ".contracts", contractId, "plan", "PLAN.md"), "\nmanual edit");
       const propose = runInCwd(kair, ["propose", contractId], repo, {
         ...buildKairEnv(repo),
       });
       expect(propose.status).not.toBe(0);
       expect(propose.stderr).toContain(`Uncommitted plan artifacts detected for contract "${contractId}".`);
       expect(propose.stderr).toContain("Suggested next step:");
-      expect(propose.stderr).toContain("git add .kair/contracts/");
+      expect(propose.stderr).toContain("git add .contracts/");
     } finally {
       fs.rmSync(repo, { recursive: true, force: true });
     }
@@ -159,11 +159,11 @@ describe("e2e: plan/propose git authority", () => {
       );
       expect(plan.status).toBe(0);
 
-      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run"), { recursive: true });
-      fs.mkdirSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "git"), { recursive: true });
-      fs.appendFileSync(path.join(repo, ".kair", "contracts", contractId, "artifacts", "run", "stream.jsonl"), "x\n");
+      fs.mkdirSync(path.join(repo, ".contracts", contractId, "artifacts", "run"), { recursive: true });
+      fs.mkdirSync(path.join(repo, ".contracts", contractId, "artifacts", "git"), { recursive: true });
+      fs.appendFileSync(path.join(repo, ".contracts", contractId, "artifacts", "run", "stream.jsonl"), "x\n");
       fs.appendFileSync(
-        path.join(repo, ".kair", "contracts", contractId, "artifacts", "git", "commands.jsonl"),
+        path.join(repo, ".contracts", contractId, "artifacts", "git", "commands.jsonl"),
         "{}\n"
       );
 

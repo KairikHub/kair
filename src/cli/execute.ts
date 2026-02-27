@@ -28,7 +28,12 @@ import { suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
 import {
   getArtifactsDir,
+  getContractDir,
+  getContractHistoryPath,
+  getContractSnapshotPath,
+  getContractsIndexPath,
   getContractsRoot,
+  getContractPlanDir,
   getContractPlanJsonPath,
   getContractRulesPath,
   getDataFile,
@@ -397,6 +402,14 @@ function resetContractsAndArtifacts() {
     )
   );
   return { dataFile, artifactsDir: getArtifactsDir() };
+}
+
+function toRepoRelativePath(targetPath: string, cwd = process.cwd()) {
+  const relative = path.relative(cwd, targetPath);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    return "";
+  }
+  return relative;
 }
 
 function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
@@ -1454,18 +1467,21 @@ export async function executeCommand(tokens: string[], options: any = {}) {
           const uncommitted = listUncommittedContractPaths(contract.id);
           if (uncommitted.length > 0) {
             const stageHint = [
-              `.kair/contracts/${contract.id}/contract.json`,
-              `.kair/contracts/${contract.id}/history.jsonl`,
-              `.kair/contracts/${contract.id}/plan`,
-              `.kair/contracts/${contract.id}/dpc`,
-              ".kair/contracts/index.json",
-            ].join(" ");
+              getContractSnapshotPath(contract.id),
+              getContractHistoryPath(contract.id),
+              getContractPlanDir(contract.id),
+              path.join(getContractDir(contract.id), "dpc"),
+              getContractsIndexPath(),
+            ]
+              .map((entry) => toRepoRelativePath(entry))
+              .filter(Boolean)
+              .join(" ");
             fail(
               [
                 `Uncommitted plan artifacts detected for contract "${contract.id}".`,
                 "Commit these files before `kair propose`:",
                 ...uncommitted.map((entry) => `- ${entry}`),
-                `Suggested next step: git add ${stageHint} && git commit -m "kair(plan): persist contract ${contract.id}"`,
+                `Suggested next step: git add ${stageHint || ".contracts"} && git commit -m "kair(plan): persist contract ${contract.id}"`,
               ].join("\n")
             );
           }

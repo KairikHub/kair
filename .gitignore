@@ -8,4 +8,4 @@ node_modules/
 .kair/runtime/
 .kair/auth-fallback.json
 .kair/config.json
-.kair/contracts/*/artifacts/
+.contracts/*/artifacts/

@@ -102,7 +102,7 @@ For changes intended to ship via `curl ... install.sh | sh`:
 Each contract is stored under:
 
 ```bash
-.kair/contracts/<contract_id>/
+.contracts/<contract_id>/
 ```
 
 Key files:
@@ -152,8 +152,8 @@ The current `kair --help` command groups are:
 ## Native Runner (`kair run`)
 `kair run` delegates execution to the native Kair runner and always writes:
 
-- `.kair/contracts/<contract_id>/artifacts/run/run-request.json`
-- `.kair/contracts/<contract_id>/artifacts/run/run-result.json`
+- `.contracts/<contract_id>/artifacts/run/run-request.json`
+- `.contracts/<contract_id>/artifacts/run/run-result.json`
 
 Auth:
 - Preferred: `kair login --provider openai` or `kair login --provider claude`
@@ -166,9 +166,9 @@ Optional selection:
 - `kair run <id> --provider <name> --model <name>`
 
 Run prerequisites:
-- `.kair/contracts/<contract_id>/plan/plan_v1.json`
-- `.kair/contracts/<contract_id>/plan/RULES.md` (may be empty)
-- Approval artifact `.kair/contracts/<contract_id>/approvals/<plan_hash>.json` unless `--dry-run`
+- `.contracts/<contract_id>/plan/plan_v1.json`
+- `.contracts/<contract_id>/plan/RULES.md` (may be empty)
+- Approval artifact `.contracts/<contract_id>/approvals/<plan_hash>.json` unless `--dry-run`
 - If run from a git repo, Kair prompts for `git pull` unless `--pull` is passed
 
 Tool grants (still run-time gated):
@@ -181,7 +181,7 @@ Example flow:
 
 ```bash
 ./.kair/bin/kair contract "Write a hello file under artifacts"
-./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .kair/contracts/<contract_id>/artifacts/run/."}]}'
+./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'
 ./.kair/bin/kair propose --last
 ./.kair/bin/kair grant --last local:write --actor <name>
 ./.kair/bin/kair run --last --dry-run --debug
@@ -193,13 +193,13 @@ Manual test checklist:
    - `KAIR_OPENAI_API_KEY=<your key>`
 2. Run:
    - `./.kair/bin/kair contract "Write hello evidence"`
-   - `./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .kair/contracts/<contract_id>/artifacts/run/."}]}'`
+   - `./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'`
    - `./.kair/bin/kair propose --last`
    - `./.kair/bin/kair grant --last local:write --actor <name>`
    - `./.kair/bin/kair run --last --dry-run --debug`
 3. Verify expected evidence files:
-   - `.kair/contracts/<contract_id>/artifacts/run/run-request.json`
-   - `.kair/contracts/<contract_id>/artifacts/run/run-result.json`
+   - `.contracts/<contract_id>/artifacts/run/run-request.json`
+   - `.contracts/<contract_id>/artifacts/run/run-result.json`
 4. Inspect outputs:
    - Open `run-request.json` for the execution payload.
    - Open `run-result.json` for runner status, summary, logs path, and evidence paths.

@@ -174,10 +174,14 @@ export function buildContractGitPaths(contractId: string, cwd = process.cwd()) {
     }
   }
 
+  const contractRelativeDir = toRepoRelative(getContractDir(contractId), cwd);
+  const legacyRunPrefix = contractRelativeDir ? `${contractRelativeDir}/run/` : "";
+  const legacyGitPrefix = contractRelativeDir ? `${contractRelativeDir}/git/` : "";
+
   const filtered = [...stagePaths]
     .filter((entry) => !entry.includes("/artifacts/"))
-    .filter((entry) => !entry.startsWith(`.kair/contracts/${contractId}/run/`))
-    .filter((entry) => !entry.startsWith(`.kair/contracts/${contractId}/git/`))
+    .filter((entry) => !legacyRunPrefix || !entry.startsWith(legacyRunPrefix))
+    .filter((entry) => !legacyGitPrefix || !entry.startsWith(legacyGitPrefix))
     .filter((entry) => !entry.startsWith(".kair/auth-fallback.json"))
     .filter((entry) => !entry.startsWith(".kair/config.json"))
     .sort((a, b) => a.localeCompare(b));

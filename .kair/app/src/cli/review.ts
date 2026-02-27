@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { EvidenceItem } from "../core/contracts/evidence";
+import { getContractArtifactsDir } from "../core/store/paths";
 import { COLORS, formatState, heading, label, style, title } from "./format";
 
 const DIVIDER_WIDTH = 72;
@@ -85,11 +86,16 @@ function renderEvidenceChecklist(contract: any, evidenceItems: EvidenceItem[]) {
     return [`${style("[ ]", COLORS.gray)} Evidence: none recorded.`];
   }
   return evidenceItems.map(
-    (item) =>
-      `${style("[ ]", COLORS.green)} ${item.type} - ${item.label} (${style(
-        `.kair/contracts/${contract.id}/artifacts/evidence/${item.path}`,
+    (item) => {
+      const evidencePath = path.relative(
+        process.cwd(),
+        path.join(getContractArtifactsDir(contract.id), "evidence", item.path)
+      ) || path.join(".contracts", contract.id, "artifacts", "evidence", item.path);
+      return `${style("[ ]", COLORS.green)} ${item.type} - ${item.label} (${style(
+        evidencePath,
         COLORS.gray
-      )})`
+      )})`;
+    }
   );
 }
 
