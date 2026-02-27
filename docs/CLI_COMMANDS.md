@@ -55,6 +55,20 @@ kair <command>
   - `--actor` (alias: `--by`) attributes plan history entries.
 - `kair plan <contract_id> "<plan>"`
   - Attach a legacy text plan and transition to `PLANNED`.
+- `kair architect [--contract <contract_id>] [--last] [--provider <name>] [--model <name>] [--instructions <text>] [--resume] [--json] [--debug] [--max-rounds <n>]`
+  - Run resumable multi-agent planning loop over the target contract intent.
+  - Contract selection order: `--contract`, then `--last`, then most recently updated contract.
+  - Agent SOUL files are loaded from `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`.
+  - Per-agent provider/model routing is read from SOUL frontmatter; global `--provider`/`--model` can override all agents.
+  - Writes architect session/log artifacts under `.contracts/<contract_id>/artifacts/architect/`.
+  - If contract budget is missing, prompts in interactive mode; otherwise persists default caps `max_tokens=120000`, `total_max_cost_usd=15`.
+  - Final output is validated against `kair.plan.v1` and milestone gate before completion.
+- `kair architect status [--contract <contract_id>] [--last]`
+  - Show architect checkpoint and resumability status.
+- `kair architect validate [--contract <contract_id>] [--last] [--json]`
+  - Re-run milestone and schema validation for architect output.
+- `kair architect init-agents [--contract <contract_id>] [--last]`
+  - Scaffold default agent SOUL files for the target contract.
 
 ### Controls and Approval
 - `kair grant list`

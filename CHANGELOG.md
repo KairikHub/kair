@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-02-27
+- CLI help surface expansion:
+  - Added `architect` to top-level `kair --help` command index.
+  - Added dedicated `kair architect --help` / `kair architect help` output with usage variants and path contracts.
+  - Added architect-specific usage routing for invalid architect arguments.
+- Docs updates for architect planning surface:
+  - README now includes `kair architect` overview and quick usage examples.
+  - `docs/CLI_COMMANDS.md` now documents architect command variants and artifact paths.
+  - `docs/ARCHITECTURE.md` now includes architect orchestration boundary and checkpoint/log artifacts.
+- Test coverage:
+  - Added e2e tests for top-level help inclusion, architect help parity, and architect invalid-args usage hints.
+
 ## 2026-02-13
 - Breaking CLI command remap (no compatibility aliases):
   - `kair contract "<intent>"` now creates contracts (old `propose` behavior).

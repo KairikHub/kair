@@ -75,10 +75,10 @@
     {"path": ".kair/app/node_modules/tsx/package.json", "sha256": "01a9e08302bec206e15b651fe3e128a009d9d6a0e64cb83a58ebc09d8c1d4665", "size": 1624},
     {"path": ".kair/app/package.json", "sha256": "b61050974adc50064720ae3d3f6a0c90809977e20c8f87bf1428d950c75522e4", "size": 602},
     {"path": ".kair/app/src/cli/argv.ts", "sha256": "e2d35ebce59b08576fa4bc9ac04c3efa083c6e5250c03a8ac04095b8e96157c4", "size": 3527},
-    {"path": ".kair/app/src/cli/errors.ts", "sha256": "524765ba7a3f71a7f14bb483d0d409f9a2626a10df1dfbee8976c88aded27d81", "size": 387},
-    {"path": ".kair/app/src/cli/execute.ts", "sha256": "9a7646cc3e1eded4b610af92b3ba8200c88bf584c3478d95eccd16fb66c9be44", "size": 68514},
+    {"path": ".kair/app/src/cli/errors.ts", "sha256": "90b89a87408d8d520ca2b8f01a10a3976418af6f951ed0bfbb9c997423ed222b", "size": 487},
+    {"path": ".kair/app/src/cli/execute.ts", "sha256": "a02921f99efc790feba4bbcaf2662e8cea7dd05cf7aaa5d15282c831ea22854c", "size": 69234},
     {"path": ".kair/app/src/cli/format.ts", "sha256": "b86b467bcec4cf8851e3468125ccba16b997614c1f5fef8223fcc1bd6c8a8d67", "size": 1427},
-    {"path": ".kair/app/src/cli/help.ts", "sha256": "69a9358853c2d330a29eafd9e8c0a67557483646730e2adf2d90bd8c41b7a9ac", "size": 10458},
+    {"path": ".kair/app/src/cli/help.ts", "sha256": "f61f1f21ae2cf06b25a214ec69a2560f77e33595cdc42c9c3d5bedf970543408", "size": 12165},
     {"path": ".kair/app/src/cli/list.ts", "sha256": "5ffce94299d796d921b315ece9400ac66bd4c1d716a9239c5b09578516cac1a2", "size": 1971},
     {"path": ".kair/app/src/cli/main.ts", "sha256": "ebd9cb235f5f7e93a44840db6fd8561d9a0c4e3ba36078cf5857b415906a3721", "size": 2488},
     {"path": ".kair/app/src/cli/prompt.ts", "sha256": "914527805bad115c55b8fd21f36a9ab8d9861833f285bdd0c796d8e66a823b84", "size": 1293},
@@ -134,6 +134,6 @@
     {"path": ".kair/app/src/kair.ts", "sha256": "b41b65a0366849aeb39300f24543b21c437288a2e149296b60c924d96ebb8cd2", "size": 158},
     {"path": ".kair/bin/kair", "sha256": "48dd48ae043b2440d4bba4d113e93bef72eb2fa0819f1cd64191c475b6bd109e", "size": 657},
     {"path": ".kair/runtime/node", "sha256": "dd6f3352057e904b0b32b7e74829b82acb33958f20c8feab6c0f781f7d042ebd", "size": 113991760},
-    {"path": ".kair/VERSION", "sha256": "0a29f43a824732ff16f15adf2faee628be55805ace40f44f9c59cf7891da6012", "size": 78}
+    {"path": ".kair/VERSION", "sha256": "85ead5b498ae457c62209e8e436e985c0f271f2d10dfda7042748b4651a4e3f3", "size": 78}
   ]
 }

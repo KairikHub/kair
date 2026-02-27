@@ -141,9 +141,27 @@ The current `kair --help` command groups are:
   - `kair logins` list provider login/configuration status (`kair login list` alias)
   - `kair contract` create a new Contract in `DRAFT`
   - `kair plan` generate/refine structured `kair.plan.v1`
+  - `kair architect` orchestrate resumable multi-agent planning for a Contract
   - `kair propose` submit/share a planned Contract
   - `kair approve` approve a Contract version
   - `kair run` execute a Contract via native runner
+
+## Multi-Agent Planning (`kair architect`)
+`kair architect` is the CLI surface for looped multi-agent planning over Contract intent.
+
+- Contract selection defaults to latest unless `--contract <id>` or `--last` is supplied.
+- Agent definitions live at `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`.
+- SOUL frontmatter can set per-agent provider/model routing for LLM-agnostic execution.
+- Architect loop checkpoints and decision logs are written under `.contracts/<contract_id>/artifacts/architect/`.
+- Final gate validates milestone readiness before accepting output.
+
+Quick example:
+
+```bash
+kair architect --last
+kair architect status --last
+kair architect validate --last
+```
 - Governance and controls:
   - `kair grant`, `pause`, `resume`, `rewind`
 - Review and inspection:

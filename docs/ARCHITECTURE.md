@@ -100,3 +100,19 @@ Grant List Output (current static set):
 ## Execution Backend (v0)
 - `kair run` delegates execution to the native runner npm runner adapter.
 - Kair remains the authority layer; native runner remains an implementation detail.
+
+## Architect Orchestration Boundary (planned surface)
+- `kair architect` is CLI-first orchestration for multi-agent planning only.
+- It does not auto-approve or auto-run contracts; human authority gates remain unchanged.
+- Agent definitions are contract-local:
+  - `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`
+- Agent execution is LLM-agnostic:
+  - each agent can target different provider/model routing from SOUL frontmatter.
+- Architect resumability/checkpoint artifacts are stored under:
+  - `.contracts/<contract_id>/artifacts/architect/session.json`
+  - `.contracts/<contract_id>/artifacts/architect/decisions.jsonl`
+  - `.contracts/<contract_id>/artifacts/architect/turns.jsonl`
+  - `.contracts/<contract_id>/artifacts/architect/validation.json`
+- Final architect output must satisfy:
+  - valid `kair.plan.v1` schema
+  - milestone gate validation

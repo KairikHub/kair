@@ -12,6 +12,7 @@ ${label("start a workflow")}
   logins                  List provider login/configuration status.
   contract                Create a new Contract in DRAFT.
   plan                    Generate/refine a structured plan (kair.plan.v1).
+  architect               Run multi-agent planning loop for a Contract.
   propose                 Submit a planned Contract for approval.
   approve                 Approve a Contract version.
   run                     Execute an approved Contract.
@@ -33,6 +34,7 @@ ${label("maintenance")}
   self-update             Update local kair install using hosted installer.
 
 See "kair contract --help" for contract creation usage.
+See "kair architect --help" for multi-agent planning usage.
 See "kair grant --help" for grant usage.`);
 }
 
@@ -85,6 +87,45 @@ ${label("Notes:")}
   In a git repo, successful structured plan persistence auto-commits contract-local .kair artifacts.
   --json implies --interactive=false.
   --debug prints prompt payload and DPC details (suppressed in --json mode).
+`);
+}
+
+export function printArchitectHelp() {
+  console.log(`${title("Kair Architect Command")}
+
+${label("Usage:")}
+  kair architect [--contract <contract_id>] [--last] [--provider <name>] [--model <name>] [--instructions <text>] [--resume] [--json] [--debug] [--max-rounds <n>]
+  kair architect status [--contract <contract_id>] [--last]
+  kair architect validate [--contract <contract_id>] [--last] [--json]
+  kair architect init-agents [--contract <contract_id>] [--last]
+
+${label("Description:")}
+  Orchestrate a resumable multi-agent planning loop and persist structured plan output for the selected Contract.
+
+${label("Contract selection:")}
+  Use --contract <contract_id> to target explicitly.
+  Use --last for the most recently updated Contract.
+  With neither flag, architect defaults to the most recently updated Contract.
+
+${label("Agent definitions (SOUL):")}
+  .contracts/<contract_id>/agents/<agent_name>/SOUL.md
+  SOUL frontmatter can define per-agent provider/model routing.
+
+${label("Resumability and logs:")}
+  Checkpoints and decision logs are written under:
+  .contracts/<contract_id>/artifacts/architect/
+  Runs can pause/resume from saved checkpoint state.
+
+${label("Budget policy:")}
+  If contract budget is missing, architect prompts in interactive mode.
+  If not provided, architect persists default budget caps:
+  max_tokens=120000 and total_max_cost_usd=15.
+
+${label("Milestone validation gate:")}
+  Final validation requires:
+  1) valid kair.plan.v1 schema,
+  2) milestone signal in plan content,
+  3) validator-agent pass (with bounded retries).
 `);
 }
 

@@ -67,6 +67,7 @@ import { failWithHelp } from "./errors";
 import { parseContractCommand, extractActorFlags, extractProposeOptions, extractRunOptions, requireArgs } from "./argv";
 import {
   printAcceptHelp,
+  printArchitectHelp,
   printApproveHelp,
   printContractsHelp,
   printContractHelp,
@@ -1526,6 +1527,28 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         }
       }
       await handleTopLevelPlan(rest);
+      break;
+    }
+    case "architect": {
+      if (hasHelpFlag(rest)) {
+        printArchitectHelp();
+        return;
+      }
+      const subcommand = (rest[0] || "").trim().toLowerCase();
+      if (subcommand === "status" || subcommand === "validate" || subcommand === "init-agents") {
+        if (hasHelpFlag(rest.slice(1))) {
+          printArchitectHelp();
+          return;
+        }
+        failWithHelp(
+          `Architect subcommand "${subcommand}" is not implemented yet. See usage below.`,
+          "architect"
+        );
+      }
+      failWithHelp(
+        'Architect command is not implemented yet. Use "kair architect --help" for planned interface.',
+        "architect"
+      );
       break;
     }
     case "approve": {
