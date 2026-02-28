@@ -111,7 +111,7 @@ describe("e2e: interactive plan", () => {
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
       expect(after.contract.plan_v1.steps.length).toBeGreaterThan(0);
       expect(after.contract.current_state).toBe("PLANNED");
       expect(
@@ -171,7 +171,7 @@ describe("e2e: interactive plan", () => {
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract).toBeDefined();
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
       expect(after.contract.plan_v1.steps.some((step: any) => step.id === "add-safety-gate")).toBe(
         true
       );
@@ -243,7 +243,7 @@ describe("e2e: interactive plan", () => {
       expect(create.status).toBe(0);
 
       const initialPlanRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Initial plan",
         steps: [
           {

@@ -11,7 +11,7 @@ ${label("start a workflow")}
   login                   OAuth login for OpenAI/Claude providers.
   logins                  List provider login/configuration status.
   contract                Create a new Contract in DRAFT.
-  plan                    Generate/refine a structured plan (kair.plan.v1).
+  plan                    Generate/refine a structured plan (plan.v1).
   architect               Run multi-agent planning loop for a Contract.
   propose                 Submit a planned Contract for approval.
   approve                 Approve a Contract version.
@@ -42,13 +42,16 @@ export function printContractHelp() {
   console.log(`${title("Kair Contract Command")}
 
 ${label("Usage:")}
-  kair contract "<intent>" [--id <contract_id>] [--with=git]
+  kair contract [<intent>] [--id <contract_id>] [--with=git]
 
 ${label("Description:")}
   Create a new Contract in DRAFT state.
 
 ${label("Notes:")}
-  If --id is omitted, kair generates a suggested contract id from intent.
+  On first use per install, kair initializes a Project Name before creating contracts.
+  In interactive mode, kair prompts for missing Project Name and Intent.
+  In non-interactive mode, set KAIR_PROJECT if project name is not initialized.
+  If --id is omitted, kair generates a suggested contract id from Project Name (shortened + timestamp).
 `);
 }
 
@@ -77,14 +80,14 @@ ${label("Usage:")}
 ${label("Modes:")}
   Interactive (default): generates/refines plans with accept/refine/cancel prompts.
   Non-interactive: use --interactive=false with JSON from arg, --file, or stdin.
-  JSON output: --json prints only validated kair.plan.v1 JSON.
+  JSON output: --json prints only validated plan.v1 JSON.
 
 ${label("Notes:")}
   If <contract_id> is omitted, plan targets the most recently updated Contract.
   Provider resolution order: --provider, then KAIR_LLM_PROVIDER, then .kair/config.json defaultProvider (if configured).
   If exactly one provider is configured with an API key/token, plan auto-selects it.
   If multiple providers are configured, interactive mode prompts; non-interactive mode requires --provider or KAIR_LLM_PROVIDER.
-  In a git repo, successful structured plan persistence auto-commits contract-local .kair artifacts.
+  In a git repo, successful structured plan persistence auto-commits contract-local .contracts artifacts.
   --json implies --interactive=false.
   --debug prints prompt payload and DPC details (suppressed in --json mode).
 `);
@@ -123,7 +126,7 @@ ${label("Budget policy:")}
 
 ${label("Milestone validation gate:")}
   Final validation requires:
-  1) valid kair.plan.v1 schema,
+  1) valid plan.v1 schema,
   2) milestone signal in plan content,
   3) validator-agent pass (with bounded retries).
 `);

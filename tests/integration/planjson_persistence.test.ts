@@ -3,12 +3,13 @@ import * as path from "node:path";
 
 import { proposeContract } from "../../src/core/contracts/propose";
 import { PLAN_VERSION, Plan } from "../../src/core/plans/schema";
-import { contractStore, loadStore, saveStore } from "../../src/core/store/contracts_store";
+import { contractStore, loadStore, saveStore, setProjectName } from "../../src/core/store/contracts_store";
 import { makeTempRoot } from "../helpers/tmp";
 
 function resetStore() {
   contractStore.contracts.clear();
   contractStore.nextId = 1;
+  setProjectName("");
 }
 
 describe("integration: structured plan persistence", () => {
@@ -68,6 +69,7 @@ describe("integration: structured plan persistence", () => {
       const dataFile = path.join(tmp.dataDir, "index.json");
       const indexPayload = {
         nextId: 2,
+        project: "legacy-project",
         contracts: [
           {
             id: "legacy_contract",

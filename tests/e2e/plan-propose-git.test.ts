@@ -60,6 +60,7 @@ function setupTempRepoWithEmbeddedKair() {
 function buildKairEnv(repo: string) {
   return {
     KAIR_TEST_MODE: "1",
+    KAIR_PROJECT: "git-e2e-project",
     KAIR_DATA_DIR: path.join(repo, ".contracts"),
     KAIR_ARTIFACTS_DIR: path.join(repo, ".contracts"),
   };
@@ -71,7 +72,7 @@ describe("e2e: plan/propose git authority", () => {
     const kair = path.join(repo, ".kair", "bin", "kair");
     const contractId = "git_plan_autocommit";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Git auto commit",
       steps: [{ id: "step-a", summary: "Auto commit plan artifacts." }],
     });
@@ -103,7 +104,7 @@ describe("e2e: plan/propose git authority", () => {
     const kair = path.join(repo, ".kair", "bin", "kair");
     const contractId = "git_propose_block";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Git propose block",
       steps: [{ id: "step-a", summary: "Detect dirty plan artifacts." }],
     });
@@ -140,7 +141,7 @@ describe("e2e: plan/propose git authority", () => {
     const kair = path.join(repo, ".kair", "bin", "kair");
     const contractId = "git_propose_ignore_artifacts";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Git propose ignore artifacts",
       steps: [{ id: "step-a", summary: "Ignore artifacts noise." }],
     });
@@ -182,7 +183,7 @@ describe("e2e: plan/propose git authority", () => {
     const kair = path.join(repo, ".kair", "bin", "kair");
     const contractId = "git_propose_autocommit_state";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Git propose auto-commit",
       steps: [{ id: "step-a", summary: "Auto-commit propose transition state." }],
     });
@@ -214,7 +215,7 @@ describe("e2e: plan/propose git authority", () => {
     const kair = path.join(repo, ".kair", "bin", "kair");
     const contractId = "git_run_autocommit_state";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Git run auto-commit",
       steps: [{ id: "step-a", summary: "Auto-commit run transition state." }],
     });

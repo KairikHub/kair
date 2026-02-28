@@ -2,12 +2,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { proposeContract } from "../../src/core/contracts/propose";
-import { contractStore, loadStore, saveStore } from "../../src/core/store/contracts_store";
+import { contractStore, loadStore, saveStore, setProjectName } from "../../src/core/store/contracts_store";
 import { makeTempRoot } from "../helpers/tmp";
 
 function resetStore() {
   contractStore.contracts.clear();
   contractStore.nextId = 1;
+  setProjectName("");
 }
 
 describe("integration: persistence store", () => {

@@ -9,7 +9,13 @@ import { loadEvidenceIndex } from "../core/contracts/evidence";
 import { writePlanPromptArtifact } from "../core/contracts/artifacts";
 import { DPC_VERSION, DpcV1 } from "../core/dpc/schema";
 import { getDpcPath, loadDpcV1, saveDpcV1 } from "../core/dpc/storage";
-import { contractStore, getContract, getLastContractId } from "../core/store/contracts_store";
+import {
+  contractStore,
+  getContract,
+  getLastContractId,
+  getProjectName,
+  setProjectName,
+} from "../core/store/contracts_store";
 import {
   enforceControls,
 } from "../core/contracts/controls";
@@ -24,7 +30,7 @@ import { diffPlansByStepId, type PlanStepDiffById } from "../core/plans/diff";
 import { parseAndValidatePlanJson } from "../core/plans/validate";
 import { getProvider, normalizeProviderName } from "../core/providers/registry";
 import type { Provider } from "../core/providers/types";
-import { suggestContractId, validateContractId } from "../core/contracts/ids";
+import { normalizeProjectName, suggestContractId, validateContractId } from "../core/contracts/ids";
 import { appendApprovalVersion, appendRewindVersion } from "../core/contracts/versioning";
 import {
   getArtifactsDir,
@@ -191,10 +197,10 @@ function updateDpcEvidenceForPlanAttempt(params: {
 }
 
 function resolveContractPlanV1(contract: any): Plan | null {
-  if (contract?.plan_v1 && contract.plan_v1.version === "kair.plan.v1") {
+  if (contract?.plan_v1 && contract.plan_v1.version === "plan.v1") {
     return contract.plan_v1 as Plan;
   }
-  if (contract?.planJson && contract.planJson.version === "kair.plan.v1") {
+  if (contract?.planJson && contract.planJson.version === "plan.v1") {
     return contract.planJson as Plan;
   }
   return null;
@@ -509,6 +515,7 @@ async function promptPruneConfirmation() {
 function resetContractsAndArtifacts() {
   contractStore.contracts.clear();
   contractStore.nextId = 1;
+  setProjectName("");
   const contractsRoot = getContractsRoot();
   fs.mkdirSync(contractsRoot, { recursive: true });
   for (const entry of fs.readdirSync(contractsRoot)) {
@@ -521,6 +528,7 @@ function resetContractsAndArtifacts() {
     JSON.stringify(
       {
         nextId: 1,
+        project: "",
         contracts: [],
       },
       null,
@@ -536,6 +544,54 @@ function toRepoRelativePath(targetPath: string, cwd = process.cwd()) {
     return "";
   }
   return relative;
+}
+
+async function resolveOrInitializeProjectName(allowPrompt: boolean) {
+  const existing = normalizeProjectName(getProjectName());
+  if (existing) {
+    if (existing !== getProjectName()) {
+      setProjectName(existing);
+    }
+    return existing;
+  }
+
+  if (allowPrompt && process.stdin.isTTY && process.stdout.isTTY) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      while (true) {
+        const answer = (await rl.question("Project Name: ")).trim();
+        const normalized = normalizeProjectName(answer);
+        if (!normalized) {
+          console.log("Project Name cannot be empty.");
+          continue;
+        }
+        setProjectName(normalized);
+        return normalized;
+      }
+    } finally {
+      rl.close();
+    }
+  }
+
+  const fromEnv = normalizeProjectName(String(process.env.KAIR_PROJECT || "").trim());
+  if (fromEnv) {
+    setProjectName(fromEnv);
+    return fromEnv;
+  }
+
+  fail("Unable to resolve Project Name. Set KAIR_PROJECT or run interactively.");
+}
+
+function buildUniqueProjectBasedContractId(projectName: string, fallbackIndex: number) {
+  const baseSuggested = suggestContractId(projectName) || `contract_${fallbackIndex}`;
+  let candidate = baseSuggested;
+  let suffix = 2;
+  while (contractStore.contracts.has(candidate)) {
+    const next = `${baseSuggested}-${suffix}`;
+    candidate = next.slice(0, 80);
+    suffix += 1;
+  }
+  return candidate;
 }
 
 function parseTopLevelPlanOptions(args: string[]): ParsedTopLevelPlanOptions {
@@ -1526,7 +1582,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       let intent = remaining.join(" ").trim();
       let id = idRaw.trim();
       const allowPrompt = options.allowPrompt === true;
-      const isChained = options.isChained === true;
+      let projectName = await resolveOrInitializeProjectName(allowPrompt);
       if (id) {
         const error = validateContractId(id);
         if (error) {
@@ -1543,15 +1599,21 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         );
       }
       if (!intent && allowPrompt) {
-        const prompted = await promptForProposeInput({ intent, idRaw: id || "" });
+        const prompted = await promptForProposeInput({ intent, idRaw: id || "", projectRaw: projectName });
         intent = prompted.intent;
         id = prompted.id;
+        if (prompted.project && prompted.project !== projectName) {
+          projectName = prompted.project;
+        }
+        if (prompted.project && prompted.project !== getProjectName()) {
+          setProjectName(prompted.project);
+        }
       }
       if (!intent) {
         fail("Intent cannot be empty.");
       }
       if (!id) {
-        id = isChained ? `contract_${contractStore.nextId}` : suggestContractId(intent);
+        id = buildUniqueProjectBasedContractId(projectName, contractStore.nextId);
         const error = validateContractId(id);
         if (error) {
           fail(error);
@@ -1561,7 +1623,9 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         }
       }
       const contract = proposeContract(intent, [], id);
+      setProjectName(projectName);
       console.log(`Created a Kair Contract: ${contract.id}`);
+      console.log(`Project: ${projectName}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
       if (withGit) {

@@ -44,6 +44,7 @@ type ContractIndexEntry = {
 export const contractStore = {
   contracts: new Map<string, ContractRecord>(),
   nextId: 1,
+  project: "",
 };
 
 function normalizeContract(raw: any): ContractRecord | null {
@@ -100,6 +101,7 @@ export function loadStore() {
       return;
     }
     contractStore.contracts.clear();
+    contractStore.project = String(parsed.project || "").trim();
     for (const entry of parsed.contracts as ContractIndexEntry[]) {
       const snapshotPath = getContractSnapshotPath(entry.id);
       try {
@@ -137,9 +139,18 @@ export function saveStore() {
 
   const payload = {
     nextId: contractStore.nextId,
+    project: contractStore.project || "",
     contracts: [...contractStore.contracts.values()].map(buildIndexEntry),
   };
   fs.writeFileSync(indexPath, JSON.stringify(payload, null, 2));
+}
+
+export function getProjectName() {
+  return String(contractStore.project || "").trim();
+}
+
+export function setProjectName(projectName: string) {
+  contractStore.project = String(projectName || "").trim();
 }
 
 export function appendContractHistoryEntry(contractId: string, entry: any) {

@@ -1,4 +1,4 @@
-export const PLAN_VERSION = "kair.plan.v1";
+export const PLAN_VERSION = "plan.v1";
 
 export type PlanStep = {
   id: string;

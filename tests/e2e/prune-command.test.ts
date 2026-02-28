@@ -141,6 +141,7 @@ describe("e2e: prune command", () => {
       expect(result.stdout).toContain("Prune complete.");
       expect(store).toEqual({
         nextId: 1,
+        project: "",
         contracts: [],
       });
       expect(fs.readdirSync(tmp.artifactsDir)).toEqual([]);

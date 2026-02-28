@@ -4,7 +4,7 @@ import { renderPlanPretty } from "../../src/core/plans/render";
 describe("plan pretty renderer", () => {
   test("formats title, numbered steps, wrapped details, and optional meta counts", () => {
     const plan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Pretty plan",
       steps: [
         {
@@ -40,7 +40,7 @@ describe("plan pretty renderer", () => {
 
   test("uses untitled fallback when title is missing or empty", () => {
     const plan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "   ",
       steps: [
         {

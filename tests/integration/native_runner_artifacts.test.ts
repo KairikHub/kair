@@ -16,7 +16,7 @@ describe("integration: native runner artifacts", () => {
           contractId: "native_integration",
           intent: "Integration native runner",
           plan: {
-            version: "kair.plan.v1",
+            version: "plan.v1",
             title: "Native integration plan",
             steps: [{ id: "step-1", summary: "Write integration evidence" }],
           },

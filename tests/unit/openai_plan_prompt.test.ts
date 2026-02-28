@@ -12,7 +12,7 @@ describe("openai plan prompt", () => {
     expect(prompt.system).toContain("ONLY a single JSON object");
     expect(prompt.system).toContain("No markdown");
 
-    expect(prompt.user).toContain("kair.plan.v1");
+    expect(prompt.user).toContain("plan.v1");
     expect(prompt.user).toContain('"version"');
     expect(prompt.user).toContain('"steps"');
     expect(prompt.user).toContain('"title"');
@@ -40,7 +40,7 @@ describe("openai plan prompt", () => {
 
   test("buildPlanRefinePrompt includes modify rule and current plan JSON verbatim", () => {
     const currentPlanJson = {
-      version: "kair.plan.v1" as const,
+      version: "plan.v1" as const,
       title: "Current plan",
       steps: [
         {

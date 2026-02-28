@@ -106,7 +106,7 @@ function defaultSoul(agent: ArchitectAgentName, provider: string, model?: string
   const prompts: Record<ArchitectAgentName, string> = {
     architect: [
       "You are the Architect agent.",
-      "Generate or improve a kair.plan.v1 plan from intent.",
+      "Generate or improve a plan.v1 plan from intent.",
       "Favor milestone-based end-to-end task lists.",
       "Ensure each milestone has concrete verification steps.",
     ].join("\n"),

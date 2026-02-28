@@ -15,7 +15,7 @@ export const PLAN_GENERATE_SYSTEM_PROMPT =
   "You are a planning assistant. You output ONLY a single JSON object. No markdown. No code fences. No commentary.";
 
 const PLAN_JSON_SCHEMA = `{
-  "version": "kair.plan.v1",
+  "version": "plan.v1",
   "title": "non-empty string",
   "steps": [
     {
@@ -40,12 +40,12 @@ function buildJsonOutputRequirements() {
   return [
     "Output requirements:",
     `- Return a JSON object conforming exactly to this schema:\n${PLAN_JSON_SCHEMA}`,
-    '- "version" must equal "kair.plan.v1".',
+    '- "version" must equal "plan.v1".',
     '- Include top-level fields: "version", "title", and "steps".',
     '- Each step must include "id" and "summary". Optional fields: "details", "tags", "risks".',
     "- No markdown, no code fences, no commentary.",
     "",
-    "If you cannot comply, output a valid fallback JSON object with version kair.plan.v1 and a single step explaining failure.",
+    "If you cannot comply, output a valid fallback JSON object with version plan.v1 and a single step explaining failure.",
   ];
 }
 

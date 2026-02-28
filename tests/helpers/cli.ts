@@ -48,6 +48,7 @@ export function runCli(
     cwd: process.cwd(),
     env: {
       ...process.env,
+      KAIR_PROJECT: process.env.KAIR_PROJECT || "test-project",
       ...envOverrides,
     },
     encoding: "utf8",

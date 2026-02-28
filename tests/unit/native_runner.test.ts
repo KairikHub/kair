@@ -13,7 +13,7 @@ function makeRequest(artifactsDir: string) {
     contractId: "native_runner_contract",
     intent: "Native runner test",
     plan: {
-      version: "kair.plan.v1" as const,
+      version: "plan.v1" as const,
       title: "Native plan",
       steps: [{ id: "step-1", summary: "Run native" }],
     },

@@ -4,7 +4,7 @@ import { diffPlansByStepId } from "../../src/core/plans/diff";
 describe("plan diff by step id", () => {
   test("returns added, removed, and changed steps", () => {
     const oldPlan: Plan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Old",
       steps: [
         {
@@ -20,7 +20,7 @@ describe("plan diff by step id", () => {
       ],
     };
     const newPlan: Plan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "New",
       steps: [
         {
@@ -49,7 +49,7 @@ describe("plan diff by step id", () => {
 
   test("treats title/description aliases as comparable fields", () => {
     const oldPlan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Old",
       steps: [
         {
@@ -60,7 +60,7 @@ describe("plan diff by step id", () => {
       ],
     } as unknown as Plan;
     const newPlan = {
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "New",
       steps: [
         {

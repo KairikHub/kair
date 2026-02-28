@@ -49,7 +49,7 @@ describe("plan schema validator", () => {
 
   test("markdown fenced payload throws", () => {
     expect(() =>
-      parseAndValidatePlanJson("```json\n{\"version\":\"kair.plan.v1\"}\n```")
+      parseAndValidatePlanJson("```json\n{\"version\":\"plan.v1\"}\n```")
     ).toThrow("Plan must be raw JSON without markdown fences");
   });
 
@@ -59,7 +59,7 @@ describe("plan schema validator", () => {
       title: "Bad version",
       steps: [{ id: "s1", summary: "Desc" }],
     });
-    expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.version must equal kair.plan.v1");
+    expect(() => parseAndValidatePlanJson(raw)).toThrow("Plan.version must equal plan.v1");
   });
 
   test("missing title throws", () => {

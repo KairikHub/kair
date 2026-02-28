@@ -30,7 +30,7 @@ describe("e2e: plan non-interactive", () => {
       expect(create.status).toBe(0);
 
       const planJsonRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Non-interactive plan",
         steps: [
           {
@@ -63,7 +63,7 @@ describe("e2e: plan non-interactive", () => {
       expect(fs.existsSync(after.storePath)).toBe(true);
       expect(after.contract).toBeDefined();
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
       expect(Array.isArray(after.contract.plan_v1.steps)).toBe(true);
       expect(after.contract.plan_v1.steps.length).toBe(2);
 
@@ -72,7 +72,7 @@ describe("e2e: plan non-interactive", () => {
       expect(review.stdout).toContain("APPROVED INTENT");
 
       const defaultLastPlanRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Default last",
         steps: [
           {
@@ -153,7 +153,7 @@ describe("e2e: plan non-interactive", () => {
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
       expect(after.contract.plan_v1.steps.length).toBeGreaterThan(0);
     } finally {
       tmp.cleanup();
@@ -271,7 +271,7 @@ describe("e2e: plan non-interactive", () => {
 
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
     } finally {
       tmp.cleanup();
     }
@@ -295,7 +295,7 @@ describe("e2e: plan non-interactive", () => {
       expect(create.status).toBe(0);
 
       const planJsonRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "JSON output mode",
         steps: [
           {
@@ -311,7 +311,7 @@ describe("e2e: plan non-interactive", () => {
       expect(result.stdout).not.toContain("Structured plan set for Contract");
 
       const parsedOut = JSON.parse(result.stdout);
-      expect(parsedOut.version).toBe("kair.plan.v1");
+      expect(parsedOut.version).toBe("plan.v1");
       expect(parsedOut.steps).toHaveLength(1);
       expect(parsedOut.steps[0].id).toBe("step-a");
       expect(String(result.stdout).trim().startsWith("{")).toBe(true);
@@ -338,7 +338,7 @@ describe("e2e: plan non-interactive", () => {
       expect(create.status).toBe(0);
 
       const planJsonRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Conflict plan",
         steps: [
           {
@@ -394,7 +394,7 @@ describe("e2e: plan non-interactive", () => {
       expect(afterRewind.contract.current_state).toBe("REWOUND");
 
       const planJsonRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Recovery plan after rewind",
         steps: [
           {
@@ -410,7 +410,7 @@ describe("e2e: plan non-interactive", () => {
       const after = readContractFromStore(tmp.dataDir, contractId);
       expect(after.contract.current_state).toBe("PLANNED");
       expect(after.contract.plan_v1).toBeDefined();
-      expect(after.contract.plan_v1.version).toBe("kair.plan.v1");
+      expect(after.contract.plan_v1.version).toBe("plan.v1");
 
       const plannedEntries = (after.contract.history || []).filter(
         (entry: any) => entry && entry.state === "PLANNED"
@@ -466,7 +466,7 @@ describe("e2e: plan non-interactive", () => {
       expect(debugResult.stdout).toContain("DPC (kair.dpc.v1)");
 
       const jsonRaw = JSON.stringify({
-        version: "kair.plan.v1",
+        version: "plan.v1",
         title: "Debug suppressed in json mode",
         steps: [
           {

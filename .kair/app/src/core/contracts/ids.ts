@@ -10,6 +10,10 @@ function slugify(text: string) {
     .replace(/-+/g, "-");
 }
 
+export function normalizeProjectName(name: string) {
+  return slugify(String(name || "").trim());
+}
+
 function formatTimestampForId(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -19,9 +23,9 @@ function formatTimestampForId(date = new Date()) {
   return `${year}${month}${day}-${hour}${minute}`;
 }
 
-export function suggestContractId(intent: string) {
+export function suggestContractId(sourceText: string) {
   const stamp = formatTimestampForId();
-  const words = intent
+  const words = String(sourceText || "")
     .trim()
     .split(/\s+/)
     .filter(Boolean)

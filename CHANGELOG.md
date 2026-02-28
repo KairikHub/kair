@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-02-28
+- Contract/project storage and identity updates:
+  - Structured plan schema version is now `plan.v1` (replacing `kair.plan.v1`).
+  - `kair contract` now initializes project identity first (single project per install).
+  - `.contracts/index.json` now stores top-level `project`.
+  - Default contract id generation now uses shortened project name + timestamp (not intent-derived).
+- Help/docs alignment:
+  - Updated `kair contract --help` usage/notes for project-first flow.
+  - Updated README/docs for single-project install semantics and `plan.v1`.
+
 ## 2026-02-27
 - `kair architect` implementation (multi-agent planning loop):
   - Added executable architect command with contract selection, resumable session state, and subcommands:

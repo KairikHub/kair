@@ -34,10 +34,10 @@ export type RunContractOutcome = {
 };
 
 function resolveStructuredPlan(contract: any): Plan | null {
-  if (contract?.plan_v1 && contract.plan_v1.version === "kair.plan.v1") {
+  if (contract?.plan_v1 && contract.plan_v1.version === "plan.v1") {
     return contract.plan_v1;
   }
-  if (contract?.planJson && contract.planJson.version === "kair.plan.v1") {
+  if (contract?.planJson && contract.planJson.version === "plan.v1") {
     return contract.planJson;
   }
   return null;

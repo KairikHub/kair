@@ -9,7 +9,7 @@ describe("e2e: run output", () => {
     const tmp = makeTempRoot();
     const contractId = "run_debug";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Run debug output",
       steps: [
         {
@@ -61,7 +61,7 @@ describe("e2e: run output", () => {
     const tmp = makeTempRoot();
     const contractId = "run_json";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Run json output",
       steps: [
         {

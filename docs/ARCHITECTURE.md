@@ -30,7 +30,7 @@ Pause definition (v0):
 - id
 - intent
 - plan (legacy text plan)
-- plan_v1 (structured `kair.plan.v1` object)
+- plan_v1 (structured `plan.v1` object)
 - planJson (compatibility field for structured plan reads/writes)
 - current_state
 - history (append‑only)
@@ -63,6 +63,8 @@ Grant List Output (current static set):
 ## Persistence
 - Per-contract snapshots: `.contracts/<contract_id>/contract.json`.
 - Lightweight index: `.contracts/index.json`.
+- Index includes one top-level project name per install (`project`) and all contracts under that project scope.
+- Project identity is initialized during `kair contract` (interactive prompt) or via `KAIR_PROJECT` for non-interactive automation.
 - Append-only history log: `.contracts/<contract_id>/history.jsonl`.
 - Append‑only history is preserved across runs.
 - v0 best practices:
@@ -114,5 +116,5 @@ Grant List Output (current static set):
   - `.contracts/<contract_id>/artifacts/architect/turns.jsonl`
   - `.contracts/<contract_id>/artifacts/architect/validation.json`
 - Final architect output must satisfy:
-  - valid `kair.plan.v1` schema
+  - valid `plan.v1` schema
   - milestone gate validation

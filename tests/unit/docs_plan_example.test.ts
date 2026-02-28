@@ -2,7 +2,7 @@ import { parseAndValidatePlanJson } from "../../src/core/plans/validate";
 
 const DOCS_PLAN_EXAMPLE_JSON = JSON.stringify(
   {
-    version: "kair.plan.v1",
+    version: "plan.v1",
     title: "Docs example plan",
     steps: [
       {
@@ -17,10 +17,10 @@ const DOCS_PLAN_EXAMPLE_JSON = JSON.stringify(
 );
 
 describe("docs canonical plan example", () => {
-  test("parses as valid kair.plan.v1 and includes required step semantics", () => {
+  test("parses as valid plan.v1 and includes required step semantics", () => {
     const plan = parseAndValidatePlanJson(DOCS_PLAN_EXAMPLE_JSON);
 
-    expect(plan.version).toBe("kair.plan.v1");
+    expect(plan.version).toBe("plan.v1");
     expect(plan.steps.length).toBeGreaterThanOrEqual(1);
 
     // The runtime schema uses summary/details; map to docs title/description semantics.

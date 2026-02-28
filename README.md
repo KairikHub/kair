@@ -105,6 +105,11 @@ Each contract is stored under:
 .contracts/<contract_id>/
 ```
 
+Install scope:
+- Kair currently manages one project per install (stored in `.contracts/index.json` as top-level `project`).
+- `kair contract` prompts for Project Name when one is not initialized yet.
+- New contract ids default to shortened project name + timestamp when `--id` is not provided.
+
 Key files:
 
 - `contract.json`
@@ -140,7 +145,7 @@ The current `kair --help` command groups are:
   - `kair login` OAuth login for `openai`/`claude`
   - `kair logins` list provider login/configuration status (`kair login list` alias)
   - `kair contract` create a new Contract in `DRAFT`
-  - `kair plan` generate/refine structured `kair.plan.v1`
+  - `kair plan` generate/refine structured `plan.v1`
   - `kair architect` orchestrate resumable multi-agent planning for a Contract
   - `kair propose` submit/share a planned Contract
   - `kair approve` approve a Contract version
@@ -199,7 +204,7 @@ Example flow:
 
 ```bash
 ./.kair/bin/kair contract "Write a hello file under artifacts"
-./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'
+./.kair/bin/kair plan --last --interactive=false '{"version":"plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'
 ./.kair/bin/kair propose --last
 ./.kair/bin/kair grant --last local:write --actor <name>
 ./.kair/bin/kair run --last --dry-run --debug
@@ -211,7 +216,7 @@ Manual test checklist:
    - `KAIR_OPENAI_API_KEY=<your key>`
 2. Run:
    - `./.kair/bin/kair contract "Write hello evidence"`
-   - `./.kair/bin/kair plan --last --interactive=false '{"version":"kair.plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'`
+   - `./.kair/bin/kair plan --last --interactive=false '{"version":"plan.v1","title":"Write hello evidence","steps":[{"id":"write-hello","summary":"Write hello file","details":"Create a file under .contracts/<contract_id>/artifacts/run/."}]}'`
    - `./.kair/bin/kair propose --last`
    - `./.kair/bin/kair grant --last local:write --actor <name>`
    - `./.kair/bin/kair run --last --dry-run --debug`

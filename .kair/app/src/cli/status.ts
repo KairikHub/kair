@@ -6,11 +6,11 @@ function describePlan(contract: any) {
   const structuredPlan = contract?.plan_v1 || contract?.planJson;
   if (
     structuredPlan &&
-    structuredPlan.version === "kair.plan.v1" &&
+    structuredPlan.version === "plan.v1" &&
     Array.isArray(structuredPlan.steps)
   ) {
     const title = typeof structuredPlan.title === "string" ? structuredPlan.title : "(untitled)";
-    return `kair.plan.v1 | ${title} | ${structuredPlan.steps.length} step(s)`;
+    return `plan.v1 | ${title} | ${structuredPlan.steps.length} step(s)`;
   }
   if (contract?.plan) {
     return String(contract.plan);

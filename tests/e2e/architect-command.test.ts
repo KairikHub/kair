@@ -62,7 +62,7 @@ describe("e2e: architect command", () => {
       const planPath = path.join(tmp.dataDir, contractId, "plan", "plan_v1.json");
       expect(fs.existsSync(planPath)).toBe(true);
       const plan = readJson(planPath);
-      expect(plan.version).toBe("kair.plan.v1");
+      expect(plan.version).toBe("plan.v1");
       expect(Array.isArray(plan.steps)).toBe(true);
       expect(plan.steps.length).toBeGreaterThan(0);
 

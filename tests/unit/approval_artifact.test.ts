@@ -10,8 +10,8 @@ import {
 
 describe("approval artifacts", () => {
   test("computePlanHash is stable across key order", () => {
-    const a = { version: "kair.plan.v1", title: "T", steps: [{ id: "a", summary: "A" }] };
-    const b = { title: "T", steps: [{ summary: "A", id: "a" }], version: "kair.plan.v1" };
+    const a = { version: "plan.v1", title: "T", steps: [{ id: "a", summary: "A" }] };
+    const b = { title: "T", steps: [{ summary: "A", id: "a" }], version: "plan.v1" };
     expect(computePlanHash(a)).toBe(computePlanHash(b));
   });
 
@@ -19,7 +19,7 @@ describe("approval artifacts", () => {
     const cwd = fs.mkdtempSync(path.join(process.cwd(), "tmp-approval-"));
     const previousDataDir = process.env.KAIR_DATA_DIR;
     process.env.KAIR_DATA_DIR = cwd;
-    const plan = { version: "kair.plan.v1", title: "T", steps: [{ id: "a", summary: "A" }] };
+    const plan = { version: "plan.v1", title: "T", steps: [{ id: "a", summary: "A" }] };
     const contractId = "approval_contract";
     try {
       const written = writeApprovalArtifact({

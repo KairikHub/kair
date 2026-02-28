@@ -3,6 +3,8 @@
 ## Current Focus
 - native runner-first execution backend interface and adapter hardening.
 - CLI-only governance workflow quality and reliability.
+- Stabilize single-project install flow (`.contracts/index.json` project metadata + project-scoped contract IDs).
+- Expand architect/manual test coverage and resumability validation.
 
 ## Demo Definition of Done
 A 5–10 minute CLI demo that shows:

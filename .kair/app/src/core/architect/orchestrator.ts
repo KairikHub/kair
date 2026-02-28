@@ -78,7 +78,7 @@ function buildAgentInstructions(params: {
     params.agentSoul.prompt,
     "",
     "Non-negotiable output requirements:",
-    "- Output ONLY valid kair.plan.v1 JSON.",
+    "- Output ONLY valid plan.v1 JSON.",
     "- Include at least one milestone step (summary/details/tags should contain 'milestone').",
     "- Include explicit verification/acceptance criteria in details.",
     "- Preserve existing step ids where reasonable.",

@@ -57,7 +57,7 @@ function writeContractFiles(root: string, contractId: string) {
   fs.writeFileSync(path.join(contractDir, "plan", "PLAN.md"), "# PLAN\n");
   fs.writeFileSync(
     path.join(contractDir, "plan", "plan_v1.json"),
-    JSON.stringify({ version: "kair.plan.v1", title: "t", steps: [{ id: "s1", summary: "sum" }] }, null, 2)
+    JSON.stringify({ version: "plan.v1", title: "t", steps: [{ id: "s1", summary: "sum" }] }, null, 2)
   );
   fs.writeFileSync(path.join(contractDir, "plan", "RULES.md"), "");
   fs.writeFileSync(path.join(contractDir, "dpc", "dpc_v1.json"), "{}\n");
@@ -135,7 +135,7 @@ describe("unit: git integration contract-scoped commit paths", () => {
     }
   });
 
-  test("commitPlanChanges commits only contract-scoped .kair artifacts", () => {
+  test("commitPlanChanges commits only contract-scoped .contracts artifacts", () => {
     const repo = setupRepo();
     const prevCwd = process.cwd();
     const contractId = "contract_git_commit";

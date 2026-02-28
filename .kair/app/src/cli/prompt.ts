@@ -1,11 +1,36 @@
 import { createInterface } from "node:readline/promises";
 
-import { suggestContractId, validateContractId } from "../core/contracts/ids";
-import { contractStore } from "../core/store/contracts_store";
+import { normalizeProjectName, suggestContractId, validateContractId } from "../core/contracts/ids";
+import { contractStore, getProjectName } from "../core/store/contracts_store";
 
-export async function promptForProposeInput({ intent, idRaw }: { intent: string; idRaw: string }) {
+export async function promptForProposeInput({
+  intent,
+  idRaw,
+  projectRaw,
+}: {
+  intent: string;
+  idRaw: string;
+  projectRaw: string;
+}) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
+    let finalProject = projectRaw;
+    if (!finalProject) {
+      const existing = getProjectName();
+      if (existing) {
+        finalProject = existing;
+      }
+    }
+    while (!finalProject) {
+      const answer = await rl.question("What is the Project Name? ");
+      const normalized = normalizeProjectName(answer);
+      if (!normalized) {
+        console.log("Project Name cannot be empty.");
+        continue;
+      }
+      finalProject = normalized;
+    }
+
     let finalIntent = intent;
     while (!finalIntent) {
       const answer = await rl.question("What is the intent of your proposed contract? ");
@@ -14,7 +39,7 @@ export async function promptForProposeInput({ intent, idRaw }: { intent: string;
 
     let finalId = idRaw;
     if (!finalId) {
-      const suggested = suggestContractId(finalIntent);
+      const suggested = suggestContractId(finalProject);
       while (true) {
         const answer = await rl.question(`Contract id [${suggested}]: `);
         const candidate = (answer.trim() || suggested).trim();
@@ -32,9 +57,8 @@ export async function promptForProposeInput({ intent, idRaw }: { intent: string;
       }
     }
 
-    return { intent: finalIntent, id: finalId };
+    return { project: finalProject, intent: finalIntent, id: finalId };
   } finally {
     rl.close();
   }
 }
-

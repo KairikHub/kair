@@ -11,6 +11,12 @@ function readStoreIds(dataDir: string) {
   return (parsed.contracts || []).map((contract: any) => contract.id);
 }
 
+function readStore(dataDir: string) {
+  const storePath = path.join(dataDir, "index.json");
+  const raw = fs.readFileSync(storePath, "utf8");
+  return JSON.parse(raw);
+}
+
 describe("e2e: contract help", () => {
   test("contract --help shows contract-specific help", () => {
     const tmp = makeTempRoot();
@@ -24,7 +30,7 @@ describe("e2e: contract help", () => {
       const result = runCli(["contract", "--help"], env);
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Kair Contract Command");
-      expect(result.stdout).toContain('kair contract "<intent>" [--id <contract_id>]');
+      expect(result.stdout).toContain("kair contract [<intent>] [--id <contract_id>] [--with=git]");
       expect(result.stdout).not.toContain('Unknown Contract "--help".');
     } finally {
       tmp.cleanup();
@@ -37,6 +43,7 @@ describe("e2e: contract help", () => {
       KAIR_DATA_DIR: tmp.dataDir,
       KAIR_ARTIFACTS_DIR: tmp.artifactsDir,
       KAIR_TEST_MODE: "1",
+      KAIR_PROJECT: "project-contract-e2e",
     };
 
     try {
@@ -44,8 +51,11 @@ describe("e2e: contract help", () => {
       expect(result.status).toBe(0);
       expect(result.stdout).toContain("Created a Kair Contract:");
 
+      const store = readStore(tmp.dataDir);
       const ids = readStoreIds(tmp.dataDir);
       expect(ids.length).toBe(1);
+      expect(store.project).toBe("project-contract-e2e");
+      expect(ids[0]).toContain("project-contract-e2e-");
     } finally {
       tmp.cleanup();
     }

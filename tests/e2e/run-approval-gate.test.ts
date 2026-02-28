@@ -9,7 +9,7 @@ describe("e2e: run approval gate", () => {
     const tmp = makeTempRoot();
     const contractId = "run_approval_gate";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Approval gate",
       steps: [{ id: "step-1", summary: "Gate run" }],
     });
@@ -41,7 +41,7 @@ describe("e2e: run approval gate", () => {
     const tmp = makeTempRoot();
     const contractId = "run_approval_written";
     const planJson = JSON.stringify({
-      version: "kair.plan.v1",
+      version: "plan.v1",
       title: "Approval written",
       steps: [{ id: "step-1", summary: "Gate run" }],
     });

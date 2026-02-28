@@ -18,7 +18,7 @@ function prepareApprovedContract(params: {
   actor: string;
 }) {
   const planJson = JSON.stringify({
-    version: "kair.plan.v1",
+    version: "plan.v1",
     title: "Run force flow",
     steps: [
       {

@@ -36,17 +36,20 @@ kair <command>
 - `kair logins` (alias: `kair login list`)
   - Lists provider status for `openai` and `claude`.
   - Reports configured state, source (`env`/`keychain`/`fallback`/`mixed`/`none`), and default marker.
-- `kair contract "<intent>" [--id <contract_id>] [--with=git]`
+- `kair contract [<intent>] [--id <contract_id>] [--with=git]`
   - Create a contract in `DRAFT`.
-  - If `--id` is omitted, kair generates an id from intent.
+  - If no project exists for this install, kair initializes one project name first.
+  - In interactive mode, kair prompts for missing Project Name and Intent.
+  - In non-interactive mode, set `KAIR_PROJECT` when no project is initialized yet.
+  - If `--id` is omitted, kair generates an id from shortened project name + timestamp.
   - `--with=git` creates/switches branch `kair-contract/<contract_id>` and logs git receipts.
 - `kair plan [<contract_id>] [--last] [--provider <name>] [--model <name>] [--interactive <true|false>] [--json] [--debug] [--actor <name>|--by <name>] [<plan_json>]`
-  - Interactive by default; generates/refines strict `kair.plan.v1` JSON and persists on accept.
+  - Interactive by default; generates/refines strict `plan.v1` JSON and persists on accept.
   - Provider resolution order: `--provider`, then `KAIR_LLM_PROVIDER`, then `.kair/config.json` default provider (if configured).
   - If exactly one provider is configured with a key/token, it is auto-selected.
   - If multiple providers are configured, interactive mode prompts; non-interactive mode requires `--provider` or `KAIR_LLM_PROVIDER`.
   - Use `kair logins` to diagnose why provider selection prompts.
-  - In a git repo, successful structured plan persistence auto-commits contract-local `.kair` artifacts.
+  - In a git repo, successful structured plan persistence auto-commits contract-local `.contracts` artifacts.
   - Writes `.contracts/<contract_id>/plan/PLAN.md` and `.contracts/<contract_id>/plan/plan_v1.json` when persisted.
   - Accepted plan shape: top-level `version`, `title`, `steps`; each step requires `id` + `summary`, with optional `details`.
   - With no contract id, defaults to the most recently updated contract.
@@ -62,7 +65,7 @@ kair <command>
   - Per-agent provider/model routing is read from SOUL frontmatter; global `--provider`/`--model` can override all agents.
   - Writes architect session/log artifacts under `.contracts/<contract_id>/artifacts/architect/`.
   - If contract budget is missing, prompts in interactive mode; otherwise persists default caps `max_tokens=120000`, `total_max_cost_usd=15`.
-  - Final output is validated against `kair.plan.v1` and milestone gate before completion.
+  - Final output is validated against `plan.v1` and milestone gate before completion.
 - `kair architect status [--contract <contract_id>] [--last]`
   - Show architect checkpoint and resumability status.
 - `kair architect validate [--contract <contract_id>] [--last] [--json]`
@@ -148,7 +151,7 @@ kair <command>
 
 ```bash
 kair contract --id contract_demo "Contract Demo"
-kair plan contract_demo --interactive=false '{"version":"kair.plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
+kair plan contract_demo --interactive=false '{"version":"plan.v1","title":"Contract demo plan","steps":[{"id":"prepare-change","summary":"Prepare implementation details","details":"Gather change context and expected touchpoints."},{"id":"validate-change","summary":"Run tests and verify outcomes","details":"Run automated checks and capture evidence."}]}'
 kair propose
 kair approve contract_demo --actor Damien
 kair run

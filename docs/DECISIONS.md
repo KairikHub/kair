@@ -184,13 +184,33 @@ Specifically:
 - Agent definitions are contract-local at `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`.
 - Agent execution is provider-agnostic:
   - Different agents may route to different providers/models.
-- Architect output must be a structured `kair.plan.v1` plan with milestone validation before completion.
+- Architect output must be a structured `plan.v1` plan with milestone validation before completion.
 - Missing contract budget is resolved during architect flow and persisted on the Contract (default caps allowed when user input is absent).
 
 **Rationale:**
 - Preserves Kair’s authority boundaries while enabling autonomous planning assistance.
 - Keeps planning artifacts auditable and resumable without introducing hidden orchestration state.
 - Supports heterogeneous LLM backends without coupling governance logic to one provider.
+
+---
+
+## Decision 010 — Single-Project Install Scope and Neutral Plan Version
+
+**Status:** Active  
+**Date:** 2026-02-28
+
+Kair install scope is now one project per local install, and structured plan version strings are tool-neutral.
+
+Specifically:
+- `.contracts/index.json` includes one top-level `project` field for the install.
+- `kair contract` establishes/uses project name before creating contracts.
+- Default contract id generation is based on shortened project name + timestamp (not intent text).
+- Structured plan schema version uses `plan.v1` instead of `kair.plan.v1`.
+
+**Rationale:**
+- Aligns CLI mental model with Git-style one-repo-at-a-time workflow.
+- Separates project identity from per-contract intent.
+- Removes unnecessary product-name coupling from durable plan schema versioning.
 
 ---
 
