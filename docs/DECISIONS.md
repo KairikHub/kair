@@ -170,6 +170,30 @@ Specifically:
 
 ---
 
+## Decision 009 — Architect Is a Resumable, Governance-Only Planning Loop
+
+**Status:** Active  
+**Date:** 2026-02-28
+
+`kair architect` is a CLI-first, resumable multi-agent planning workflow.
+
+Specifically:
+- Architect is planning-only and governance-safe:
+  - It must never auto-approve or auto-run Contracts.
+- Architect persistence is contract-local under `.contracts/<contract_id>/artifacts/architect/` and must support restart/resume from saved session state.
+- Agent definitions are contract-local at `.contracts/<contract_id>/agents/<agent_name>/SOUL.md`.
+- Agent execution is provider-agnostic:
+  - Different agents may route to different providers/models.
+- Architect output must be a structured `kair.plan.v1` plan with milestone validation before completion.
+- Missing contract budget is resolved during architect flow and persisted on the Contract (default caps allowed when user input is absent).
+
+**Rationale:**
+- Preserves Kair’s authority boundaries while enabling autonomous planning assistance.
+- Keeps planning artifacts auditable and resumable without introducing hidden orchestration state.
+- Supports heterogeneous LLM backends without coupling governance logic to one provider.
+
+---
+
 ## How to Change a Decision
 
 - Add a new entry with a higher number
