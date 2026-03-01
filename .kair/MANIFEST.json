@@ -142,6 +142,6 @@
     {"path": ".kair/app/src/kair.ts", "sha256": "b41b65a0366849aeb39300f24543b21c437288a2e149296b60c924d96ebb8cd2", "size": 158},
     {"path": ".kair/bin/kair", "sha256": "48dd48ae043b2440d4bba4d113e93bef72eb2fa0819f1cd64191c475b6bd109e", "size": 657},
     {"path": ".kair/runtime/node", "sha256": "dd6f3352057e904b0b32b7e74829b82acb33958f20c8feab6c0f781f7d042ebd", "size": 113991760},
-    {"path": ".kair/VERSION", "sha256": "36d95999040dc46d839c94b46c08b0e360d6bd9271d5413dccb998485cd9aef7", "size": 78}
+    {"path": ".kair/VERSION", "sha256": "e8037d4e365c40de589ca72604fb8fb5f7f2a6eea680e8900445abdd695f831d", "size": 78}
   ]
 }
