@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-01
+- Release publishing + update-channel verification for project-first contract flow:
+  - Pushed `feat(contract): project-first contract identity and neutral plan schema version` to `origin/main` (`8d1d01a`).
+  - Regenerated embedded runtime metadata payload (`.kair/VERSION`, `.kair/MANIFEST.json`) and published follow-up packaging commit (`a6bfe2f`).
+  - Verified `kair self-update` installs payload containing project-first prompts and help text for `kair contract`.
+  - Verified contract creation behavior in isolated temp workspaces:
+    - First interactive run prompts `Project Name:` before intent/id prompts.
+    - Default id generation uses normalized project name + timestamp.
+    - Explicit `--id` works and duplicate id guard rejects collisions.
+
 ## 2026-02-28
 - Contract/project storage and identity updates:
   - Structured plan schema version is now `plan.v1` (replacing `kair.plan.v1`).
