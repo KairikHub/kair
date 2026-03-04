@@ -58,6 +58,7 @@ import {
   pullCurrentBranch,
   pushContractBranch,
 } from "../core/git/integration";
+import { ensureGitProjectSettings } from "../core/git/settings";
 import { validateApprovalArtifact, writeApprovalArtifact } from "../core/approvals";
 import {
   ensureProviderSession,
@@ -344,6 +345,37 @@ function maybeAutoCommitContractState(params: {
     }
   } catch (error: any) {
     warn(`Contract state commit skipped: ${error.message}`);
+  }
+}
+
+
+function isGitAutomationEnabled() {
+  if (!isInsideGitRepo()) {
+    return false;
+  }
+  return Boolean(ensureGitProjectSettings());
+}
+
+function maybeEnsureContractBranchForAutomation(contractId: string) {
+  if (!isGitAutomationEnabled()) {
+    return;
+  }
+  try {
+    checkoutContractBranch(contractId);
+  } catch (error: any) {
+    warn(`Git branch setup skipped: ${error.message}`);
+  }
+}
+
+function maybePushContractBranchForAutomation(contractId: string, context: string) {
+  if (!isGitAutomationEnabled()) {
+    return;
+  }
+  try {
+    const pushed = pushContractBranch(contractId);
+    console.log(`Pushed branch ${pushed.branch} (${context}).`);
+  } catch (error: any) {
+    warn(`Git push skipped (${context}): ${error.message}`);
   }
 }
 
@@ -1206,6 +1238,7 @@ async function handleTopLevelPlan(rest: string[]) {
   const parsed = parseTopLevelPlanOptions(rest);
   const contractId = resolvePlanContractId(parsed);
   const targetContract = getContract(contractId);
+  maybeEnsureContractBranchForAutomation(contractId);
   const existingPlan = resolveContractPlanV1(targetContract);
   const allowPrompt = process.stdin.isTTY && process.stdout.isTTY;
   const actor = parsed.actorRaw || (process.env.KAIR_ACTOR || "").trim()
@@ -1263,6 +1296,7 @@ async function handleTopLevelPlan(rest: string[]) {
         provider: providerName || null,
         model,
       });
+      maybePushContractBranchForAutomation(contractId, "plan");
       process.stdout.write(`${JSON.stringify(planJson, null, 2)}\n`);
       return;
     }
@@ -1298,6 +1332,7 @@ async function handleTopLevelPlan(rest: string[]) {
         provider: providerName || null,
         model,
       });
+      maybePushContractBranchForAutomation(contractId, "plan");
       appendStreamEvent({
         contractId,
         phase: "plan",
@@ -1434,6 +1469,7 @@ async function handleTopLevelPlan(rest: string[]) {
           provider: providerName || null,
           model,
         });
+        maybePushContractBranchForAutomation(contractId, "plan");
         console.log(`Structured plan set for Contract ${contractId}.`);
         return;
       }
@@ -1628,10 +1664,15 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       console.log(`Project: ${projectName}`);
       console.log(`Intent: ${contract.intent}`);
       console.log(`Active version: ${contract.activeVersion ?? "none"}`);
-      if (withGit) {
+      const gitAutomationEnabled = isGitAutomationEnabled();
+      const shouldPrepareGit = withGit || gitAutomationEnabled;
+      if (shouldPrepareGit) {
         ensureGitInstalled();
         ensureGitRepo();
         const checkout = checkoutContractBranch(contract.id);
+        if (!withGit && gitAutomationEnabled) {
+          console.log("Git automation enabled from .kair/git.json (or auto-detected origin remote).");
+        }
         console.log(`Git branch ready: ${contractBranchName(contract.id)}`);
         console.log(`Git receipt: ${checkout.receiptPath}`);
       }
@@ -1815,6 +1856,7 @@ export async function executeCommand(tokens: string[], options: any = {}) {
       const parsed = parseArchitectOptions(rest);
       const contractId = resolveArchitectContractId(parsed);
       const contract = getContract(contractId);
+      maybeEnsureContractBranchForAutomation(contractId);
       const actor = resolveActor("architect");
       const budgetResult = await ensureArchitectBudget({
         contract,
@@ -1869,6 +1911,14 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         if (contract.current_state !== "PLANNED") {
           transition(contract, "PLANNED", "Architect finalized plan; Contract moved to PLANNED.", actor);
         }
+        maybeAutoCommitPlanArtifacts({
+          contractId: contract.id,
+          actor,
+          mode: "non-interactive",
+          provider: parsed.providerRaw || null,
+          model: parsed.modelRaw || null,
+        });
+        maybePushContractBranchForAutomation(contract.id, "architect");
       }
 
       if (parsed.jsonOutput) {

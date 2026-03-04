@@ -52,6 +52,8 @@ ${label("Notes:")}
   In interactive mode, kair prompts for missing Project Name and Intent.
   In non-interactive mode, set KAIR_PROJECT if project name is not initialized.
   If --id is omitted, kair generates a suggested contract id from Project Name (shortened + timestamp).
+  In a git repo, kair auto-detects origin and writes .kair/git.json to enable branch automation.
+  --with=git still works and forces immediate git branch setup.
 `);
 }
 
@@ -87,7 +89,8 @@ ${label("Notes:")}
   Provider resolution order: --provider, then KAIR_LLM_PROVIDER, then .kair/config.json defaultProvider (if configured).
   If exactly one provider is configured with an API key/token, plan auto-selects it.
   If multiple providers are configured, interactive mode prompts; non-interactive mode requires --provider or KAIR_LLM_PROVIDER.
-  In a git repo, successful structured plan persistence auto-commits contract-local .contracts artifacts.
+  In a git repo with .kair/git.json configured, successful plan persistence auto-checkouts/creates
+  the contract branch, auto-commits contract-local .contracts artifacts, and attempts to push.
   --json implies --interactive=false.
   --debug prints prompt payload and DPC details (suppressed in --json mode).
 `);
@@ -120,6 +123,7 @@ ${label("Resumability and logs:")}
   Runs can pause/resume from saved checkpoint state.
 
 ${label("Budget policy:")}
+  When git automation is enabled, completed architect runs also push the contract branch.
   If contract budget is missing, architect prompts in interactive mode.
   If not provided, architect persists default budget caps:
   max_tokens=120000 and total_max_cost_usd=15.

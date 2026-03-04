@@ -57,6 +57,13 @@ function setupTempRepoWithEmbeddedKair() {
   return root;
 }
 
+
+function setupRemote(root: string) {
+  const remoteRoot = fs.mkdtempSync(path.join(os.tmpdir(), "kair-e2e-git-remote-"));
+  runGit(["init", "--bare", remoteRoot], remoteRoot);
+  runGit(["remote", "add", "origin", remoteRoot], root);
+  return remoteRoot;
+}
 function buildKairEnv(repo: string) {
   return {
     KAIR_TEST_MODE: "1",
@@ -67,6 +74,34 @@ function buildKairEnv(repo: string) {
 }
 
 describe("e2e: plan/propose git authority", () => {
+
+  test("contract auto-detects git origin and writes .kair/git.json without --with=git", () => {
+    const repo = setupTempRepoWithEmbeddedKair();
+    const remote = setupRemote(repo);
+    const kair = path.join(repo, ".kair", "bin", "kair");
+    const contractId = "git_auto_settings";
+
+    try {
+      const create = runInCwd(kair, ["contract", "--id", contractId, "Git auto settings contract"], repo, {
+        ...buildKairEnv(repo),
+      });
+      expect(create.status).toBe(0);
+      expect(create.stdout).toContain("Git automation enabled");
+
+      const settingsPath = path.join(repo, ".kair", "git.json");
+      const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+      expect(settings.repo_url).toBe(remote);
+      expect(settings.remote_name).toBe("origin");
+
+      const branch = runGit(["branch", "--show-current"], repo);
+      expect(branch.status).toBe(0);
+      expect(branch.stdout.trim()).toBe(`kair-contract/${contractId}`);
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+      fs.rmSync(remote, { recursive: true, force: true });
+    }
+  });
+
   test("non-interactive plan auto-commits contract artifacts in git repo", () => {
     const repo = setupTempRepoWithEmbeddedKair();
     const kair = path.join(repo, ".kair", "bin", "kair");

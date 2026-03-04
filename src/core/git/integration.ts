@@ -22,7 +22,7 @@ type GitResult = {
   command: string[];
 };
 
-function runGit(args: string[], cwd = process.cwd()): GitResult {
+export function runGitCommand(args: string[], cwd = process.cwd()): GitResult {
   const result = spawnSync("git", args, { cwd, encoding: "utf8" });
   return {
     status: result.status ?? 1,
@@ -33,7 +33,7 @@ function runGit(args: string[], cwd = process.cwd()): GitResult {
 }
 
 export function isGitInstalled() {
-  const result = runGit(["--version"]);
+  const result = runGitCommand(["--version"]);
   return result.status === 0;
 }
 
@@ -44,7 +44,7 @@ export function ensureGitInstalled() {
 }
 
 export function ensureGitRepo(cwd = process.cwd()) {
-  const result = runGit(["rev-parse", "--is-inside-work-tree"], cwd);
+  const result = runGitCommand(["rev-parse", "--is-inside-work-tree"], cwd);
   if (result.status !== 0 || !result.stdout.trim().toLowerCase().startsWith("true")) {
     throw new Error("--with=git requires running inside a git repository.");
   }
@@ -58,7 +58,7 @@ function appendGitReceipt(contractId: string, payload: Record<string, unknown>) 
 }
 
 function runAndReceipt(contractId: string, args: string[], cwd = process.cwd()) {
-  const result = runGit(args, cwd);
+  const result = runGitCommand(args, cwd);
   const receiptPath = appendGitReceipt(contractId, {
     ts: now(),
     cwd,
@@ -194,7 +194,7 @@ export function listUncommittedContractPaths(contractId: string, cwd = process.c
   if (scope.length === 0) {
     return [] as string[];
   }
-  const result = runGit(["status", "--porcelain", "--untracked-files=all", "--", ...scope], cwd);
+  const result = runGitCommand(["status", "--porcelain", "--untracked-files=all", "--", ...scope], cwd);
   if (result.status !== 0) {
     throw new Error(`git status failed: ${result.stderr || result.stdout}`);
   }
@@ -238,6 +238,6 @@ export function isInsideGitRepo(cwd = process.cwd()) {
   if (!isGitInstalled()) {
     return false;
   }
-  const result = runGit(["rev-parse", "--is-inside-work-tree"], cwd);
+  const result = runGitCommand(["rev-parse", "--is-inside-work-tree"], cwd);
   return result.status === 0 && result.stdout.trim().toLowerCase().startsWith("true");
 }
