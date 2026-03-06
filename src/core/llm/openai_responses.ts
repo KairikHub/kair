@@ -1,4 +1,5 @@
 import type { Plan } from "../plans/schema";
+import type { PlanProviderResponse } from "../providers/types";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "./plan_request_record";
 import {
   buildPlanGeneratePrompt,
@@ -165,5 +166,22 @@ export async function requestOpenAIPlanText(request: OpenAIPlanTextRequest) {
   if (!plan) {
     throw new Error("OpenAI response did not include any text output.");
   }
-  return plan;
+  const usage = payload?.usage || {};
+  const inputTokens = Number(usage.input_tokens ?? 0);
+  const outputTokens = Number(usage.output_tokens ?? 0);
+  if (!Number.isFinite(inputTokens) || !Number.isFinite(outputTokens)) {
+    throw new Error("OpenAI response did not include usage metadata required for budget accounting.");
+  }
+  const totalTokens = Number(usage.total_tokens ?? inputTokens + outputTokens);
+  const result: PlanProviderResponse = {
+    text: plan,
+    usage: {
+      input_tokens: Number.isFinite(inputTokens) ? Math.max(0, Math.floor(inputTokens)) : 0,
+      output_tokens: Number.isFinite(outputTokens) ? Math.max(0, Math.floor(outputTokens)) : 0,
+      total_tokens: Number.isFinite(totalTokens) ? Math.max(0, Math.floor(totalTokens)) : 0,
+    },
+    provider: "openai",
+    model: request.model,
+  };
+  return result;
 }

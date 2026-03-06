@@ -89,10 +89,38 @@ export const mockProvider: Provider = {
     }
     if (shouldReturnInvalidFirst()) {
       mockCallCount += 1;
-      return "{bad json";
+      return {
+        text: "{bad json",
+        usage: {
+          input_tokens: 100,
+          output_tokens: 25,
+          total_tokens: 125,
+        },
+        provider: "mock",
+        model: (request.model || "mock-default").trim() || "mock-default",
+      };
     }
     mockCallCount += 1;
     const plan = request.instructions ? buildRefinedPlan(request) : buildInitialPlan(request);
-    return JSON.stringify(plan);
+    const inputSignal = [
+      request.contractId,
+      request.intent,
+      request.instructions || "",
+      request.currentPlanText || "",
+      request.currentPlanJson ? JSON.stringify(request.currentPlanJson) : "",
+    ].join("\n");
+    const outputSignal = JSON.stringify(plan);
+    const inputTokens = 100 + Math.ceil(inputSignal.length / 16);
+    const outputTokens = 50 + Math.ceil(outputSignal.length / 16);
+    return {
+      text: outputSignal,
+      usage: {
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        total_tokens: inputTokens + outputTokens,
+      },
+      provider: "mock",
+      model: (request.model || "mock-default").trim() || "mock-default",
+    };
   },
 };

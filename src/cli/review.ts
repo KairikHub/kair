@@ -34,6 +34,14 @@ function resolveBudget(contract: any) {
   if (budget === undefined || budget === null || budget === "") {
     return "n/a";
   }
+  if (budget && typeof budget === "object" && budget.limits && budget.usage) {
+    return [
+      `tokens=${budget.usage.total_tokens}/${budget.limits.max_tokens}`,
+      `cost_usd=${budget.usage.total_cost_usd}/${budget.limits.total_max_cost_usd}`,
+      `calls=${budget.usage.calls}`,
+      `status=${budget.status || "ok"}`,
+    ].join(" | ");
+  }
   if (typeof budget === "string" || typeof budget === "number" || typeof budget === "boolean") {
     return String(budget);
   }

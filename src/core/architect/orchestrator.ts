@@ -5,6 +5,7 @@ import { getProvider } from "../providers/registry";
 import type { Provider } from "../providers/types";
 import type { Plan } from "../plans/schema";
 import { parseAndValidatePlanJson } from "../plans/validate";
+import { assertBudgetAllowsCall, recordUsageAndEnforce } from "../llm/budget_guard";
 import { now } from "../time";
 import { appendArchitectDecision, appendArchitectTurn } from "./log";
 import { getArchitectHumanInputPath, getArchitectValidationPath } from "./paths";
@@ -96,6 +97,7 @@ function buildAgentInstructions(params: {
 }
 
 async function requestPlanFromAgent(params: {
+  contract: any;
   provider: Provider;
   providerName: string;
   model?: string;
@@ -104,7 +106,8 @@ async function requestPlanFromAgent(params: {
   currentPlan: Plan | null;
   instructions: string;
 }) {
-  const raw = await params.provider.planJson({
+  assertBudgetAllowsCall(params.contract);
+  const response = await params.provider.planJson({
     contractId: params.contractId,
     intent: params.intent,
     currentPlanJson: params.currentPlan,
@@ -112,8 +115,13 @@ async function requestPlanFromAgent(params: {
     instructions: params.instructions,
     model: params.model || null,
   });
+  recordUsageAndEnforce(params.contract, {
+    provider: response.provider || params.providerName,
+    model: response.model || params.model || "unknown",
+    usage: response.usage,
+  });
   try {
-    return parseAndValidatePlanJson(raw);
+    return parseAndValidatePlanJson(response.text);
   } catch (error: any) {
     throw new Error(
       `Agent provider ${params.providerName} returned invalid plan JSON: ${error?.message || String(error)}`
@@ -153,6 +161,8 @@ export async function runArchitectLoop(params: {
       provider_override: params.providerOverride,
       model_override: params.modelOverride,
       budget: params.contract.budget,
+      budget_status: params.contract?.budget?.status,
+      budget_usage: params.contract?.budget?.usage,
       instructions: params.instructions,
       updated_at: now(),
       working_plan: params.contract.plan_v1 || params.contract.planJson || undefined,
@@ -201,6 +211,7 @@ export async function runArchitectLoop(params: {
 
     const beforePlan = workingPlan;
     const nextPlan = await requestPlanFromAgent({
+      contract: params.contract,
       provider,
       providerName: soul.routing.provider,
       model: soul.routing.model,
@@ -234,6 +245,9 @@ export async function runArchitectLoop(params: {
     });
 
     session.working_plan = nextPlan;
+    session.budget = params.contract.budget;
+    session.budget_status = params.contract?.budget?.status;
+    session.budget_usage = params.contract?.budget?.usage;
 
     if (agentName === "integrator") {
       const validatorSoul = souls.validator;
@@ -253,6 +267,7 @@ export async function runArchitectLoop(params: {
           priorValidationFailures: validation.message,
         });
         validatedPlan = await requestPlanFromAgent({
+          contract: params.contract,
           provider: validatorProvider,
           providerName: validatorSoul.routing.provider,
           model: validatorSoul.routing.model,
@@ -270,6 +285,9 @@ export async function runArchitectLoop(params: {
       validation.retries_used = retries;
       session.validation = validation;
       session.working_plan = validatedPlan;
+      session.budget = params.contract.budget;
+      session.budget_status = params.contract?.budget?.status;
+      session.budget_usage = params.contract?.budget?.usage;
       saveValidationResult(params.contract.id, validation);
 
       appendArchitectDecision({

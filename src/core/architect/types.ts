@@ -1,4 +1,5 @@
 import type { Plan } from "../plans/schema";
+import type { ContractLlmBudget } from "../llm/budget_guard";
 
 export type ArchitectAgentName = "architect" | "critic" | "integrator" | "validator";
 
@@ -19,10 +20,7 @@ export type AgentSoul = {
 
 export type ArchitectSessionStatus = "running" | "awaiting_human" | "completed" | "blocked";
 
-export type ArchitectBudget = {
-  max_tokens: number;
-  total_max_cost_usd: number;
-};
+export type ArchitectBudget = ContractLlmBudget;
 
 export type ArchitectSession = {
   contract_id: string;
@@ -33,6 +31,8 @@ export type ArchitectSession = {
   provider_override?: string;
   model_override?: string;
   budget: ArchitectBudget;
+  budget_status?: ArchitectBudget["status"];
+  budget_usage?: ArchitectBudget["usage"];
   instructions?: string;
   pending_human_prompt?: string;
   working_plan?: Plan;

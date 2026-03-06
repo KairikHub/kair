@@ -24,6 +24,10 @@ import { assertState, recordHistory, transition } from "../core/contracts/histor
 import { getPlanJsonRef, setPlanJson } from "../core/contracts/plan_json";
 import { runContract, resumeContract } from "../core/contracts/run";
 import { PlanLlmRequestRecord, sanitizePlanLlmRequestRecord } from "../core/llm/plan_request_record";
+import {
+  assertBudgetAllowsCall,
+  recordUsageAndEnforce,
+} from "../core/llm/budget_guard";
 import type { Plan } from "../core/plans/schema";
 import { renderPlanPretty } from "../core/plans/render";
 import { diffPlansByStepId, type PlanStepDiffById } from "../core/plans/diff";
@@ -1140,6 +1144,7 @@ async function promptRunInteractiveConfirmation(plan: Plan, allowPrompt: boolean
 }
 
 async function requestPlanFromProvider(params: {
+  contract: any;
   provider: Provider;
   contractId: string;
   intent: string;
@@ -1190,7 +1195,8 @@ async function requestPlanFromProvider(params: {
   });
   const promptArtifactPath = writePlanPromptArtifact(sanitizedPromptRecord);
   try {
-    raw = await params.provider.planJson({
+    assertBudgetAllowsCall(params.contract);
+    const response = await params.provider.planJson({
       contractId: params.contractId,
       intent: params.intent,
       currentPlanJson: params.currentPlan,
@@ -1198,6 +1204,12 @@ async function requestPlanFromProvider(params: {
       instructions: params.instructions,
       model: params.model,
     });
+    recordUsageAndEnforce(params.contract, {
+      provider: response.provider || params.provider.name,
+      model: response.model || params.model || "unknown",
+      usage: response.usage,
+    });
+    raw = response.text;
   } catch (error: any) {
     fail(error && error.message ? error.message : String(error));
   }
@@ -1306,6 +1318,7 @@ async function handleTopLevelPlan(rest: string[]) {
       let result;
       try {
         result = await requestPlanFromProvider({
+          contract: targetContract,
           provider: activeProvider,
           contractId,
           intent: targetContract.intent,
@@ -1406,6 +1419,7 @@ async function handleTopLevelPlan(rest: string[]) {
           jsonOutput: parsed.jsonOutput,
         });
         const result = await requestPlanFromProvider({
+          contract: targetContract,
           provider: activeProvider,
           contractId,
           intent: targetContract.intent,
@@ -1486,6 +1500,7 @@ async function handleTopLevelPlan(rest: string[]) {
         const activeProvider = await ensureProviderAndApiKey();
         try {
           const result = await requestPlanFromProvider({
+            contract: targetContract,
             provider: activeProvider,
             contractId,
             intent: targetContract.intent,
@@ -1792,6 +1807,11 @@ export async function executeCommand(tokens: string[], options: any = {}) {
         console.log(`Status: ${session.status}`);
         console.log(`Round: ${session.round}/${session.max_rounds}`);
         console.log(`Active agent: ${session.active_agent}`);
+        if (session.budget?.usage && session.budget?.limits) {
+          console.log(
+            `Budget usage: tokens=${session.budget.usage.total_tokens}/${session.budget.limits.max_tokens}, cost_usd=${session.budget.usage.total_cost_usd}/${session.budget.limits.total_max_cost_usd}, status=${session.budget.status}`
+          );
+        }
         if (session.pending_human_prompt) {
           console.log(`Pending human input: ${session.pending_human_prompt}`);
         }
@@ -1928,6 +1948,8 @@ export async function executeCommand(tokens: string[], options: any = {}) {
               contract_id: contract.id,
               status: result.status,
               budget: budgetResult.budget,
+              budget_status: budgetResult.budget.status,
+              budget_usage: budgetResult.budget.usage,
               rounds: result.session.round,
               validation: result.session.validation || (result as any).validation || null,
             },
@@ -1943,7 +1965,12 @@ export async function executeCommand(tokens: string[], options: any = {}) {
 
       console.log(`Architect status for Contract ${contract.id}: ${result.status}`);
       console.log(`Rounds: ${result.session.round}/${result.session.max_rounds}`);
-      console.log(`Budget: max_tokens=${budgetResult.budget.max_tokens}, total_max_cost_usd=${budgetResult.budget.total_max_cost_usd}`);
+      console.log(
+        `Budget: max_tokens=${budgetResult.budget.limits.max_tokens}, total_max_cost_usd=${budgetResult.budget.limits.total_max_cost_usd}`
+      );
+      console.log(
+        `Budget usage: tokens=${budgetResult.budget.usage.total_tokens}, cost_usd=${budgetResult.budget.usage.total_cost_usd}, calls=${budgetResult.budget.usage.calls}, status=${budgetResult.budget.status}`
+      );
       const resultValidation = result.session.validation || (result as any).validation;
       if (resultValidation) {
         console.log(`Validation: ${resultValidation.final_pass ? "PASS" : "FAIL"} (${resultValidation.message})`);

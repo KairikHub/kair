@@ -124,9 +124,11 @@ ${label("Resumability and logs:")}
 
 ${label("Budget policy:")}
   When git automation is enabled, completed architect runs also push the contract branch.
-  If contract budget is missing, architect prompts in interactive mode.
-  If not provided, architect persists default budget caps:
-  max_tokens=120000 and total_max_cost_usd=15.
+  Budget is contract-scoped and lifetime-accumulated across provider-backed prompts.
+  If contract budget is missing, architect prompts in interactive mode; otherwise defaults are used.
+  Default caps are max_tokens=120000 and total_max_cost_usd=15.
+  Enforcement uses exact post-response usage accounting.
+  A single crossing call may overshoot budget; subsequent provider calls are blocked.
 
 ${label("Milestone validation gate:")}
   Final validation requires:

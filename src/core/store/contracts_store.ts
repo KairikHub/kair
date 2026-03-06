@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { fail } from "../errors";
+import { normalizeContractBudget } from "../llm/budget_guard";
 import type { Plan } from "../plans/schema";
 import {
   getContractHistoryPath,
@@ -75,6 +76,9 @@ function normalizeContract(raw: any): ContractRecord | null {
   }
   if (!Array.isArray(normalized.versions)) {
     normalized.versions = [];
+  }
+  if (normalized.budget !== undefined) {
+    normalized.budget = normalizeContractBudget(normalized.budget);
   }
   return normalized;
 }

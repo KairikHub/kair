@@ -18,6 +18,25 @@ function describePlan(contract: any) {
   return "none";
 }
 
+function describeBudgetLine(contract: any) {
+  const budget = contract?.budget;
+  if (!budget || typeof budget !== "object") {
+    return "n/a";
+  }
+  if (budget.limits && budget.usage) {
+    return [
+      `tokens=${budget.usage.total_tokens}/${budget.limits.max_tokens}`,
+      `cost_usd=${budget.usage.total_cost_usd}/${budget.limits.total_max_cost_usd}`,
+      `calls=${budget.usage.calls}`,
+      `status=${budget.status || "ok"}`,
+    ].join(" | ");
+  }
+  if ("max_tokens" in budget || "total_max_cost_usd" in budget) {
+    return `legacy limits max_tokens=${budget.max_tokens ?? "n/a"}, total_max_cost_usd=${budget.total_max_cost_usd ?? "n/a"}`;
+  }
+  return JSON.stringify(budget);
+}
+
 export function showContractStatus(contract: any) {
   const timestamp = now();
   console.log(`${timestamp} | ${contract.id} | STATUS | Audit report generated.`);
@@ -29,6 +48,7 @@ export function showContractStatus(contract: any) {
   console.log(`${label("Plan")}: ${describePlan(contract)}`);
   console.log(`${label("Current state")}: ${formatState(contract.current_state)}`);
   console.log(`${label("Active version")}: ${contract.activeVersion ?? "none"}`);
+  console.log(`${label("Budget")}: ${describeBudgetLine(contract)}`);
   if (contract.current_state === "PAUSED" && contract.pauseContext?.at) {
     console.log(`${label("Paused at")}: ${contract.pauseContext.at}`);
   }

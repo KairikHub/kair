@@ -88,6 +88,10 @@ describe("integration: structured plan persistence", () => {
             id: "legacy_contract",
             intent: "Legacy contract",
             plan: "legacy string plan",
+            budget: {
+              max_tokens: 2222,
+              total_max_cost_usd: 7,
+            },
             current_state: "PLANNED",
             history: [],
             approvals: [],
@@ -114,6 +118,10 @@ describe("integration: structured plan persistence", () => {
       expect(loaded?.plan).toBe("legacy string plan");
       expect(loaded?.planJson).toBeUndefined();
       expect(loaded?.plan_v1).toBeUndefined();
+      expect(loaded?.budget?.limits?.max_tokens).toBe(2222);
+      expect(loaded?.budget?.limits?.total_max_cost_usd).toBe(7);
+      expect(loaded?.budget?.usage?.total_tokens).toBe(0);
+      expect(loaded?.budget?.status).toBe("ok");
     } finally {
       if (previousDataDir === undefined) {
         delete process.env.KAIR_DATA_DIR;

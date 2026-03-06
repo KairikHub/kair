@@ -1,35 +1,22 @@
 import { createInterface } from "node:readline/promises";
 
 import { recordHistory } from "../contracts/history";
+import {
+  DEFAULT_LLM_BUDGET_LIMITS,
+  ensureBudgetInitialized,
+  normalizeContractBudget,
+} from "../llm/budget_guard";
 import { now } from "../time";
-import type { ArchitectBudget } from "./types";
+import type { LlmBudgetLimits } from "../llm/budget_guard";
 
-export const DEFAULT_ARCHITECT_BUDGET: ArchitectBudget = {
-  max_tokens: 120000,
-  total_max_cost_usd: 15,
-};
+export const DEFAULT_ARCHITECT_BUDGET: LlmBudgetLimits = { ...DEFAULT_LLM_BUDGET_LIMITS };
 
 function parsePositiveNumber(raw: string) {
   const parsed = Number((raw || "").trim());
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function normalizeBudget(raw: any): ArchitectBudget | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const maxTokens = parsePositiveNumber(String(raw.max_tokens ?? ""));
-  const maxCost = parsePositiveNumber(String(raw.total_max_cost_usd ?? ""));
-  if (!maxTokens || !maxCost) {
-    return null;
-  }
-  return {
-    max_tokens: maxTokens,
-    total_max_cost_usd: maxCost,
-  };
-}
-
-async function promptBudget(defaults: ArchitectBudget) {
+async function promptBudget(defaults: LlmBudgetLimits) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     const maxTokensRaw = await rl.question(
@@ -43,7 +30,7 @@ async function promptBudget(defaults: ArchitectBudget) {
     return {
       max_tokens: maxTokens,
       total_max_cost_usd: maxCost,
-    } as ArchitectBudget;
+    } as LlmBudgetLimits;
   } finally {
     rl.close();
   }
@@ -54,10 +41,11 @@ export async function ensureArchitectBudget(params: {
   allowPrompt: boolean;
   actor?: string;
 }) {
-  const existing = normalizeBudget(params.contract?.budget);
-  if (existing) {
+  const hasExisting = Boolean(params.contract?.budget);
+  if (hasExisting) {
+    const budget = ensureBudgetInitialized(params.contract, DEFAULT_ARCHITECT_BUDGET);
     return {
-      budget: existing,
+      budget,
       source: "existing",
     } as const;
   }
@@ -66,16 +54,17 @@ export async function ensureArchitectBudget(params: {
     ? await promptBudget(DEFAULT_ARCHITECT_BUDGET)
     : { ...DEFAULT_ARCHITECT_BUDGET };
 
-  params.contract.budget = chosen;
+  params.contract.budget = normalizeContractBudget(chosen, DEFAULT_ARCHITECT_BUDGET);
   recordHistory(
     params.contract,
     params.contract.current_state,
     `Architect budget set (max_tokens=${chosen.max_tokens}, total_max_cost_usd=${chosen.total_max_cost_usd}) at ${now()}.`,
     params.actor
   );
+  const budget = ensureBudgetInitialized(params.contract, DEFAULT_ARCHITECT_BUDGET);
 
   return {
-    budget: chosen,
+    budget,
     source: params.allowPrompt ? "prompt-or-default" : "default",
   } as const;
 }
